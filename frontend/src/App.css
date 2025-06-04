@@ -1,0 +1,467 @@
+/* Arthrokinetix Custom CSS with Tailwind Integration */
+
+@import 'tailwindcss/base';
+@import 'tailwindcss/components';
+@import 'tailwindcss/utilities';
+
+/* Custom CSS Variables for Arthrokinetix Brand Colors */
+:root {
+  --color-primary: #2c3e50;
+  --color-secondary: #3498db;
+  --color-accent: #e74c3c;
+  --color-success: #2ecc71;
+  --color-healing: #16a085;
+  --color-innovation: #f39c12;
+  --color-light: #ecf0f1;
+  --color-dark: #2c3e50;
+  
+  /* Emotional Color Palettes */
+  --color-hope: #27ae60;
+  --color-tension: #e74c3c;
+  --color-confidence: #3498db;
+  --color-uncertainty: #95a5a6;
+  --color-breakthrough: #f39c12;
+}
+
+/* Global Styles */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+  line-height: 1.6;
+  color: var(--color-dark);
+  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+  min-height: 100vh;
+}
+
+/* Emotional Signature Styles */
+.emotional-signature {
+  position: relative;
+  width: 80px;
+  height: 80px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto;
+}
+
+.signature-rings {
+  position: absolute;
+  border: 2px solid currentColor;
+  border-radius: 50%;
+  opacity: 0.6;
+  animation: signatureRotate 8s linear infinite;
+}
+
+.signature-rings:nth-child(1) {
+  width: 100%;
+  height: 100%;
+  animation-duration: 8s;
+}
+
+.signature-rings:nth-child(2) {
+  width: 80%;
+  height: 80%;
+  animation-duration: 6s;
+  animation-direction: reverse;
+}
+
+.signature-rings:nth-child(3) {
+  width: 60%;
+  height: 60%;
+  animation-duration: 10s;
+}
+
+@keyframes signatureRotate {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.signature-center {
+  position: relative;
+  z-index: 10;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: currentColor;
+  border-radius: 50%;
+  color: white;
+  font-size: 12px;
+  font-weight: bold;
+}
+
+.signature-particles {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.signature-particle {
+  position: absolute;
+  width: 3px;
+  height: 3px;
+  background: currentColor;
+  border-radius: 50%;
+  opacity: 0.7;
+  animation: particleFloat 4s ease-in-out infinite;
+}
+
+@keyframes particleFloat {
+  0%, 100% {
+    transform: translateY(0) scale(1);
+    opacity: 0.7;
+  }
+  50% {
+    transform: translateY(-10px) scale(1.2);
+    opacity: 1;
+  }
+}
+
+/* Algorithm Mood Indicator */
+.mood-indicator {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 1000;
+  width: 60px;
+  height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  backdrop-filter: blur(10px);
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.mood-indicator:hover {
+  transform: scale(1.1);
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.mood-shape {
+  transition: all 0.5s ease;
+  filter: drop-shadow(0 0 10px currentColor);
+}
+
+.mood-shape.pulsing {
+  animation: moodPulse 2s ease-in-out infinite;
+}
+
+@keyframes moodPulse {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 0.8;
+  }
+  50% {
+    transform: scale(1.1);
+    opacity: 1;
+  }
+}
+
+/* Subspecialty Styling */
+.subspecialty-sportsMedicine {
+  --primary-color: #e74c3c;
+  background: linear-gradient(135deg, #e74c3c, #c0392b);
+}
+
+.subspecialty-jointReplacement {
+  --primary-color: #3498db;
+  background: linear-gradient(135deg, #3498db, #2980b9);
+}
+
+.subspecialty-trauma {
+  --primary-color: #f39c12;
+  background: linear-gradient(135deg, #f39c12, #e67e22);
+}
+
+.subspecialty-spine {
+  --primary-color: #9b59b6;
+  background: linear-gradient(135deg, #9b59b6, #8e44ad);
+}
+
+.subspecialty-handUpperExtremity {
+  --primary-color: #1abc9c;
+  background: linear-gradient(135deg, #1abc9c, #16a085);
+}
+
+.subspecialty-footAnkle {
+  --primary-color: #34495e;
+  background: linear-gradient(135deg, #34495e, #2c3e50);
+}
+
+/* Andry Tree Visualization */
+.andry-tree-container {
+  position: relative;
+  width: 100%;
+  height: 400px;
+  overflow: hidden;
+  border-radius: 12px;
+  background: linear-gradient(180deg, #87CEEB 0%, #F0F8FF 50%, #8FBC8F 100%);
+  margin: 20px 0;
+}
+
+.andry-tree-svg {
+  width: 100%;
+  height: 100%;
+}
+
+/* Healing Animation */
+.healing-particle {
+  animation: healingRise 3s ease-in-out infinite;
+}
+
+@keyframes healingRise {
+  0% {
+    transform: translateY(0) scale(0.5);
+    opacity: 0;
+  }
+  50% {
+    transform: translateY(-20px) scale(1);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(-40px) scale(0.5);
+    opacity: 0;
+  }
+}
+
+/* Data Flow Animation */
+.data-flow {
+  stroke-dasharray: 10 5;
+  animation: dataFlowMove 2s linear infinite;
+}
+
+@keyframes dataFlowMove {
+  0% {
+    stroke-dashoffset: 0;
+  }
+  100% {
+    stroke-dashoffset: 15;
+  }
+}
+
+/* Article Card Styles */
+.article-card {
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 16px;
+  padding: 24px;
+  margin-bottom: 24px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+.article-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 48px rgba(0, 0, 0, 0.15);
+}
+
+.article-card .signature-badge {
+  position: absolute;
+  top: -10px;
+  right: -10px;
+  width: 60px;
+  height: 60px;
+}
+
+/* Artwork Gallery Styles */
+.artwork-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 24px;
+  padding: 24px;
+}
+
+.artwork-item {
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+.artwork-item:hover {
+  transform: scale(1.02);
+  box-shadow: 0 16px 64px rgba(0, 0, 0, 0.2);
+}
+
+.artwork-preview {
+  width: 100%;
+  height: 200px;
+  background: linear-gradient(45deg, #f0f0f0, #e0e0e0);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .mood-indicator {
+    width: 50px;
+    height: 50px;
+    top: 10px;
+    right: 10px;
+  }
+  
+  .emotional-signature {
+    width: 60px;
+    height: 60px;
+  }
+  
+  .signature-center {
+    width: 30px;
+    height: 30px;
+    font-size: 10px;
+  }
+  
+  .article-card {
+    padding: 16px;
+    margin-bottom: 16px;
+  }
+  
+  .artwork-grid {
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: 16px;
+    padding: 16px;
+  }
+}
+
+/* Smooth page transitions */
+.page-transition-enter {
+  opacity: 0;
+  transform: translateY(20px);
+}
+
+.page-transition-enter-active {
+  opacity: 1;
+  transform: translateY(0);
+  transition: opacity 300ms, transform 300ms;
+}
+
+.page-transition-exit {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.page-transition-exit-active {
+  opacity: 0;
+  transform: translateY(-20px);
+  transition: opacity 300ms, transform 300ms;
+}
+
+/* Newsletter signup */
+.newsletter-form {
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 12px;
+  padding: 24px;
+  margin: 32px 0;
+}
+
+.newsletter-input {
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  border-radius: 8px;
+  padding: 12px 16px;
+  width: 100%;
+  margin-bottom: 16px;
+  font-size: 16px;
+  transition: all 0.3s ease;
+}
+
+.newsletter-input:focus {
+  outline: none;
+  border-color: var(--color-secondary);
+  box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, var(--color-secondary), var(--color-primary));
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 12px 24px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(52, 152, 219, 0.3);
+}
+
+.btn-secondary {
+  background: rgba(255, 255, 255, 0.9);
+  color: var(--color-primary);
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  border-radius: 8px;
+  padding: 8px 16px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.btn-secondary:hover {
+  background: white;
+  transform: translateY(-1px);
+}
+
+/* Loading states */
+.loading-skeleton {
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: loading-shimmer 1.5s infinite;
+}
+
+@keyframes loading-shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.1);
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(52, 152, 219, 0.5);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(52, 152, 219, 0.7);
+}
