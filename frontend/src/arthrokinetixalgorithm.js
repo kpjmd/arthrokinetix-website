@@ -626,7 +626,7 @@ function initializeArthrokinetixArt() {
     insertPoint.parentNode.insertBefore(container, insertPoint.nextSibling);
     
     // Add export functionality
-    addExportControls(generator);
+    // addExportControls(generator); // Commented out for web app use
     
     return generator;
   } else {
