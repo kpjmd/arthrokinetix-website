@@ -16,7 +16,7 @@ import About from './pages/About';
 import AlgorithmMoodIndicator from './components/AlgorithmMoodIndicator';
 
 // API Base URL
-const API_BASE = process.env.REACT_APP_BACKEND_URL || 'http://localhost:3000';
+const API_BASE = process.env.REACT_APP_BACKEND_URL || 'http://localhost:8001';
 
 function App() {
   const [algorithmState, setAlgorithmState] = useState(null);
