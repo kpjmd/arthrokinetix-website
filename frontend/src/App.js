@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import './App.css';
 
 // Import the Arthrokinetix algorithm
-import ArthrokinetixArtGenerator from '../../../arthrokinetixalgorithm.js';
+import ArthrokinetixArtGenerator from './arthrokinetixalgorithm.js';
 
 // Components
 import Header from './components/Header';
