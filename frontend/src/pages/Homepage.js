@@ -430,59 +430,62 @@ const Homepage = ({ algorithmState, onStateUpdate }) => {
 
       {/* Newsletter Section */}
       <section className="py-20 bg-gradient-to-br from-primary to-secondary text-white">
-        <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           <motion.div
             initial={{ y: 50, opacity: 0 }}
             whileInView={{ y: 0, opacity: 1 }}
             transition={{ duration: 0.8 }}
             viewport={{ once: true }}
+            className="text-center"
           >
             <h2 className="text-3xl font-bold mb-4">
               Join the Arthrokinetix Community
             </h2>
-            <p className="text-xl text-blue-100 mb-8">
+            <p className="text-xl text-blue-100 mb-8 max-w-2xl mx-auto">
               Subscribe to access emotional feedback features and influence the algorithm's evolution.
             </p>
 
-            <form onSubmit={handleNewsletterSubmit} className="newsletter-form max-w-md mx-auto">
-              <input
-                type="email"
-                placeholder="Enter your email address"
-                className="newsletter-input text-gray-900"
-                value={newsletterEmail}
-                onChange={(e) => setNewsletterEmail(e.target.value)}
-                required
-              />
-              
-              <button 
-                type="submit"
-                className="btn-primary w-full"
-                disabled={newsletterStatus === 'subscribing'}
-              >
-                {newsletterStatus === 'subscribing' ? (
-                  <motion.div
-                    animate={{ rotate: 360 }}
-                    transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-                    className="w-5 h-5 border-2 border-white border-t-transparent rounded-full"
-                  />
-                ) : (
-                  <>
-                    <Users className="w-5 h-5 mr-2" />
-                    Subscribe & Unlock Features
-                  </>
-                )}
-              </button>
-
-              {newsletterStatus === 'success' && (
-                <motion.p
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="text-green-300 mt-3"
+            <div className="max-w-md mx-auto">
+              <form onSubmit={handleNewsletterSubmit} className="space-y-4">
+                <input
+                  type="email"
+                  placeholder="Enter your email address"
+                  className="w-full px-4 py-3 rounded-lg border border-white/20 bg-white/10 backdrop-blur-sm text-white placeholder-white/70 focus:outline-none focus:ring-2 focus:ring-white/30 focus:border-transparent"
+                  value={newsletterEmail}
+                  onChange={(e) => setNewsletterEmail(e.target.value)}
+                  required
+                />
+                
+                <button 
+                  type="submit"
+                  className="w-full bg-white text-primary font-semibold py-3 px-6 rounded-lg hover:bg-blue-50 transition-colors duration-200 flex items-center justify-center disabled:opacity-50"
+                  disabled={newsletterStatus === 'subscribing'}
                 >
-                  Welcome to Arthrokinetix! Check your email for confirmation.
-                </motion.p>
-              )}
-            </form>
+                  {newsletterStatus === 'subscribing' ? (
+                    <motion.div
+                      animate={{ rotate: 360 }}
+                      transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                      className="w-5 h-5 border-2 border-primary border-t-transparent rounded-full"
+                    />
+                  ) : (
+                    <>
+                      <Users className="w-5 h-5 mr-2" />
+                      Subscribe & Unlock Features
+                    </>
+                  )}
+                </button>
+
+                {newsletterStatus === 'success' && (
+                  <motion.p
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="text-green-300 mt-3 text-center"
+                  >
+                    Welcome to Arthrokinetix! Check your email for confirmation.
+                  </motion.p>
+                )}
+              </form>
+            </div>
           </motion.div>
         </div>
       </section>
