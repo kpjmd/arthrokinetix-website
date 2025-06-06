@@ -506,7 +506,6 @@ async def process_feedback_influence(feedback: dict):
     except Exception as e:
         print(f"Error processing feedback influence: {e}")
 
-# Admin Authentication
 @app.post("/api/admin/authenticate")
 async def admin_authenticate(credentials: dict):
     """Authenticate admin user"""
@@ -520,8 +519,12 @@ async def admin_authenticate(credentials: dict):
         else:
             raise HTTPException(status_code=401, detail="Invalid password")
             
+    except HTTPException:
+        # Re-raise HTTP exceptions as-is
+        raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        # Only catch unexpected exceptions
+        raise HTTPException(status_code=500, detail=f"Authentication error: {str(e)}")
 
 @app.post("/api/admin/infographics")
 async def create_infographic(infographic_data: dict):
