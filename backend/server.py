@@ -506,6 +506,60 @@ async def process_feedback_influence(feedback: dict):
     except Exception as e:
         print(f"Error processing feedback influence: {e}")
 
-if __name__ == "__main__":
-    import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8001)
+# Admin Authentication
+@app.post("/api/admin/authenticate")
+async def admin_authenticate(credentials: dict):
+    """Authenticate admin user"""
+    try:
+        admin_password = os.environ.get('ADMIN_PASSWORD')
+        if not admin_password:
+            raise HTTPException(status_code=500, detail="Admin password not configured")
+        
+        if credentials.get('password') == admin_password:
+            return {"authenticated": True, "message": "Authentication successful"}
+        else:
+            raise HTTPException(status_code=401, detail="Invalid password")
+            
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/admin/infographics")
+async def create_infographic(infographic_data: dict):
+    """Create new infographic"""
+    try:
+        infographic = {
+            "id": str(uuid.uuid4()),
+            "title": infographic_data.get("title"),
+            "html_content": infographic_data.get("htmlContent"),
+            "linked_article_id": infographic_data.get("linkedArticleId"),
+            "created_date": datetime.utcnow(),
+            "status": "active"
+        }
+        
+        # Store in database (you can create an infographics collection)
+        # For now, we'll just return success
+        
+        return {"infographic": infographic}
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/admin/artworks")
+async def upload_artwork():
+    """Upload SVG artwork with metadata"""
+    try:
+        # Handle file upload and metadata parsing
+        # This would need proper file handling in a real implementation
+        
+        artwork = {
+            "id": str(uuid.uuid4()),
+            "title": "Manual Upload",
+            "file_type": "svg",
+            "uploaded_date": datetime.utcnow(),
+            "status": "uploaded"
+        }
+        
+        return {"artwork": artwork}
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
