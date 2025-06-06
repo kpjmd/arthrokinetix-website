@@ -48,11 +48,30 @@ const Homepage = ({ algorithmState, onStateUpdate }) => {
 
     setNewsletterStatus('subscribing');
     
-    // Simulate newsletter signup
-    setTimeout(() => {
-      setNewsletterStatus('success');
-      setNewsletterEmail('');
-    }, 1000);
+    try {
+      const response = await fetch(`${API_BASE}/api/newsletter/subscribe`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email: newsletterEmail })
+      });
+
+      const data = await response.json();
+      
+      if (response.ok) {
+        setNewsletterStatus('success');
+        setNewsletterEmail('');
+        // Store subscription status locally
+        localStorage.setItem('newsletter_subscribed', 'true');
+        localStorage.setItem('newsletter_email', newsletterEmail);
+      } else {
+        setNewsletterStatus('error');
+      }
+    } catch (error) {
+      console.error('Newsletter subscription error:', error);
+      setNewsletterStatus('error');
+    }
   };
 
   return (
