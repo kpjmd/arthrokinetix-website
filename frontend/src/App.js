@@ -13,6 +13,7 @@ import ResearchHub from './pages/ResearchHub';
 import ArticlePage from './pages/ArticlePage';
 import Gallery from './pages/Gallery';
 import About from './pages/About';
+import AdminDashboard from './pages/AdminDashboard';
 import AlgorithmMoodIndicator from './components/AlgorithmMoodIndicator';
 
 // API Base URL
