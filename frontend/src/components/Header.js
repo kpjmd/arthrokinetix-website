@@ -32,22 +32,26 @@ const Header = () => {
             </div>
           </Link>
 
-          {/* Navigation */}
-          <nav className="hidden md:flex space-x-8">
-            {navItems.map((item) => (
-              <Link
-                key={item.path}
-                to={item.path}
-                className={`px-3 py-2 text-sm font-medium transition-colors duration-200 ${
-                  location.pathname === item.path
-                    ? 'text-secondary border-b-2 border-secondary'
-                    : 'text-gray-700 hover:text-secondary'
-                }`}
-              >
-                {item.label}
-              </Link>
-            ))}
-          </nav>
+          {/* Navigation & Web3 */}
+          <div className="hidden md:flex items-center space-x-8">
+            <nav className="flex space-x-8">
+              {navItems.map((item) => (
+                <Link
+                  key={item.path}
+                  to={item.path}
+                  className={`px-3 py-2 text-sm font-medium transition-colors duration-200 ${
+                    location.pathname === item.path
+                      ? 'text-secondary border-b-2 border-secondary'
+                      : 'text-gray-700 hover:text-secondary'
+                  }`}
+                >
+                  {item.label}
+                </Link>
+              ))}
+            </nav>
+            
+            <Web3Integration />
+          </div>
 
           {/* Mobile menu button */}
           <div className="md:hidden">
