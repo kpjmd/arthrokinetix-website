@@ -503,6 +503,18 @@ const getEmotionColor = (emotion) => {
   return colors[emotion] || '#3498db';
 };
 
+const getEmotionSymbol = (emotion) => {
+  const symbols = {
+    hope: '○',
+    confidence: '■',
+    breakthrough: '★',
+    healing: '⬢',
+    tension: '▲',
+    uncertainty: '◆'
+  };
+  return symbols[emotion] || '○';
+};
+
 const generateSampleArticles = () => [
   {
     id: '1',
