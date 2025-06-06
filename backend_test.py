@@ -169,6 +169,55 @@ class ArthrokinetixAPITester:
             f"api/artworks/{self.test_artwork_id}",
             200
         )
+        
+    def test_admin_authentication(self):
+        """Test admin authentication endpoint"""
+        # Test with correct password
+        success_valid, response_valid = self.run_test(
+            "Admin Authentication (Valid Password)",
+            "POST",
+            "api/admin/authenticate",
+            200,
+            data={"password": "arthrokinetix_admin_2024"}
+        )
+        
+        # Test with incorrect password
+        success_invalid, _ = self.run_test(
+            "Admin Authentication (Invalid Password)",
+            "POST",
+            "api/admin/authenticate",
+            401,
+            data={"password": "wrong_password"}
+        )
+        
+        return success_valid and success_invalid, response_valid
+        
+    def test_admin_infographics(self):
+        """Test admin infographics endpoint"""
+        test_infographic = {
+            "title": "Test Infographic: ACL Reconstruction Techniques",
+            "htmlContent": "<div class='infographic'><h1>ACL Reconstruction</h1><p>This is a test infographic</p></div>",
+            "linkedArticleId": self.test_article_id if self.test_article_id else ""
+        }
+        
+        return self.run_test(
+            "Admin Infographics",
+            "POST",
+            "api/admin/infographics",
+            200,
+            data=test_infographic
+        )
+        
+    def test_admin_artworks(self):
+        """Test admin artworks endpoint"""
+        # Note: This endpoint expects a file upload which is difficult to test with requests
+        # For now, we'll just test the endpoint response without a file
+        return self.run_test(
+            "Admin Artworks",
+            "POST",
+            "api/admin/artworks",
+            200
+        )
 
 def main():
     # Get the backend URL from environment or use default
@@ -178,7 +227,8 @@ def main():
     print(f"Testing Arthrokinetix API at: {backend_url}")
     tester = ArthrokinetixAPITester(backend_url)
 
-    # Run tests
+    # Run tests for existing endpoints
+    print("\n=== Testing Core API Endpoints ===")
     tester.test_root_endpoint()
     tester.test_algorithm_state()
     tester.test_get_articles()
@@ -187,6 +237,12 @@ def main():
     tester.test_create_article()
     tester.test_get_specific_article()
     tester.test_get_specific_artwork()
+    
+    # Run tests for new admin endpoints
+    print("\n=== Testing Admin API Endpoints ===")
+    tester.test_admin_authentication()
+    tester.test_admin_infographics()
+    tester.test_admin_artworks()
 
     # Print results
     print(f"\n📊 Tests passed: {tester.tests_passed}/{tester.tests_run}")
@@ -194,4 +250,3 @@ def main():
 
 if __name__ == "__main__":
     sys.exit(main())
-      
