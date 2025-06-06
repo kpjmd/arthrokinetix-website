@@ -126,6 +126,10 @@ function App() {
               path="/about" 
               element={<About />} 
             />
+            <Route 
+              path="/admin" 
+              element={<AdminDashboard />} 
+            />
           </Routes>
         </AnimatePresence>
       </div>
