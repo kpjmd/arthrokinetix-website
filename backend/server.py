@@ -191,30 +191,6 @@ async def get_artwork(artwork_id: str):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.post("/api/feedback")
-async def submit_feedback(feedback_data: dict):
-    """Submit emotional feedback for an article"""
-    try:
-        feedback = {
-            "id": str(uuid.uuid4()),
-            "article_id": feedback_data.get("article_id"),
-            "emotion": feedback_data.get("emotion"),
-            "user_id": feedback_data.get("user_id"),
-            "timestamp": datetime.utcnow(),
-            "influence_weight": 1.0  # Base weight, can be adjusted based on user type
-        }
-        
-        feedback_collection.insert_one(feedback)
-        
-        # Update algorithm state based on feedback
-        await process_feedback_influence(feedback)
-        
-        feedback["_id"] = str(feedback["_id"])
-        return feedback
-        
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
 # Helper functions
 async def process_article_emotions(content: str) -> dict:
     """Process article content for emotional analysis using Claude as supplement"""
