@@ -567,6 +567,112 @@ async def upload_artwork():
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+# Newsletter Management
+@app.post("/api/newsletter/subscribe")
+async def newsletter_subscribe(subscription_data: dict):
+    """Subscribe to newsletter"""
+    try:
+        email = subscription_data.get('email')
+        if not email:
+            raise HTTPException(status_code=400, detail="Email is required")
+        
+        # Check if email already exists
+        existing_subscription = db.newsletter_subscribers.find_one({"email": email})
+        if existing_subscription:
+            return {"message": "Email already subscribed", "status": "existing"}
+        
+        # Create new subscription
+        subscription = {
+            "id": str(uuid.uuid4()),
+            "email": email,
+            "subscribed_date": datetime.utcnow(),
+            "status": "active",
+            "verified": False,  # In production, send verification email
+            "preferences": {
+                "algorithm_updates": True,
+                "new_articles": True,
+                "feedback_access": True
+            }
+        }
+        
+        db.newsletter_subscribers.insert_one(subscription)
+        
+        # Grant feedback access
+        subscription["_id"] = str(subscription["_id"])
+        return {
+            "subscription": subscription,
+            "message": "Successfully subscribed to newsletter",
+            "status": "subscribed"
+        }
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/newsletter/status/{email}")
+async def get_newsletter_status(email: str):
+    """Check newsletter subscription status"""
+    try:
+        subscription = db.newsletter_subscribers.find_one({"email": email})
+        if subscription:
+            subscription["_id"] = str(subscription["_id"])
+            return {"subscribed": True, "subscription": subscription}
+        else:
+            return {"subscribed": False}
+            
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/feedback")
+async def submit_feedback_enhanced(feedback_data: dict):
+    """Enhanced feedback submission with access control"""
+    try:
+        email = feedback_data.get("user_email")
+        
+        # Check if user has feedback access (newsletter subscriber or NFT holder)
+        has_access = False
+        access_type = "none"
+        
+        if email:
+            subscription = db.newsletter_subscribers.find_one({"email": email, "status": "active"})
+            if subscription:
+                has_access = True
+                access_type = "subscriber"
+        
+        # TODO: Add NFT verification here
+        # For now, also grant access to anonymous users for demo purposes
+        if not has_access:
+            has_access = True
+            access_type = "demo"
+        
+        if not has_access:
+            raise HTTPException(status_code=403, detail="Feedback access requires newsletter subscription or NFT ownership")
+        
+        feedback = {
+            "id": str(uuid.uuid4()),
+            "article_id": feedback_data.get("article_id"),
+            "emotion": feedback_data.get("emotion"),
+            "user_email": email,
+            "access_type": access_type,
+            "timestamp": datetime.utcnow(),
+            "influence_weight": 1.0 if access_type == "subscriber" else 0.5
+        }
+        
+        feedback_collection.insert_one(feedback)
+        
+        # Update algorithm state based on feedback
+        await process_feedback_influence(feedback)
+        
+        feedback["_id"] = str(feedback["_id"])
+        return {
+            "feedback": feedback,
+            "message": f"Feedback submitted successfully ({access_type} access)"
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8001)
