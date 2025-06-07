@@ -42,8 +42,13 @@ client = MongoClient(mongo_url)
 db = client.arthrokinetix
 
 # Initialize services
-claude_service = ClaudeAnalysisService(db)
-arthrokinetix_engine = ArthrokinetixEngine(db)
+if SERVICES_AVAILABLE:
+    claude_service = ClaudeAnalysisService(db)
+    arthrokinetix_engine = ArthrokinetixEngine(db)
+else:
+    # Fallback to None - will use basic server functionality
+    claude_service = None
+    arthrokinetix_engine = None
 
 # Collections
 articles_collection = db.articles
