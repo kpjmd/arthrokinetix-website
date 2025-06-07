@@ -127,7 +127,7 @@ Also assess:
 Return only valid JSON with all fields."""
 
         message = self.anthropic_client.messages.create(
-            model="claude-3-sonnet-20240229",
+            model="claude-3-5-sonnet-20241022",  # Updated to latest model
             max_tokens=1000,
             messages=[{
                 "role": "user",
