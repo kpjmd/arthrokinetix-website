@@ -283,7 +283,10 @@ async def create_article_enhanced(article_data: dict):
         # Update algorithm state
         await update_algorithm_state(emotional_data)
         
-        article["_id"] = str(article["_id"])
+        # Convert ObjectId to string for JSON serialization
+        if "_id" in article:
+            article["_id"] = str(article["_id"])
+        
         return {
             "article": article,
             "signature": signature_data,
