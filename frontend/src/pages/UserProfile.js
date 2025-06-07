@@ -272,7 +272,7 @@ const UserProfile = () => {
                   subscriptionStatus?.subscribed ? 'border-green-200 bg-green-50' : 'border-gray-200 bg-gray-50'
                 }`}>
                   <div className="flex items-center mb-3">
-                    <Collection className="w-6 h-6 mr-3 text-secondary" />
+                    <Archive className="w-6 h-6 mr-3 text-secondary" />
                     <h4 className="font-semibold">Signature Collection</h4>
                   </div>
                   <p className="text-sm text-gray-600 mb-3">
