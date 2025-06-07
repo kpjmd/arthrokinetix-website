@@ -134,7 +134,7 @@ const Homepage = ({ algorithmState, onStateUpdate }) => {
           </div>
         </motion.div>
 
-        {/* Algorithm State Display - Repositioned */}
+        {/* Algorithm State Display - Perfectly Centered */}
         {algorithmState && (
           <motion.div 
             className="absolute bottom-8 left-1/2 transform -translate-x-1/2 pointer-events-none z-10"
@@ -142,7 +142,7 @@ const Homepage = ({ algorithmState, onStateUpdate }) => {
             animate={{ scale: 1, opacity: 1 }}
             transition={{ duration: 0.8, delay: 0.5 }}
           >
-            <div className="bg-white/15 backdrop-blur-lg rounded-xl p-6 border border-white/30 pointer-events-auto max-w-sm mx-4 shadow-2xl">
+            <div className="bg-white/15 backdrop-blur-lg rounded-xl p-6 border border-white/30 pointer-events-auto shadow-2xl">
               <div className="text-center text-white">
                 <h3 className="font-semibold mb-3 text-lg">Algorithm State</h3>
                 <motion.div 
