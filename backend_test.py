@@ -220,9 +220,23 @@ class ArthrokinetixAPITester:
         )
 
 def main():
-    # Get the backend URL from environment or use default
+    # Get the backend URL from frontend .env file
     import os
-    backend_url = os.environ.get('REACT_APP_BACKEND_URL', 'http://localhost:8001')
+    
+    # Read the REACT_APP_BACKEND_URL from the frontend .env file
+    backend_url = None
+    try:
+        with open('/app/frontend/.env', 'r') as f:
+            for line in f:
+                if line.startswith('REACT_APP_BACKEND_URL='):
+                    backend_url = line.strip().split('=', 1)[1]
+                    break
+    except Exception as e:
+        print(f"Error reading frontend .env file: {e}")
+    
+    # Fallback to default if not found
+    if not backend_url:
+        backend_url = 'http://localhost:8001'
     
     print(f"Testing Arthrokinetix API at: {backend_url}")
     tester = ArthrokinetixAPITester(backend_url)
