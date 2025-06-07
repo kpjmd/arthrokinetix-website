@@ -105,6 +105,14 @@ function App() {
               } 
             />
             <Route 
+              path="/research-enhanced" 
+              element={
+                <EnhancedResearchHub 
+                  algorithmState={algorithmState}
+                />
+              } 
+            />
+            <Route 
               path="/research/:slug" 
               element={
                 <ArticlePage 
@@ -112,6 +120,10 @@ function App() {
                   onStateUpdate={setAlgorithmState}
                 />
               } 
+            />
+            <Route 
+              path="/profile" 
+              element={<UserProfile />} 
             />
             <Route 
               path="/gallery" 
