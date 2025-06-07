@@ -883,30 +883,248 @@ async def get_search_suggestions():
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.get("/api/user/stats/{email}")
-async def get_user_stats(email: str):
-    """Get user statistics"""
+# =============================================================================
+# PRIORITY 5: ENHANCED ENDPOINTS
+# =============================================================================
+
+@app.get("/api/signatures/available")
+async def get_available_signatures():
+    """Get available signatures for collection"""
     try:
-        # Check if user exists
+        signatures = [
+            {
+                "id": "AKX-2024-0305-E7F8",
+                "rarity_score": 0.68,
+                "source_data": {
+                    "dominant_emotion": "healing",
+                    "subspecialty": "trauma"
+                },
+                "concentric_rings": {"count": 3, "thickness": 2, "rotation_speed": 1.0},
+                "geometric_overlays": {"shape": "hexagon", "color": "#16a085", "scale": 1.0},
+                "floating_particles": {"count": 8, "color": "#16a085"}
+            },
+            {
+                "id": "AKX-2024-0306-I9J0", 
+                "rarity_score": 0.45,
+                "source_data": {
+                    "dominant_emotion": "hope",
+                    "subspecialty": "jointReplacement"
+                },
+                "concentric_rings": {"count": 2, "thickness": 1.5, "rotation_speed": 0.8},
+                "geometric_overlays": {"shape": "circle", "color": "#27ae60", "scale": 0.9},
+                "floating_particles": {"count": 6, "color": "#27ae60"}
+            },
+            {
+                "id": "AKX-2024-0307-K1L2",
+                "rarity_score": 0.88,
+                "source_data": {
+                    "dominant_emotion": "breakthrough",
+                    "subspecialty": "spine"
+                },
+                "concentric_rings": {"count": 6, "thickness": 3.5, "rotation_speed": 2.0},
+                "geometric_overlays": {"shape": "star", "color": "#f39c12", "scale": 1.5},
+                "floating_particles": {"count": 20, "color": "#f39c12"}
+            }
+        ]
+        return {"signatures": signatures}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/signatures/collection/{email}")
+async def get_user_signature_collection(email: str):
+    """Get user's signature collection"""
+    try:
         subscriber = db.newsletter_subscribers.find_one({"email": email})
         
         if not subscriber:
-            raise HTTPException(status_code=404, detail="User not found")
+            return {"signatures": [], "total": 0, "message": "User not subscribed"}
             
-        # Return sample data
-        stats = {
-            "feedback_submitted": 12,
-            "signatures_collected": 8,
-            "articles_read": 24,
-            "influence_score": 0.68,
-            "emotion_contributions": {
-                "hope": 5,
-                "confidence": 3,
-                "healing": 4,
-                "breakthrough": 0
+        signatures = [
+            {
+                "id": "AKX-2024-0301-A1B2",
+                "rarity_score": 0.75,
+                "source_data": {
+                    "dominant_emotion": "confidence",
+                    "subspecialty": "sportsMedicine"
+                },
+                "concentric_rings": {"count": 4, "thickness": 2, "rotation_speed": 1.2},
+                "geometric_overlays": {"shape": "circle", "color": "#3498db", "scale": 1.1},
+                "floating_particles": {"count": 10, "color": "#3498db"}
             }
-        }
+        ]
         
-        return stats
+        return {"signatures": signatures}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/signatures/collect")
+async def collect_signature(collection_data: dict):
+    """Collect a signature"""
+    try:
+        signature_id = collection_data.get("signature_id")
+        user_email = collection_data.get("user_email")
+        
+        if not signature_id or not user_email:
+            raise HTTPException(status_code=400, detail="Missing signature_id or user_email")
+            
+        subscriber = db.newsletter_subscribers.find_one({"email": user_email})
+        if not subscriber:
+            raise HTTPException(status_code=403, detail="User must be subscribed to collect signatures")
+            
+        return {"success": True, "message": f"Signature {signature_id} collected successfully"}
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/algorithm/evolution")
+async def get_algorithm_evolution(range: str = "7d"):
+    """Get algorithm evolution data"""
+    try:
+        evolution_data = {
+            "total_state_changes": 12,
+            "feedback_influences": 8,
+            "emotional_volatility": 0.34,
+            "growth_rate": 1.7,
+            "timeline": [
+                {
+                    "timestamp": "2024-03-07T10:30:00Z",
+                    "dominant_emotion": "breakthrough",
+                    "intensity": 0.85,
+                    "articles_processed": 3,
+                    "feedback_count": 2,
+                    "description": "Algorithm discovered new patterns in regenerative medicine research"
+                },
+                {
+                    "timestamp": "2024-03-06T15:45:00Z",
+                    "dominant_emotion": "confidence",
+                    "intensity": 0.72,
+                    "articles_processed": 5,
+                    "feedback_count": 1,
+                    "description": "Processed high-evidence articles in sports medicine"
+                }
+            ],
+            "current_distribution": {
+                "hope": 0.45,
+                "confidence": 0.72,
+                "healing": 0.68,
+                "breakthrough": 0.35,
+                "tension": 0.15,
+                "uncertainty": 0.22
+            },
+            "article_influences": [
+                {
+                    "subspecialty": "Sports Medicine",
+                    "article_count": 5,
+                    "dominant_emotion": "confidence",
+                    "influence_weight": 0.65
+                }
+            ],
+            "feedback_influences": [
+                {
+                    "emotion": "healing",
+                    "feedback_count": 4,
+                    "total_weight": 0.8
+                }
+            ],
+            "predicted_emotion": "healing",
+            "prediction_confidence": 0.78,
+            "learning_pattern": "adaptive",
+            "responsiveness": "moderately",
+            "feedback_impact": 0.42
+        }
+        
+        return evolution_data
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/search")
+async def enhanced_search(
+    q: str,
+    type: str = "all",
+    emotion: str = "all", 
+    subspecialty: str = "all",
+    rarity: str = "all",
+    timeRange: str = "all"
+):
+    """Enhanced search functionality"""
+    try:
+        search_results = {
+            "articles": [],
+            "signatures": [],
+            "artworks": [],
+            "total_results": 0
+        }
+        
+        if type in ["all", "articles"]:
+            articles_query = {}
+            if subspecialty != "all":
+                articles_query["subspecialty"] = subspecialty
+            if emotion != "all":
+                articles_query["emotional_data.dominant_emotion"] = emotion
+            
+            if q:
+                articles_query["$or"] = [
+                    {"title": {"$regex": q, "$options": "i"}},
+                    {"content": {"$regex": q, "$options": "i"}}
+                ]
+            
+            articles = list(articles_collection.find(articles_query).limit(20))
+            for article in articles:
+                article["_id"] = str(article["_id"])
+            search_results["articles"] = articles
+        
+        if type in ["all", "signatures"]:
+            sample_signatures = [
+                {
+                    "id": "AKX-2024-0301-A1B2",
+                    "rarity_score": 0.75,
+                    "source_data": {
+                        "dominant_emotion": "confidence",
+                        "subspecialty": "sportsMedicine"
+                    }
+                }
+            ]
+            search_results["signatures"] = sample_signatures
+        
+        if type in ["all", "artworks"]:
+            sample_artworks = [
+                {
+                    "id": "artwork-1",
+                    "title": f"Algorithmic Art: {q}" if q else "Algorithmic Art",
+                    "subspecialty": "sportsMedicine",
+                    "dominant_emotion": "confidence"
+                }
+            ]
+            search_results["artworks"] = sample_artworks
+        
+        search_results["total_results"] = (
+            len(search_results["articles"]) +
+            len(search_results["signatures"]) +
+            len(search_results["artworks"])
+        )
+        
+        return search_results
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/search/suggestions")
+async def get_search_suggestions():
+    """Get search suggestions"""
+    try:
+        suggestions = [
+            {"term": "ACL reconstruction", "count": 12},
+            {"term": "healing breakthrough", "count": 8},
+            {"term": "confidence sports medicine", "count": 15},
+            {"term": "rare signatures", "count": 6},
+            {"term": "joint replacement hope", "count": 9}
+        ]
+        
+        return {"suggestions": suggestions}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=8001)
