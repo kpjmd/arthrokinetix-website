@@ -317,6 +317,34 @@ class ArthrokinetixAPITester:
             params={"q": "test", "type": "all"}
         )
 
+def test_search_suggestions(self):
+    """Test search suggestions endpoint"""
+    return self.run_test(
+        "Search Suggestions",
+        "GET",
+        "api/search/suggestions",
+        200
+    )
+
+def test_collect_signature(self):
+    """Test collecting a signature"""
+    if not self.test_signature_id or not self.test_email:
+        print("❌ Cannot test signature collection - missing signature ID or email")
+        return False, {}
+        
+    collection_data = {
+        "signature_id": self.test_signature_id,
+        "user_email": self.test_email
+    }
+    
+    return self.run_test(
+        "Collect Signature",
+        "POST",
+        "api/signatures/collect",
+        200,
+        data=collection_data
+    )
+
 def main():
     # Get the backend URL from frontend .env file
     import os
@@ -339,32 +367,35 @@ def main():
     print(f"Testing Arthrokinetix API at: {backend_url}")
     tester = ArthrokinetixAPITester(backend_url)
 
-    # Run tests for existing endpoints
-    print("\n=== Testing Core API Endpoints ===")
-    tester.test_root_endpoint()
-    tester.test_algorithm_state()
-    tester.test_get_articles()
-    tester.test_get_articles_with_filter()
-    tester.test_get_artworks()
-    tester.test_create_article()
-    tester.test_get_specific_article()
-    tester.test_get_specific_artwork()
-    
-    # Run tests for admin endpoints
-    print("\n=== Testing Admin API Endpoints ===")
-    tester.test_admin_authentication()
-    tester.test_admin_infographics()
-    tester.test_admin_artworks()
-    
-    # Run tests for Priority 5 features
+    # Run tests for Priority 5 features (as requested in the review)
     print("\n=== Testing Priority 5 Features ===")
-    tester.test_newsletter_subscribe()
-    tester.test_newsletter_status()
-    tester.test_submit_feedback()
+    print("\n1. Testing GET /api/signatures/available")
     tester.test_available_signatures()
+    
+    print("\n2. Testing GET /api/signatures/collection/{email}")
+    # First subscribe to newsletter to ensure we have a valid user
+    tester.test_newsletter_subscribe()
     tester.test_signature_collection()
+    
+    print("\n3. Testing POST /api/signatures/collect")
+    tester.test_collect_signature()
+    
+    print("\n4. Testing GET /api/algorithm/evolution")
     tester.test_algorithm_evolution()
+    
+    print("\n5. Testing GET /api/search")
     tester.test_enhanced_search()
+    
+    print("\n6. Testing GET /api/search/suggestions")
+    tester.test_search_suggestions()
+    
+    # Test admin authentication as requested
+    print("\n=== Testing Admin Authentication ===")
+    tester.test_admin_authentication()
+    
+    # Print results
+    print(f"\n📊 Tests passed: {tester.tests_passed}/{tester.tests_run}")
+    return 0 if tester.tests_passed == tester.tests_run else 1
 
     # Print results
     print(f"\n📊 Tests passed: {tester.tests_passed}/{tester.tests_run}")
