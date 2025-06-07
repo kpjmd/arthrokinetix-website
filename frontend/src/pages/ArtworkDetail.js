@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ArrowLeft, Download, Share2, Eye, Palette, Award, Calendar, Tag } from 'lucide-react';
+import { ArrowLeft, Download, Share2, Eye, Palette, Award, Calendar, Tag, X } from 'lucide-react';
 
 const API_BASE = process.env.REACT_APP_BACKEND_URL || 'http://localhost:8001';
 
