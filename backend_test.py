@@ -11,8 +11,10 @@ class ArthrokinetixAPITester:
         self.tests_passed = 0
         self.test_article_id = None
         self.test_artwork_id = None
+        self.test_email = f"test_{datetime.now().strftime('%Y%m%d%H%M%S')}@example.com"
+        self.test_signature_id = None
 
-    def run_test(self, name, method, endpoint, expected_status, data=None):
+    def run_test(self, name, method, endpoint, expected_status, data=None, params=None):
         """Run a single API test"""
         url = f"{self.base_url}/{endpoint}"
         headers = {'Content-Type': 'application/json'}
@@ -22,7 +24,7 @@ class ArthrokinetixAPITester:
         
         try:
             if method == 'GET':
-                response = requests.get(url, headers=headers)
+                response = requests.get(url, headers=headers, params=params)
             elif method == 'POST':
                 response = requests.post(url, json=data, headers=headers)
 
