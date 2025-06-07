@@ -192,7 +192,7 @@ const SignatureCollection = ({ userEmail, isSubscriber }) => {
           </div>
         ) : (
           <div className="text-center py-8">
-            <Collection className="w-12 h-12 text-gray-400 mx-auto mb-3" />
+            <Archive className="w-12 h-12 text-gray-400 mx-auto mb-3" />
             <p className="text-gray-500">No signatures collected yet. Explore articles to find collectible signatures!</p>
           </div>
         )}
