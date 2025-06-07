@@ -10,11 +10,13 @@ import ArthrokinetixArtGenerator from './arthrokinetixalgorithm.js';
 import Header from './components/Header';
 import Homepage from './pages/Homepage';
 import ResearchHub from './pages/ResearchHub';
+import EnhancedResearchHub from './pages/EnhancedResearchHub';
 import ArticlePage from './pages/ArticlePage';
 import Gallery from './pages/Gallery';
 import About from './pages/About';
 import AdminDashboard from './pages/AdminDashboard';
 import ArtworkDetail from './pages/ArtworkDetail';
+import UserProfile from './pages/UserProfile';
 import AlgorithmMoodIndicator from './components/AlgorithmMoodIndicator';
 
 // API Base URL
