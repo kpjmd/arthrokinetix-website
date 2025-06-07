@@ -15,7 +15,7 @@ const UserProfile = () => {
 
   const tabs = [
     { id: 'profile', label: 'Profile', icon: User },
-    { id: 'collection', label: 'Signature Collection', icon: Collection },
+    { id: 'collection', label: 'Signature Collection', icon: Archive },
     { id: 'stats', label: 'Statistics', icon: BarChart3 },
     { id: 'settings', label: 'Settings', icon: Settings }
   ];
