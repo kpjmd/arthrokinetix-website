@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { User, Mail, Award, Collection, BarChart3, Settings, Download, Shield } from 'lucide-react';
+import { User, Mail, Award, Archive, BarChart3, Settings, Download, Shield } from 'lucide-react';
 import SignatureCollection from '../components/SignatureCollection';
 import Web3Integration from '../components/Web3Integration';
 
