@@ -134,19 +134,19 @@ const Homepage = ({ algorithmState, onStateUpdate }) => {
           </div>
         </motion.div>
 
-        {/* Algorithm State Display - Centered */}
+        {/* Algorithm State Display - Repositioned */}
         {algorithmState && (
           <motion.div 
-            className="absolute inset-0 flex items-center justify-center pointer-events-none"
+            className="absolute bottom-8 left-1/2 transform -translate-x-1/2 pointer-events-none z-10"
             initial={{ scale: 0, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             transition={{ duration: 0.8, delay: 0.5 }}
           >
-            <div className="bg-white/10 backdrop-blur-lg rounded-xl p-8 border border-white/20 pointer-events-auto max-w-sm mx-4">
+            <div className="bg-white/15 backdrop-blur-lg rounded-xl p-6 border border-white/30 pointer-events-auto max-w-sm mx-4 shadow-2xl">
               <div className="text-center text-white">
-                <h3 className="font-semibold mb-4 text-lg">Algorithm Emotional State</h3>
+                <h3 className="font-semibold mb-3 text-lg">Algorithm State</h3>
                 <motion.div 
-                  className="w-20 h-20 mx-auto mb-4 rounded-full border-4 flex items-center justify-center"
+                  className="w-16 h-16 mx-auto mb-3 rounded-full border-4 flex items-center justify-center"
                   style={{ 
                     borderColor: algorithmState.visual_representation?.color,
                     backgroundColor: `${algorithmState.visual_representation?.color}20`
@@ -161,14 +161,14 @@ const Homepage = ({ algorithmState, onStateUpdate }) => {
                     ease: "easeInOut"
                   }}
                 >
-                  <span className="text-2xl font-bold">
+                  <span className="text-xl font-bold">
                     {getEmotionSymbol(algorithmState.emotional_state?.dominant_emotion)}
                   </span>
                 </motion.div>
-                <p className="text-lg capitalize font-medium mb-2">
+                <p className="text-base capitalize font-medium mb-2">
                   {algorithmState.emotional_state?.dominant_emotion}
                 </p>
-                <p className="text-sm opacity-90 mb-3">
+                <p className="text-sm opacity-90 mb-2">
                   {Math.round((algorithmState.emotional_state?.emotional_intensity || 0) * 100)}% intensity
                 </p>
                 <div className="text-xs opacity-75">
