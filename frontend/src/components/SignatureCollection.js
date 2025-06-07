@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Star, Collection, Award, Download, Search, Filter } from 'lucide-react';
+import { Star, Archive, Award, Download, Search, Filter } from 'lucide-react';
 import EmotionalSignature from './EmotionalSignature';
 
 const API_BASE = process.env.REACT_APP_BACKEND_URL || 'http://localhost:8001';
