@@ -104,7 +104,7 @@ const SignatureCollection = ({ userEmail, isSubscriber }) => {
   if (!isSubscriber) {
     return (
       <div className="text-center py-12">
-        <Collection className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+        <Archive className="w-16 h-16 text-gray-400 mx-auto mb-4" />
         <h3 className="text-xl font-semibold text-gray-600 mb-2">
           Signature Collection
         </h3>
