@@ -14,8 +14,13 @@ from typing import List, Dict, Optional
 import sys
 sys.path.append('/app/backend')
 
-from services.claude_analysis import ClaudeAnalysisService
-from services.arthrokinetix_engine import ArthrokinetixEngine
+try:
+    from services.claude_analysis import ClaudeAnalysisService
+    from services.arthrokinetix_engine import ArthrokinetixEngine
+    SERVICES_AVAILABLE = True
+except ImportError as e:
+    print(f"Service import error: {e}")
+    SERVICES_AVAILABLE = False
 
 # Load environment variables
 load_dotenv()
