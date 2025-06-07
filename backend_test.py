@@ -350,11 +350,21 @@ def main():
     tester.test_get_specific_article()
     tester.test_get_specific_artwork()
     
-    # Run tests for new admin endpoints
+    # Run tests for admin endpoints
     print("\n=== Testing Admin API Endpoints ===")
     tester.test_admin_authentication()
     tester.test_admin_infographics()
     tester.test_admin_artworks()
+    
+    # Run tests for Priority 5 features
+    print("\n=== Testing Priority 5 Features ===")
+    tester.test_newsletter_subscribe()
+    tester.test_newsletter_status()
+    tester.test_submit_feedback()
+    tester.test_available_signatures()
+    tester.test_signature_collection()
+    tester.test_algorithm_evolution()
+    tester.test_enhanced_search()
 
     # Print results
     print(f"\n📊 Tests passed: {tester.tests_passed}/{tester.tests_run}")
