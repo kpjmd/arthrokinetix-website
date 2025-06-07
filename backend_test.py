@@ -220,6 +220,102 @@ class ArthrokinetixAPITester:
             "api/admin/artworks",
             200
         )
+        
+    # Priority 5 Feature Tests
+    
+    def test_newsletter_subscribe(self):
+        """Test newsletter subscription"""
+        subscription_data = {
+            "email": self.test_email
+        }
+        
+        success, response = self.run_test(
+            "Newsletter Subscribe",
+            "POST",
+            "api/newsletter/subscribe",
+            200,
+            data=subscription_data
+        )
+        
+        if success:
+            print(f"Successfully subscribed email: {self.test_email}")
+            print(f"Subscription status: {response.get('status')}")
+            
+        return success, response
+        
+    def test_newsletter_status(self):
+        """Test newsletter subscription status"""
+        return self.run_test(
+            "Newsletter Status Check",
+            "GET",
+            f"api/newsletter/status/{self.test_email}",
+            200
+        )
+        
+    def test_submit_feedback(self):
+        """Test feedback submission"""
+        if not self.test_article_id:
+            print("❌ Cannot test feedback - no test article created")
+            return False, {}
+            
+        feedback_data = {
+            "article_id": self.test_article_id,
+            "emotion": "hope",
+            "user_email": self.test_email
+        }
+        
+        return self.run_test(
+            "Submit Feedback",
+            "POST",
+            "api/feedback",
+            200,
+            data=feedback_data
+        )
+        
+    def test_available_signatures(self):
+        """Test available signatures endpoint"""
+        success, response = self.run_test(
+            "Available Signatures",
+            "GET",
+            "api/signatures/available",
+            200
+        )
+        
+        # Store a signature ID for collection test if available
+        if success and 'signatures' in response and len(response['signatures']) > 0:
+            self.test_signature_id = response['signatures'][0]['id']
+            print(f"Found signature ID for testing: {self.test_signature_id}")
+            
+        return success, response
+        
+    def test_signature_collection(self):
+        """Test signature collection for a user"""
+        return self.run_test(
+            "User Signature Collection",
+            "GET",
+            f"api/signatures/collection/{self.test_email}",
+            200
+        )
+        
+    def test_algorithm_evolution(self):
+        """Test algorithm evolution endpoint"""
+        return self.run_test(
+            "Algorithm Evolution",
+            "GET",
+            "api/algorithm/evolution",
+            200,
+            params={"range": "7d"}
+        )
+        
+    def test_enhanced_search(self):
+        """Test enhanced search functionality"""
+        return self.run_test(
+            "Enhanced Search",
+            "GET",
+            "api/search",
+            200,
+            params={"q": "test", "type": "all"}
+        )
 
 def main():
     # Get the backend URL from frontend .env file
