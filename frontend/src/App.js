@@ -121,7 +121,7 @@ function App() {
             />
             <Route 
               path="/gallery/:id" 
-              element={<div>Artwork Detail Page</div>} 
+              element={<ArtworkDetail />} 
             />
             <Route 
               path="/about" 
