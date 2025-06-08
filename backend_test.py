@@ -411,6 +411,14 @@ def main():
     print(f"Testing Arthrokinetix API at: {backend_url}")
     tester = ArthrokinetixAPITester(backend_url)
 
+    # Basic API health check
+    print("\n=== Testing API Health ===")
+    tester.test_root_endpoint()
+    
+    # Test algorithm state endpoint (critical for UI)
+    print("\n=== Testing Algorithm State ===")
+    tester.test_algorithm_state()
+    
     # Run tests for Priority 5 features (as requested in the review)
     print("\n=== Testing Priority 5 Features ===")
     print("\n1. Testing GET /api/signatures/available")
@@ -437,10 +445,6 @@ def main():
     print("\n=== Testing Admin Authentication ===")
     tester.test_admin_authentication()
     
-    # Print results
-    print(f"\n📊 Tests passed: {tester.tests_passed}/{tester.tests_run}")
-    return 0 if tester.tests_passed == tester.tests_run else 1
-
     # Print results
     print(f"\n📊 Tests passed: {tester.tests_passed}/{tester.tests_run}")
     return 0 if tester.tests_passed == tester.tests_run else 1
