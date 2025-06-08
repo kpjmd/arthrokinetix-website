@@ -3,81 +3,51 @@ import { Helmet } from 'react-helmet-async';
 
 const SEOHead = ({ 
   title = "Arthrokinetix - Medical Research & Algorithmic Art",
-  description = "Where medical research meets emotional intelligence and algorithmic art. Discover evidence-based orthopedic research transformed into stunning visual experiences.",
-  url = "",
-  image = "",
+  description = "Where medical research meets emotional intelligence and algorithmic art. Explore evidence-based orthopedic surgery research transformed into unique digital artwork.",
+  keywords = "medical research, algorithmic art, orthopedic surgery, sports medicine, emotional AI, research visualization",
+  image = "https://arthrokinetix.vercel.app/images/og-image.jpg",
+  url = "https://arthrokinetix.vercel.app",
   type = "website",
-  keywords = "medical research, algorithmic art, emotional intelligence, orthopedic surgery, sports medicine, AI analysis",
-  author = "Arthrokinetix",
   article = null
 }) => {
-  const baseUrl = process.env.REACT_APP_BASE_URL || "http://localhost:3000";
-  const fullUrl = url ? `${baseUrl}${url}` : baseUrl;
-  const fullImage = image ? `${baseUrl}${image}` : `${baseUrl}/og-image.png`;
+  const fullTitle = title.includes('Arthrokinetix') ? title : `${title} | Arthrokinetix`;
+  const canonicalUrl = url.startsWith('http') ? url : `https://arthrokinetix.vercel.app${url}`;
 
-  // Generate article-specific structured data
-  const articleStructuredData = article ? {
-    "@context": "https://schema.org",
-    "@type": "Article",
-    "headline": article.title,
-    "description": article.meta_description || description,
-    "image": fullImage,
-    "author": {
-      "@type": "Organization",
-      "name": "Arthrokinetix Research Team"
-    },
-    "publisher": {
-      "@type": "Organization",
-      "name": "Arthrokinetix",
-      "logo": {
-        "@type": "ImageObject",
-        "url": `${baseUrl}/logo.png`
-      }
-    },
-    "datePublished": article.published_date,
-    "dateModified": article.published_date,
-    "mainEntityOfPage": {
-      "@type": "WebPage",
-      "@id": fullUrl
-    },
-    "about": [
-      {
-        "@type": "Thing",
-        "name": "Medical Research"
-      },
-      {
-        "@type": "Thing", 
-        "name": "Emotional Intelligence"
-      },
-      {
-        "@type": "Thing",
-        "name": "Algorithmic Art"
-      }
-    ],
-    "keywords": [
-      article.subspecialty,
-      article.emotional_data?.dominant_emotion,
-      "medical research",
-      "emotional analysis",
-      "algorithmic art"
-    ].filter(Boolean).join(", ")
-  } : null;
+  // Generate structured data for articles
+  const generateArticleStructuredData = () => {
+    if (!article) return null;
 
-  // Generate website structured data
-  const websiteStructuredData = {
-    "@context": "https://schema.org",
-    "@type": "WebSite",
-    "name": "Arthrokinetix",
-    "description": description,
-    "url": baseUrl,
-    "potentialAction": {
-      "@type": "SearchAction",
-      "target": {
-        "@type": "EntryPoint",
-        "urlTemplate": `${baseUrl}/search?q={search_term_string}`
+    return {
+      "@context": "https://schema.org",
+      "@type": "Article",
+      "headline": article.title,
+      "description": article.description || description,
+      "image": image,
+      "datePublished": article.published_date,
+      "dateModified": article.updated_date || article.published_date,
+      "author": {
+        "@type": "Organization",
+        "name": "Arthrokinetix Research Team"
       },
-      "query-input": "required name=search_term_string"
-    }
+      "publisher": {
+        "@type": "Organization",
+        "name": "Arthrokinetix",
+        "logo": {
+          "@type": "ImageObject",
+          "url": "https://arthrokinetix.vercel.app/images/logo.png"
+        }
+      },
+      "mainEntityOfPage": {
+        "@type": "WebPage",
+        "@id": canonicalUrl
+      },
+      "keywords": article.keywords || keywords,
+      "articleSection": article.subspecialty || "Medical Research",
+      "about": {
+        "@type": "Thing",
+        "name": article.subspecialty || "Orthopedic Surgery"
+      }
+    };
   };
 
   // Generate organization structured data
@@ -85,97 +55,99 @@ const SEOHead = ({
     "@context": "https://schema.org",
     "@type": "Organization",
     "name": "Arthrokinetix",
-    "description": "Revolutionary platform combining medical research with emotional intelligence and algorithmic art",
-    "url": baseUrl,
-    "logo": `${baseUrl}/logo.png`,
-    "foundingDate": "2024",
+    "url": "https://arthrokinetix.vercel.app",
+    "logo": "https://arthrokinetix.vercel.app/images/logo.png",
+    "description": "Revolutionary platform combining medical research, emotional AI, and algorithmic art",
     "sameAs": [
-      "https://github.com/kpjmd/arthrokinetix-website"
+      "https://github.com/arthrokinetix",
+      "https://twitter.com/arthrokinetix"
     ],
     "contactPoint": {
       "@type": "ContactPoint",
       "contactType": "customer service",
-      "email": "hello@arthrokinetix.com"
+      "url": "https://arthrokinetix.vercel.app/contact"
     }
   };
 
   return (
     <Helmet>
       {/* Basic Meta Tags */}
-      <title>{title}</title>
+      <title>{fullTitle}</title>
       <meta name="description" content={description} />
       <meta name="keywords" content={keywords} />
-      <meta name="author" content={author} />
-      <meta name="robots" content="index, follow" />
-      <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-      <link rel="canonical" href={fullUrl} />
-
-      {/* Open Graph Meta Tags */}
-      <meta property="og:title" content={title} />
-      <meta property="og:description" content={description} />
+      <meta name="author" content="Arthrokinetix Research Team" />
+      
+      {/* Canonical URL */}
+      <link rel="canonical" href={canonicalUrl} />
+      
+      {/* Open Graph / Facebook */}
       <meta property="og:type" content={type} />
-      <meta property="og:url" content={fullUrl} />
-      <meta property="og:image" content={fullImage} />
+      <meta property="og:url" content={canonicalUrl} />
+      <meta property="og:title" content={fullTitle} />
+      <meta property="og:description" content={description} />
+      <meta property="og:image" content={image} />
       <meta property="og:image:width" content="1200" />
       <meta property="og:image:height" content="630" />
       <meta property="og:site_name" content="Arthrokinetix" />
       <meta property="og:locale" content="en_US" />
-
-      {/* Twitter Card Meta Tags */}
-      <meta name="twitter:card" content="summary_large_image" />
-      <meta name="twitter:title" content={title} />
-      <meta name="twitter:description" content={description} />
-      <meta name="twitter:image" content={fullImage} />
-      <meta name="twitter:site" content="@arthrokinetix" />
-      <meta name="twitter:creator" content="@arthrokinetix" />
-
-      {/* Additional Meta Tags */}
-      <meta name="theme-color" content="#2c3e50" />
-      <meta name="apple-mobile-web-app-capable" content="yes" />
-      <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-      <meta name="apple-mobile-web-app-title" content="Arthrokinetix" />
-
-      {/* Structured Data */}
-      <script type="application/ld+json">
-        {JSON.stringify(websiteStructuredData)}
-      </script>
       
+      {/* Twitter Card */}
+      <meta name="twitter:card" content="summary_large_image" />
+      <meta name="twitter:url" content={canonicalUrl} />
+      <meta name="twitter:title" content={fullTitle} />
+      <meta name="twitter:description" content={description} />
+      <meta name="twitter:image" content={image} />
+      <meta name="twitter:creator" content="@arthrokinetix" />
+      <meta name="twitter:site" content="@arthrokinetix" />
+      
+      {/* Additional Meta Tags */}
+      <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
+      <meta name="googlebot" content="index, follow" />
+      <meta name="theme-color" content="#2c3e50" />
+      <meta name="msapplication-TileColor" content="#2c3e50" />
+      
+      {/* Favicon */}
+      <link rel="icon" type="image/x-icon" href="/favicon.ico" />
+      <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
+      <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
+      <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+      
+      {/* Preconnect for performance */}
+      <link rel="preconnect" href="https://fonts.googleapis.com" />
+      <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="true" />
+      
+      {/* Structured Data */}
       <script type="application/ld+json">
         {JSON.stringify(organizationStructuredData)}
       </script>
-
-      {articleStructuredData && (
+      
+      {article && (
         <script type="application/ld+json">
-          {JSON.stringify(articleStructuredData)}
+          {JSON.stringify(generateArticleStructuredData())}
         </script>
       )}
-
-      {/* Preconnect to external domains for performance */}
-      <link rel="preconnect" href="https://fonts.googleapis.com" />
-      <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
       
-      {/* DNS Prefetch for performance */}
-      <link rel="dns-prefetch" href="//api.anthropic.com" />
-      
-      {/* Favicon and App Icons */}
-      <link rel="icon" type="image/x-icon" href="/favicon.ico" />
-      <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
-      <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
-      <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
-      <link rel="manifest" href="/site.webmanifest" />
-      
-      {/* Article-specific meta tags */}
-      {article && (
-        <>
-          <meta property="article:published_time" content={article.published_date} />
-          <meta property="article:modified_time" content={article.published_date} />
-          <meta property="article:author" content="Arthrokinetix Research Team" />
-          <meta property="article:section" content="Medical Research" />
-          <meta property="article:tag" content={article.subspecialty} />
-          <meta property="article:tag" content={article.emotional_data?.dominant_emotion} />
-          <meta property="article:tag" content="Emotional Intelligence" />
-          <meta property="article:tag" content="Algorithmic Art" />
-        </>
+      {/* Medical/Scientific Schema for articles */}
+      {article && article.subspecialty && (
+        <script type="application/ld+json">
+          {JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "MedicalScholarlyArticle",
+            "headline": article.title,
+            "about": {
+              "@type": "MedicalCondition",
+              "name": article.subspecialty
+            },
+            "medicalSpecialty": "https://schema.org/Orthopedics",
+            "funding": {
+              "@type": "Grant",
+              "funder": {
+                "@type": "Organization", 
+                "name": "Arthrokinetix Research"
+              }
+            }
+          })}
+        </script>
       )}
     </Helmet>
   );
