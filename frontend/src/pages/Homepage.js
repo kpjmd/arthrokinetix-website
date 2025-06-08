@@ -4,7 +4,7 @@ import { motion } from 'framer-motion';
 import { BookOpen, Palette, Zap, Users, TrendingUp, Heart } from 'lucide-react';
 import EmotionalSignature from '../components/EmotionalSignature';
 
-const API_BASE = process.env.REACT_APP_BACKEND_URL || 'http://localhost:3000';
+const API_BASE = process.env.REACT_APP_BACKEND_URL || 'http://localhost:8001';
 
 const Homepage = ({ algorithmState, onStateUpdate }) => {
   const [articles, setArticles] = useState([]);
