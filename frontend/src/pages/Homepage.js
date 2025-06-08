@@ -136,47 +136,51 @@ const Homepage = ({ algorithmState, onStateUpdate }) => {
 
         {/* Algorithm State Display - Perfectly Centered */}
         {algorithmState && (
-          <motion.div 
-            className="absolute bottom-8 left-1/2 transform -translate-x-1/2 pointer-events-none z-10 flex justify-center w-full"
-            initial={{ scale: 0, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            transition={{ duration: 0.8, delay: 0.5 }}
-          >
-            <div className="bg-white/15 backdrop-blur-lg rounded-xl p-6 border border-white/30 pointer-events-auto shadow-2xl max-w-xs">
-              <div className="text-center text-white">
-                <h3 className="font-semibold mb-3 text-lg">Algorithm State</h3>
+          <div className="absolute bottom-8 left-0 right-0 pointer-events-none z-10">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+              <div className="text-center">
                 <motion.div 
-                  className="w-16 h-16 mx-auto mb-3 rounded-full border-4 flex items-center justify-center"
-                  style={{ 
-                    borderColor: algorithmState.visual_representation?.color,
-                    backgroundColor: `${algorithmState.visual_representation?.color}20`
-                  }}
-                  animate={{ 
-                    scale: [1, 1.1, 1],
-                    rotate: [0, 5, -5, 0]
-                  }}
-                  transition={{ 
-                    duration: 3,
-                    repeat: Infinity,
-                    ease: "easeInOut"
-                  }}
+                  className="inline-block bg-white/15 backdrop-blur-lg rounded-xl p-6 border border-white/30 pointer-events-auto shadow-2xl"
+                  initial={{ scale: 0, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  transition={{ duration: 0.8, delay: 0.5 }}
                 >
-                  <span className="text-xl font-bold">
-                    {getEmotionSymbol(algorithmState.emotional_state?.dominant_emotion)}
-                  </span>
+                  <div className="text-center text-white">
+                    <h3 className="font-semibold mb-3 text-lg">Algorithm State</h3>
+                    <motion.div 
+                      className="w-16 h-16 mx-auto mb-3 rounded-full border-4 flex items-center justify-center"
+                      style={{ 
+                        borderColor: algorithmState.visual_representation?.color,
+                        backgroundColor: `${algorithmState.visual_representation?.color}20`
+                      }}
+                      animate={{ 
+                        scale: [1, 1.1, 1],
+                        rotate: [0, 5, -5, 0]
+                      }}
+                      transition={{ 
+                        duration: 3,
+                        repeat: Infinity,
+                        ease: "easeInOut"
+                      }}
+                    >
+                      <span className="text-xl font-bold">
+                        {getEmotionSymbol(algorithmState.emotional_state?.dominant_emotion)}
+                      </span>
+                    </motion.div>
+                    <p className="text-base capitalize font-medium mb-2">
+                      {algorithmState.emotional_state?.dominant_emotion}
+                    </p>
+                    <p className="text-sm opacity-90 mb-2">
+                      {Math.round((algorithmState.emotional_state?.emotional_intensity || 0) * 100)}% intensity
+                    </p>
+                    <div className="text-xs opacity-75">
+                      <p>{algorithmState.articles_processed || 0} articles processed</p>
+                    </div>
+                  </div>
                 </motion.div>
-                <p className="text-base capitalize font-medium mb-2">
-                  {algorithmState.emotional_state?.dominant_emotion}
-                </p>
-                <p className="text-sm opacity-90 mb-2">
-                  {Math.round((algorithmState.emotional_state?.emotional_intensity || 0) * 100)}% intensity
-                </p>
-                <div className="text-xs opacity-75">
-                  <p>{algorithmState.articles_processed || 0} articles processed</p>
-                </div>
               </div>
             </div>
-          </motion.div>
+          </div>
         )}
       </section>
 
