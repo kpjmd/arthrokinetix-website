@@ -588,8 +588,222 @@ class ArthrokinetixArtGenerator {
     };
   }
 
-  // Additional helper methods would continue here...
-  // (Implementing specific rendering functions, mathematical calculations, etc.)
+  // Helper methods for creating SVG elements
+  createSVGElement() {
+    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    svg.setAttribute('width', this.canvasWidth);
+    svg.setAttribute('height', this.canvasHeight);
+    svg.setAttribute('viewBox', `0 0 ${this.canvasWidth} ${this.canvasHeight}`);
+    return svg;
+  }
+
+  addBackground(svg) {
+    const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+    rect.setAttribute('width', '100%');
+    rect.setAttribute('height', '100%');
+    rect.setAttribute('fill', '#f8f9fa');
+    svg.appendChild(rect);
+  }
+
+  renderElement(svg, element) {
+    switch (element.type) {
+      case 'andryTrunk':
+        this.renderTrunk(svg, element);
+        break;
+      case 'healingParticle':
+        this.renderParticle(svg, element);
+        break;
+      case 'emotionalField':
+        this.renderField(svg, element);
+        break;
+      default:
+        console.log(`Unknown element type: ${element.type}`);
+    }
+  }
+
+  renderTrunk(svg, element) {
+    const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+    line.setAttribute('x1', element.x);
+    line.setAttribute('y1', element.y);
+    line.setAttribute('x2', element.x);
+    line.setAttribute('y2', element.y - element.height);
+    line.setAttribute('stroke', element.color);
+    line.setAttribute('stroke-width', element.thickness);
+    svg.appendChild(line);
+  }
+
+  renderParticle(svg, element) {
+    const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+    circle.setAttribute('cx', element.x);
+    circle.setAttribute('cy', element.y);
+    circle.setAttribute('r', element.size);
+    circle.setAttribute('fill', element.color);
+    circle.setAttribute('opacity', '0.7');
+    svg.appendChild(circle);
+  }
+
+  renderField(svg, element) {
+    const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+    circle.setAttribute('cx', element.x);
+    circle.setAttribute('cy', element.y);
+    circle.setAttribute('r', element.size);
+    circle.setAttribute('fill', element.color);
+    circle.setAttribute('opacity', '0.3');
+    svg.appendChild(circle);
+  }
+
+  addArtworkMetadata(svg) {
+    const metadata = document.createElementNS('http://www.w3.org/2000/svg', 'metadata');
+    metadata.textContent = JSON.stringify(this.generateArtworkMetadata());
+    svg.appendChild(metadata);
+  }
+
+  generateArtworkTitle() {
+    return `Arthrokinetix Art - ${this.subspecialty} - ${new Date().toISOString().split('T')[0]}`;
+  }
+
+  getUsedColors() {
+    return Object.values(this.emotionalPalettes).flat();
+  }
+
+  calculateVisualComplexity() {
+    return this.visualElements.length / 50;
+  }
+
+  countOrganicElements() {
+    return this.visualElements.filter(el => ['andryTrunk', 'healingParticle'].includes(el.type)).length;
+  }
+
+  countDataElements() {
+    return this.visualElements.filter(el => el.type === 'dataFlow').length;
+  }
+
+  generateUniqueID() {
+    return `AKX-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+  }
+
+  // Simple implementations of missing helper methods
+  getWordCount(element) {
+    return (element.textContent || '').split(/\s+/).length;
+  }
+
+  getParagraphCount(element) {
+    return element.querySelectorAll('p').length;
+  }
+
+  analyzeHeadingStructure(element) {
+    const headings = element.querySelectorAll('h1, h2, h3, h4, h5, h6');
+    return Array.from(headings).map(h => h.tagName.toLowerCase());
+  }
+
+  calculateReadability(element) {
+    const wordCount = this.getWordCount(element);
+    const sentenceCount = (element.textContent || '').split(/[.!?]+/).length;
+    return wordCount / Math.max(sentenceCount, 1); // Simple metric
+  }
+
+  calculateTechnicalDensity(element) {
+    const text = element.textContent || '';
+    const medicalTermCount = (text.match(/\b(surgery|surgical|medical|patient|treatment|therapy|diagnosis)\b/gi) || []).length;
+    return Math.min(medicalTermCount / 100, 1.0);
+  }
+
+  assessEvidenceStrength(element) {
+    const text = element.textContent || '';
+    const evidenceTerms = (text.match(/\b(evidence|study|research|trial|meta-analysis|systematic)\b/gi) || []).length;
+    return Math.min(evidenceTerms / 10, 1.0);
+  }
+
+  assessCertaintyLevel(element) {
+    const text = element.textContent || '';
+    const uncertaintyTerms = (text.match(/\b(may|might|possibly|unclear|uncertain|variable)\b/gi) || []).length;
+    return Math.max(0, 1.0 - (uncertaintyTerms / 20));
+  }
+
+  identifyContentSections(element) {
+    const sections = element.querySelectorAll('section, div.section, .content-section');
+    return Array.from(sections).map((section, index) => ({
+      importance: 0.5 + Math.random() * 0.5,
+      complexity: 0.3 + Math.random() * 0.7,
+      emotionalTone: Object.keys(this.emotionalPalettes)[index % Object.keys(this.emotionalPalettes).length]
+    }));
+  }
+
+  analyzeArgumentFlow(element) {
+    return ['introduction', 'methodology', 'results', 'discussion', 'conclusion'];
+  }
+
+  detectEmotionalMarkers(text, markers) {
+    return markers.reduce((count, marker) => {
+      const regex = new RegExp(`\\b${marker}\\b`, 'gi');
+      return count + (text.match(regex) || []).length;
+    }, 0);
+  }
+
+  generateRootBranches(angle, length, thickness, depth) {
+    if (depth <= 0) return [];
+    return [{
+      angle: angle + (Math.random() - 0.5) * 30,
+      length: length * 0.7,
+      thickness: thickness * 0.8
+    }];
+  }
+
+  generateBranch(x, y, angle, length, thickness, emotionalTone) {
+    this.visualElements.push({
+      type: 'andryBranch',
+      x: x,
+      y: y,
+      angle: angle,
+      length: length,
+      thickness: thickness,
+      color: this.getEmotionalColor(emotionalTone || 'confidence', 0.7)
+    });
+  }
+
+  generateFlowPath(stat) {
+    return [[100, 100], [200, 150], [300, 120]]; // Simple path
+  }
+
+  getStatisticColor(stat) {
+    return this.brandColors.secondary;
+  }
+
+  generateStarConnections(x, y, citations, index) {
+    return []; // Simple implementation
+  }
+
+  getStyleMultiplier(style) {
+    const multipliers = {
+      'dynamic': 1.2,
+      'flowing': 1.1,
+      'geometric': 0.9,
+      'structured': 0.8,
+      'reinforced': 1.3,
+      'angular': 1.0,
+      'vertical': 1.0,
+      'segmented': 0.9
+    };
+    return multipliers[style] || 1.0;
+  }
+
+  adjustEmotionalPalettes(emphasis) {
+    // Simple implementation - could be expanded
+    console.log(`Adjusting palette for ${emphasis}`);
+  }
+
+  exportSVG(artwork) {
+    return new XMLSerializer().serializeToString(artwork);
+  }
+
+  exportPNG(artwork) {
+    // Would require canvas conversion - simplified for now
+    return null;
+  }
+
+  exportMetadata() {
+    return this.generateArtworkMetadata();
+  }
 }
 
 // Usage example and initialization
