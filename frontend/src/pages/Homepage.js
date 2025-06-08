@@ -77,6 +77,13 @@ const Homepage = ({ algorithmState, onStateUpdate }) => {
 
   return (
     <div className="min-h-screen">
+      <SEOHead 
+        title="Arthrokinetix - Where Medical Research Meets Algorithmic Art"
+        description="Revolutionary platform transforming evidence-based orthopedic surgery research into unique digital art through emotional AI analysis. Explore the intersection of medical science and algorithmic creativity."
+        keywords="medical research, algorithmic art, orthopedic surgery, sports medicine, joint replacement, trauma surgery, emotional AI, research visualization, evidence-based medicine"
+        url="/"
+      />
+      
       {/* Hero Section - Split Design */}
       <section className="relative h-screen flex">
         {/* Medical Education Side */}
