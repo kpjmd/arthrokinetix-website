@@ -76,80 +76,82 @@ function App() {
   }
 
   return (
-    <Router>
-      <div className="App">
-        <Header />
-        
-        {/* Persistent Algorithm Mood Indicator */}
-        <AlgorithmMoodIndicator 
-          algorithmState={algorithmState}
-          onStateUpdate={setAlgorithmState}
-        />
+    <HelmetProvider>
+      <Router>
+        <div className="App">
+          <Header />
+          
+          {/* Persistent Algorithm Mood Indicator */}
+          <AlgorithmMoodIndicator 
+            algorithmState={algorithmState}
+            onStateUpdate={setAlgorithmState}
+          />
 
-        <AnimatePresence mode="wait">
-          <Routes>
-            <Route 
-              path="/" 
-              element={
-                <Homepage 
-                  algorithmState={algorithmState}
-                  onStateUpdate={setAlgorithmState}
-                />
-              } 
-            />
-            <Route 
-              path="/research" 
-              element={
-                <ResearchHub 
-                  algorithmState={algorithmState}
-                />
-              } 
-            />
-            <Route 
-              path="/research-enhanced" 
-              element={
-                <EnhancedResearchHub 
-                  algorithmState={algorithmState}
-                />
-              } 
-            />
-            <Route 
-              path="/research/:slug" 
-              element={
-                <ArticlePage 
-                  algorithmState={algorithmState}
-                  onStateUpdate={setAlgorithmState}
-                />
-              } 
-            />
-            <Route 
-              path="/profile" 
-              element={<UserProfile />} 
-            />
-            <Route 
-              path="/gallery" 
-              element={
-                <Gallery 
-                  algorithmState={algorithmState}
-                />
-              } 
-            />
-            <Route 
-              path="/gallery/:id" 
-              element={<ArtworkDetail />} 
-            />
-            <Route 
-              path="/about" 
-              element={<About />} 
-            />
-            <Route 
-              path="/admin" 
-              element={<AdminDashboard />} 
-            />
-          </Routes>
-        </AnimatePresence>
-      </div>
-    </Router>
+          <AnimatePresence mode="wait">
+            <Routes>
+              <Route 
+                path="/" 
+                element={
+                  <Homepage 
+                    algorithmState={algorithmState}
+                    onStateUpdate={setAlgorithmState}
+                  />
+                } 
+              />
+              <Route 
+                path="/research" 
+                element={
+                  <ResearchHub 
+                    algorithmState={algorithmState}
+                  />
+                } 
+              />
+              <Route 
+                path="/research-enhanced" 
+                element={
+                  <EnhancedResearchHub 
+                    algorithmState={algorithmState}
+                  />
+                } 
+              />
+              <Route 
+                path="/research/:slug" 
+                element={
+                  <ArticlePage 
+                    algorithmState={algorithmState}
+                    onStateUpdate={setAlgorithmState}
+                  />
+                } 
+              />
+              <Route 
+                path="/profile" 
+                element={<UserProfile />} 
+              />
+              <Route 
+                path="/gallery" 
+                element={
+                  <Gallery 
+                    algorithmState={algorithmState}
+                  />
+                } 
+              />
+              <Route 
+                path="/gallery/:id" 
+                element={<ArtworkDetail />} 
+              />
+              <Route 
+                path="/about" 
+                element={<About />} 
+              />
+              <Route 
+                path="/admin" 
+                element={<AdminDashboard />} 
+              />
+            </Routes>
+          </AnimatePresence>
+        </div>
+      </Router>
+    </HelmetProvider>
   );
 }
 
