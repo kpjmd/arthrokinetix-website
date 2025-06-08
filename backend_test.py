@@ -2,10 +2,26 @@
 import requests
 import json
 import sys
+import os
 from datetime import datetime
 
 class ArthrokinetixAPITester:
-    def __init__(self, base_url="http://localhost:8001"):
+    def __init__(self, base_url=None):
+        # Get the backend URL from frontend .env file if not provided
+        if not base_url:
+            try:
+                with open('/app/frontend/.env', 'r') as f:
+                    for line in f:
+                        if line.startswith('REACT_APP_BACKEND_URL='):
+                            base_url = line.strip().split('=', 1)[1]
+                            break
+            except Exception as e:
+                print(f"Error reading frontend .env file: {e}")
+            
+            # Fallback to default if not found
+            if not base_url:
+                base_url = 'http://localhost:8001'
+        
         self.base_url = base_url
         self.tests_run = 0
         self.tests_passed = 0
