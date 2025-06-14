@@ -8,10 +8,5 @@
         "distDir": "build"
       }
     }
-  ],
-  "build": {
-    "env": {
-      "REACT_APP_BACKEND_URL": "https://arthrokinetix.vercel.app"
-    }
-  }
+  ]
 }
