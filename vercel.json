@@ -7,50 +7,11 @@
       "config": {
         "distDir": "build"
       }
-    },
-    {
-      "src": "backend/server.py",
-      "use": "@vercel/python",
-      "config": {
-        "maxLambdaSize": "50mb",
-        "maxDuration": 30
-      }
     }
   ],
-  "rewrites": [
-    {
-      "source": "/api/(.*)",
-      "destination": "/backend/server.py"
-    }
-  ],
-  "env": {
-    "MONGODB_URI": "@mongodb_uri",
-    "ANTHROPIC_API_KEY": "@anthropic_api_key",
-    "ADMIN_PASSWORD": "@admin_password",
-    "NODE_ENV": "production"
-  },
   "build": {
     "env": {
       "REACT_APP_BACKEND_URL": "https://arthrokinetix.vercel.app"
     }
-  },
-  "headers": [
-    {
-      "source": "/api/(.*)",
-      "headers": [
-        {
-          "key": "Access-Control-Allow-Origin",
-          "value": "*"
-        },
-        {
-          "key": "Access-Control-Allow-Methods",
-          "value": "GET, POST, PUT, DELETE, OPTIONS"
-        },
-        {
-          "key": "Access-Control-Allow-Headers",
-          "value": "Content-Type, Authorization"
-        }
-      ]
-    }
-  ]
+  }
 }
