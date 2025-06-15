@@ -23,15 +23,29 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Database connection
-mongo_url = os.environ.get('MONGO_URL')
-client = MongoClient(mongo_url)
-db = client.arthrokinetix
+# Database connection with correct environment variable names and timeouts
+mongodb_uri = os.environ.get('MONGODB_URI')  # Changed from MONGO_URL
+if mongodb_uri:
+    client = MongoClient(
+        mongodb_uri,
+        serverSelectionTimeoutMS=5000,  # 5 second timeout
+        connectTimeoutMS=5000,
+        socketTimeoutMS=5000
+    )
+    db = client.arthrokinetix
+    print("MongoDB connected successfully")
+else:
+    print("No MONGODB_URI found")
+    db = None
 
-# Anthropic client for supplementary AI analysis
-anthropic_client = anthropic.Anthropic(
-    api_key=os.environ.get('CLAUDE_API_KEY')
-)
+# Anthropic client with correct environment variable name
+anthropic_api_key = os.environ.get('ANTHROPIC_API_KEY')  # Changed from CLAUDE_API_KEY
+if anthropic_api_key:
+    anthropic_client = anthropic.Anthropic(api_key=anthropic_api_key)
+    print("Claude API client initialized")
+else:
+    print("No ANTHROPIC_API_KEY found")
+    anthropic_client = None
 
 # Collections
 articles_collection = db.articles
@@ -39,23 +53,6 @@ artworks_collection = db.artworks
 users_collection = db.users
 feedback_collection = db.feedback
 algorithm_states_collection = db.algorithm_states
-
-@app.get("/api/health")
-async def health_check():
-    return {"status": "ok", "message": "FastAPI is working"}
-
-@app.get("/api/test-db")
-async def test_database():
-    try:
-        mongodb_uri = os.getenv("MONGODB_URI")
-        if not mongodb_uri:
-            return {"error": "No MONGODB_URI environment variable"}
-        
-        client = MongoClient(mongodb_uri, serverSelectionTimeoutMS=3000)
-        client.admin.command('ping')
-        return {"status": "MongoDB connection successful"}
-    except Exception as e:
-        return {"error": f"MongoDB failed: {str(e)}"}
 
 @app.get("/")
 async def root():
