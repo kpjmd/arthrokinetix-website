@@ -1127,5 +1127,15 @@ async def get_search_suggestions():
 
 if __name__ == "__main__":
     import uvicorn
+    import os
+    
+    # Railway provides PORT environment variable
     port = int(os.environ.get("PORT", 8000))
-    uvicorn.run(app, host="0.0.0.0", port=port)
+    print(f"Starting server on port {port}")  # Debug log
+    
+    uvicorn.run(
+        "server:app",  # Use string reference instead of app object
+        host="0.0.0.0", 
+        port=port,
+        reload=False  # Disable reload in production
+    )
