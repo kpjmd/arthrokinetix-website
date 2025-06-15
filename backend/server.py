@@ -44,6 +44,19 @@ algorithm_states_collection = db.algorithm_states
 async def health_check():
     return {"status": "ok", "message": "FastAPI is working"}
 
+@app.get("/api/test-db")
+async def test_database():
+    try:
+        mongodb_uri = os.getenv("MONGODB_URI")
+        if not mongodb_uri:
+            return {"error": "No MONGODB_URI environment variable"}
+        
+        client = MongoClient(mongodb_uri, serverSelectionTimeoutMS=3000)
+        client.admin.command('ping')
+        return {"status": "MongoDB connection successful"}
+    except Exception as e:
+        return {"error": f"MongoDB failed: {str(e)}"}
+
 @app.get("/")
 async def root():
     return {"message": "Arthrokinetix API - Emotional Medical Research & Art Generation"}
