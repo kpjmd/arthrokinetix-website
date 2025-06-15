@@ -40,6 +40,10 @@ users_collection = db.users
 feedback_collection = db.feedback
 algorithm_states_collection = db.algorithm_states
 
+@app.get("/api/health")
+async def health_check():
+    return {"status": "ok", "message": "FastAPI is working"}
+
 @app.get("/")
 async def root():
     return {"message": "Arthrokinetix API - Emotional Medical Research & Art Generation"}
