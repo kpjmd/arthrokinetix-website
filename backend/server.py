@@ -256,6 +256,7 @@ async def get_artwork(artwork_id: str):
         raise HTTPException(status_code=500, detail=str(e))
 
 # Helper functions
+# Fix 2: Ensure emotional data has proper numeric values
 async def process_article_emotions(content: str) -> dict:
     """Process article content for emotional analysis using Claude as supplement"""
     try:
@@ -269,7 +270,7 @@ async def process_article_emotions(content: str) -> dict:
 
 {content[:2000]}  # Limit content length
 
-Please analyze for these emotions and return scores 0-1:
+Please analyze for these emotions and return scores 0-1 as numbers (not strings):
 - hope (recovery potential, positive outcomes)
 - tension (complications, risks, challenges)
 - confidence (evidence strength, certainty)
@@ -278,33 +279,41 @@ Please analyze for these emotions and return scores 0-1:
 - healing (therapeutic potential, restoration)
 
 Also assess:
-- evidence_strength (0-1)
-- technical_density (0-1)
-- subspecialty (sportsMedicine, jointReplacement, trauma, spine, handUpperExtremity, footAnkle)
+- evidence_strength (0-1 as number)
+- technical_density (0-1 as number)
+- subspecialty (one of: sportsMedicine, jointReplacement, trauma, spine, handUpperExtremity, footAnkle)
 
-Return only valid JSON."""
+Return only valid JSON with numeric values."""
             }]
         )
         
         response_text = message.content[0].text
         emotional_data = json.loads(response_text)
         
-        # Ensure we have all required fields
+        # Ensure we have all required fields with proper numeric values
         emotions = ["hope", "tension", "confidence", "uncertainty", "breakthrough", "healing"]
         for emotion in emotions:
             if emotion not in emotional_data:
                 emotional_data[emotion] = 0.5
+            else:
+                # Ensure it's a number
+                emotional_data[emotion] = float(emotional_data[emotion])
                 
+        # Ensure numeric values for other fields
+        emotional_data["evidence_strength"] = float(emotional_data.get("evidence_strength", 0.5))
+        emotional_data["technical_density"] = float(emotional_data.get("technical_density", 0.5))
+        
         # Find dominant emotion
         emotion_scores = {k: v for k, v in emotional_data.items() if k in emotions}
         dominant_emotion = max(emotion_scores, key=emotion_scores.get)
         emotional_data["dominant_emotion"] = dominant_emotion
         
+        print(f"Emotional analysis complete. Dominant emotion: {dominant_emotion}")
         return emotional_data
         
     except Exception as e:
         print(f"Error in emotional analysis: {e}")
-        # Fallback to basic analysis
+        # Fallback to basic analysis with guaranteed numeric values
         return {
             "hope": 0.5,
             "tension": 0.3,
@@ -317,6 +326,7 @@ Return only valid JSON."""
             "technical_density": 0.5,
             "subspecialty": "sportsMedicine"
         }
+
 
 def generate_emotional_signature(emotional_data: dict) -> dict:
     """Generate unique visual signature based on emotional data"""
@@ -451,6 +461,7 @@ def calculate_read_time(content: str) -> int:
     words = len(content.split())
     return max(1, round(words / 200))  # Assuming 200 words per minute
 
+# Fix 1: Update algorithm state properly when creating articles
 async def update_algorithm_state(emotional_data: dict):
     """Update the persistent algorithm emotional state"""
     try:
@@ -482,11 +493,12 @@ async def update_algorithm_state(emotional_data: dict):
                 },
                 "visual_representation": visual_rep,
                 "timestamp": datetime.utcnow(),
-                "articles_processed": current_state.get("articles_processed", 0) + 1,
+                "articles_processed": current_state.get("articles_processed", 0) + 1,  # FIX: Increment count
                 "feedback_influences": current_state.get("feedback_influences", [])
             }
             
             algorithm_states_collection.insert_one(new_state)
+            print(f"Algorithm state updated. Articles processed: {new_state['articles_processed']}")
             
     except Exception as e:
         print(f"Error updating algorithm state: {e}")
@@ -604,6 +616,92 @@ async def upload_artwork():
         
         return {"artwork": artwork}
         
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+# Fix 3: Add article deletion endpoint
+@app.delete("/api/admin/articles/{article_id}")
+async def delete_article(article_id: str):
+    """Delete article and associated artwork"""
+    try:
+        # Find and delete the article
+        article = articles_collection.find_one({"id": article_id})
+        if not article:
+            raise HTTPException(status_code=404, detail="Article not found")
+        
+        # Delete associated artwork
+        artworks_collection.delete_many({"article_id": article_id})
+        
+        # Delete the article
+        articles_collection.delete_one({"id": article_id})
+        
+        # Delete associated feedback
+        feedback_collection.delete_many({"article_id": article_id})
+        
+        return {
+            "success": True,
+            "message": f"Article {article_id} and associated content deleted successfully"
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+# Fix 4: Add batch article management
+@app.get("/api/admin/articles")
+async def get_articles_admin():
+    """Get all articles with admin details"""
+    try:
+        articles = list(articles_collection.find({}).sort("published_date", -1))
+        
+        # Convert ObjectIds to strings and add admin metadata
+        for article in articles:
+            article["_id"] = str(article["_id"])
+            
+            # Add associated artwork count
+            artwork_count = artworks_collection.count_documents({"article_id": article["id"]})
+            article["artwork_count"] = artwork_count
+            
+            # Add feedback count
+            feedback_count = feedback_collection.count_documents({"article_id": article["id"]})
+            article["feedback_count"] = feedback_count
+            
+        return {"articles": articles, "total": len(articles)}
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+# Fix 5: Fix algorithm state count by recalculating
+@app.post("/api/admin/recalculate-algorithm-state")
+async def recalculate_algorithm_state():
+    """Recalculate algorithm state based on existing articles"""
+    try:
+        # Count existing articles
+        article_count = articles_collection.count_documents({})
+        
+        # Get current state
+        current_state = algorithm_states_collection.find_one({}, sort=[("timestamp", -1)])
+        
+        if current_state:
+            # Update the count
+            current_state["articles_processed"] = article_count
+            current_state["timestamp"] = datetime.utcnow()
+            
+            # Remove the _id to create a new document
+            current_state.pop("_id", None)
+            
+            # Insert updated state
+            algorithm_states_collection.insert_one(current_state)
+            
+            return {
+                "success": True,
+                "message": f"Algorithm state recalculated. Articles processed: {article_count}",
+                "articles_processed": article_count
+            }
+        else:
+            raise HTTPException(status_code=404, detail="No algorithm state found")
+            
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
