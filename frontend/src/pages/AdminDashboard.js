@@ -10,6 +10,8 @@ const AdminDashboard = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [activeTab, setActiveTab] = useState('articles');
   const [loading, setLoading] = useState(false);
+  const [articlesList, setArticlesList] = useState([]);
+  const [selectedArticles, setSelectedArticles] = useState(new Set());
   
   // Article form state
   const [articleForm, setArticleForm] = useState({
@@ -65,12 +67,71 @@ const AdminDashboard = () => {
     { value: 'uncertainty', label: 'Uncertainty' }
   ];
 
+  // Add this function to fetch articles with admin details
+  const fetchArticlesAdmin = async () => {
+    try {
+      const response = await fetch(`${API_BASE}/api/admin/articles`);
+      if (response.ok) {
+        const data = await response.json();
+        setArticlesList(data.articles || []);
+      }
+    } catch (error) {
+      console.error('Error fetching admin articles:', error);
+    }
+  };
+
+  // Add this function to delete articles
+  const handleDeleteArticle = async (articleId, articleTitle) => {
+    if (!window.confirm(`Are you sure you want to delete "${articleTitle}"? This will also delete associated artworks and feedback.`)) {
+      return;
+    }
+  
+    try {
+      const response = await fetch(`${API_BASE}/api/admin/articles/${articleId}`, {
+        method: 'DELETE'
+      });
+
+      if (response.ok) {
+        alert('Article deleted successfully!');
+        fetchArticlesAdmin(); // Refresh the list
+        fetchDashboardData(); // Refresh stats
+      } else {
+        const error = await response.json();
+        alert(`Failed to delete article: ${error.detail}`);
+      }
+    } catch (error) {
+      console.error('Error deleting article:', error);
+      alert('Error deleting article');
+    }
+  };
+
+  // Add this function to fix algorithm state count
+  const handleRecalculateAlgorithmState = async () => {
+    try {
+      const response = await fetch(`${API_BASE}/api/admin/recalculate-algorithm-state`, {
+        method: 'POST'
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        alert(`Algorithm state recalculated! Articles processed: ${result.articles_processed}`);
+        fetchDashboardData(); // Refresh stats
+      } else {
+        alert('Failed to recalculate algorithm state');
+      }
+    } catch (error) {
+      console.error('Error recalculating algorithm state:', error);
+      alert('Error recalculating algorithm state');
+    }
+  };
+
   useEffect(() => {
     // Check if already authenticated
     const authToken = sessionStorage.getItem('admin_authenticated');
     if (authToken === 'true') {
       setIsAuthenticated(true);
       fetchDashboardData();
+      fetchArticlesAdmin(); // Add this line for admin details
     }
   }, []);
 
@@ -298,6 +359,7 @@ const AdminDashboard = () => {
 
   const tabs = [
     { id: 'articles', label: 'Articles', icon: FileText },
+    { id: 'manage', label: 'Manage Content', icon: Users }, // New tab
     { id: 'infographics', label: 'Infographics', icon: BarChart3 },
     { id: 'artworks', label: 'Artworks', icon: Palette },
     { id: 'analytics', label: 'Analytics', icon: Users }
@@ -533,6 +595,140 @@ const AdminDashboard = () => {
                         </div>
                       </div>
                     ))}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            // Add this new tab content after the articles tab
+            {activeTab === 'manage' && (
+              <div className="space-y-6">
+                <div className="flex justify-between items-center">
+                  <h2 className="text-xl font-semibold text-gray-900">Content Management</h2>
+                  <button
+                    onClick={handleRecalculateAlgorithmState}
+                    className="flex items-center px-4 py-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition-colors"
+                  >
+                    <BarChart3 className="w-5 h-5 mr-2" />
+                    Fix Algorithm Count
+                    </button>
+                </div>
+    
+                {/* Articles Management */}
+                <div className="bg-white border border-gray-200 rounded-lg p-6">
+                   <h3 className="text-lg font-semibold text-gray-900 mb-4">Articles ({articlesList.length})</h3>
+      
+                  {articlesList.length === 0 ? (
+                    <p className="text-gray-500">No articles created yet.</p>
+                  ) : (
+                  <div className="space-y-3">
+                      {articlesList.map((article) => (
+                        <div key={article.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                          <div className="flex-1">
+                            <h4 className="font-medium text-gray-900">{article.title}</h4>
+                            <div className="flex items-center space-x-4 mt-1 text-sm text-gray-500">
+                              <span>ID: {article.id?.slice(0, 8)}...</span>
+                              <span className="capitalize">{article.subspecialty?.replace(/([A-Z])/g, ' $1')}</span>
+                              <span>Emotion: {article.emotional_data?.dominant_emotion}</span>
+                              <span>Artworks: {article.artwork_count || 0}</span>
+                              <span>Feedback: {article.feedback_count || 0}</span>
+                            </div>
+                            <div className="flex items-center space-x-2 mt-2">
+                              <span className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded">
+                                Evidence: {Math.round((article.evidence_strength || 0) * 100)}%
+                              </span>
+                              <span className="px-2 py-1 bg-green-100 text-green-800 text-xs rounded">
+                                Signature: {article.signature_data?.id}
+                              </span>
+                            </div>
+                          </div>
+              
+                          <div className="flex items-center space-x-2">
+                            <a
+                              href={`https://arthrokinetix.vercel.app/research/${article.id}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="flex items-center px-3 py-2 text-blue-600 hover:text-blue-800 transition-colors"
+                            >
+                              <Eye className="w-4 h-4 mr-1" />
+                              View
+                            </a>
+                            <button
+                              onClick={() => handleDeleteArticle(article.id, article.title)}
+                              className="flex items-center px-3 py-2 text-red-600 hover:text-red-800 transition-colors"
+                            >
+                              <X className="w-4 h-4 mr-1" />
+                              Delete
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* Database Stats */}
+                <div className="grid md:grid-cols-3 gap-6">
+                  <div className="bg-white border border-gray-200 rounded-lg p-6">
+                    <h3 className="text-lg font-semibold text-gray-900 mb-4">Database Health</h3>
+                    <div className="space-y-2 text-sm">
+                      <div className="flex justify-between">
+                        <span>Total Articles:</span>
+                        <span className="font-medium">{stats.totalArticles}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Total Artworks:</span>
+                        <span className="font-medium">{stats.totalArtworks}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Algorithm Processed:</span>
+                        <span className="font-medium">{stats.algorithmState?.articles_processed || 0}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="bg-white border border-gray-200 rounded-lg p-6">
+                    <h3 className="text-lg font-semibold text-gray-900 mb-4">Algorithm State</h3>
+                    <div className="space-y-2 text-sm">
+                      <div className="flex justify-between">
+                        <span>Dominant Emotion:</span>
+                        <span className="font-medium capitalize">{stats.algorithmState?.emotional_state?.dominant_emotion}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Intensity:</span>
+                        <span className="font-medium">{Math.round((stats.algorithmState?.emotional_state?.emotional_intensity || 0) * 100)}%</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Shape:</span>
+                        <span className="font-medium capitalize">{stats.algorithmState?.visual_representation?.shape}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="bg-white border border-gray-200 rounded-lg p-6">
+                    <h3 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h3>
+                    <div className="space-y-2">
+                      <button 
+                        onClick={fetchDashboardData}
+                        className="w-full text-left px-3 py-2 text-sm bg-gray-100 hover:bg-gray-200 rounded transition-colors"
+                      >
+                        🔄 Refresh Stats
+                      </button>
+                      <button 
+                        onClick={fetchArticlesAdmin}
+                        className="w-full text-left px-3 py-2 text-sm bg-gray-100 hover:bg-gray-200 rounded transition-colors"
+                      >
+                        📊 Refresh Articles
+                      </button>
+                      <a
+                        href="https://cloud.mongodb.com"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="block w-full text-left px-3 py-2 text-sm bg-gray-100 hover:bg-gray-200 rounded transition-colors"
+                      >
+                        🍃 MongoDB Atlas
+                      </a>
+                    </div>
                   </div>
                 </div>
               </div>
