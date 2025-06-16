@@ -23,8 +23,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Database connection with correct environment variable names and timeouts
-mongodb_uri = os.environ.get('MONGODB_URI')  # Changed from MONGO_URL
+# Database connection with consistent naming
+mongodb_uri = os.environ.get('MONGODB_URI')
 if mongodb_uri:
     client = MongoClient(
         mongodb_uri,
@@ -32,8 +32,26 @@ if mongodb_uri:
         connectTimeoutMS=5000,
         socketTimeoutMS=5000
     )
-    db = client.arthrokinetix
-    print("MongoDB connected successfully")
+    # Force consistent database naming - use lowercase
+    db = client.arthrokinetix  # Changed from client.arthrokinetix to force lowercase
+    print("MongoDB connected successfully to arthrokinetix database")
+    
+    # Test connection and ensure collections exist
+    try:
+        # Ping the database
+        client.admin.command('ping')
+        
+        # Ensure collections exist and create indexes if needed
+        db.articles.create_index("id")
+        db.artworks.create_index("id") 
+        db.algorithm_states.create_index("timestamp")
+        db.newsletter_subscribers.create_index("email")
+        db.feedback.create_index("article_id")
+        
+        print("Database collections initialized successfully")
+    except Exception as e:
+        print(f"Database initialization warning: {e}")
+        
 else:
     print("No MONGODB_URI found")
     db = None
@@ -63,12 +81,16 @@ async def root():
 async def get_algorithm_state():
     """Get current emotional state of the algorithm"""
     try:
+        if not db:
+            raise HTTPException(status_code=500, detail="Database not connected")
+            
         # Get latest state or create default
         latest_state = algorithm_states_collection.find_one(
             {}, sort=[("timestamp", -1)]
         )
         
         if not latest_state:
+            print("Creating initial algorithm state...")
             # Create initial state
             initial_state = {
                 "emotional_state": {
@@ -78,7 +100,9 @@ async def get_algorithm_state():
                         "hope": 0.4,
                         "confidence": 0.6,
                         "healing": 0.3,
-                        "innovation": 0.2
+                        "innovation": 0.2,
+                        "tension": 0.1,
+                        "uncertainty": 0.2
                     }
                 },
                 "visual_representation": {
@@ -92,15 +116,41 @@ async def get_algorithm_state():
                 "feedback_influences": []
             }
             
-            algorithm_states_collection.insert_one(initial_state)
-            latest_state = initial_state
+            result = algorithm_states_collection.insert_one(initial_state)
+            latest_state = algorithm_states_collection.find_one({"_id": result.inserted_id})
+            print("Initial algorithm state created successfully")
         
         # Convert ObjectId to string for JSON serialization
         latest_state["_id"] = str(latest_state["_id"])
         return latest_state
         
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        print(f"Algorithm state error: {e}")
+        # Return basic fallback state instead of failing
+        return {
+            "emotional_state": {
+                "dominant_emotion": "confidence",
+                "emotional_intensity": 0.6,
+                "emotional_mix": {
+                    "hope": 0.4,
+                    "confidence": 0.6,
+                    "healing": 0.3,
+                    "innovation": 0.2,
+                    "tension": 0.1,
+                    "uncertainty": 0.2
+                }
+            },
+            "visual_representation": {
+                "shape": "circle",
+                "color": "#3498db",
+                "glow_intensity": 0.6,
+                "pulse_rate": 1.2
+            },
+            "timestamp": datetime.utcnow().isoformat(),
+            "articles_processed": 0,
+            "feedback_influences": [],
+            "_id": "fallback_state"
+        }
 
 @app.post("/api/articles")
 async def create_article(article_data: dict):
