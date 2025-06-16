@@ -600,7 +600,6 @@ const AdminDashboard = () => {
               </div>
             )}
 
-            // Add this new tab content after the articles tab
             {activeTab === 'manage' && (
               <div className="space-y-6">
                 <div className="flex justify-between items-center">
