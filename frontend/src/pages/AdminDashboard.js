@@ -55,7 +55,10 @@ const AdminDashboard = () => {
     { value: 'trauma', label: 'Trauma' },
     { value: 'spine', label: 'Spine' },
     { value: 'handUpperExtremity', label: 'Hand & Upper Extremity' },
-    { value: 'footAnkle', label: 'Foot & Ankle' }
+    { value: 'footAnkle', label: 'Foot & Ankle' },
+    { value: 'shoulderElbow', label: 'Shoulder & Elbow' },
+    { value: 'pediatrics', label: 'Pediatrics' },
+    { value: 'oncology', label: 'Oncology' }
   ];
 
   const emotions = [
