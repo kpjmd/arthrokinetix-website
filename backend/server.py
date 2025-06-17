@@ -281,7 +281,7 @@ Please analyze for these emotions and return scores 0-1 as numbers (not strings)
 Also assess:
 - evidence_strength (0-1 as number)
 - technical_density (0-1 as number)
-- subspecialty (one of: sportsMedicine, jointReplacement, trauma, spine, handUpperExtremity, footAnkle)
+- subspecialty (one of: sportsMedicine, jointReplacement, trauma, spine, handUpperExtremity, footAnkle, shoulderElbow, pediatrics, oncology)
 
 Return only valid JSON with numeric values."""
             }]
