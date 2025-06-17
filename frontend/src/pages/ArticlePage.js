@@ -257,7 +257,7 @@ const ArticlePage = ({ algorithmState, onStateUpdate }) => {
 
           {/* Sidebar */}
           <div className="space-y-8">
-            {/* Emotional Analysis */}
+            {/* Emotional Analysis - CORRECTED VERSION */}
             <motion.div
               initial={{ x: 50, opacity: 0 }}
               animate={{ x: 0, opacity: 1 }}
@@ -265,22 +265,27 @@ const ArticlePage = ({ algorithmState, onStateUpdate }) => {
               className="bg-white rounded-xl p-6 shadow-lg"
             >
               <h3 className="text-xl font-bold text-primary mb-4">Emotional Analysis</h3>
-              
-              <div className="space-y-4">
+  
+              <div className="space-y-6">
+                {/* Dominant Emotion Display */}
                 <div className="text-center">
                   <p className="text-sm text-gray-500 mb-2">Dominant Emotion</p>
-                  <p 
-                    className="text-lg font-bold capitalize"
-                    style={{ color: getEmotionColor(article.emotional_data?.dominant_emotion) }}
+                  <div 
+                    className="inline-flex items-center px-3 py-2 rounded-full text-white font-medium text-sm"
+                    style={{ backgroundColor: getEmotionColor(article.emotional_data?.dominant_emotion) }}
                   >
-                    {article.emotional_data?.dominant_emotion}
-                  </p>
+                    {article.emotional_data?.dominant_emotion || 'Unknown'}
+                  </div>
                 </div>
 
+                {/* Core Emotions Only (as percentages) */}
                 <div className="space-y-3">
-                  {Object.entries(article.emotional_data || {}).map(([emotion, value]) => {
-                    if (emotion === 'dominant_emotion' || value < 0.1) return null;
-                    
+                  <h4 className="text-sm font-medium text-gray-700 mb-3">Core Emotions</h4>
+                  {['hope', 'confidence', 'healing', 'breakthrough', 'tension', 'uncertainty'].map((emotion) => {
+                     const value = article.emotional_data?.[emotion];
+        
+                    if (typeof value !== 'number' || isNaN(value) || value < 0.05) return null;
+        
                     return (
                       <div key={emotion} className="space-y-1">
                         <div className="flex justify-between text-sm">
@@ -300,6 +305,69 @@ const ArticlePage = ({ algorithmState, onStateUpdate }) => {
                     );
                   })}
                 </div>
+
+                {/* Research Metrics (as percentages) */}
+                <div className="space-y-3">
+                  <h4 className="text-sm font-medium text-gray-700 mb-3">Research Quality</h4>
+      
+                  {/* Evidence Strength */}
+                  {article.emotional_data?.evidence_strength && (
+                    <div className="space-y-1">
+                      <div className="flex justify-between text-sm">
+                        <span className="text-gray-600">Evidence Strength</span>
+                        <span className="font-medium">{Math.round(article.emotional_data.evidence_strength * 100)}%</span>
+                      </div>
+                      <div className="h-2 bg-gray-200 rounded">
+                        <div 
+                          className="h-full rounded transition-all duration-300 bg-blue-500"
+                          style={{ width: `${article.emotional_data.evidence_strength * 100}%` }}
+                        />
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Technical Density */}
+                  {article.emotional_data?.technical_density && (
+                    <div className="space-y-1">
+                      <div className="flex justify-between text-sm">
+                        <span className="text-gray-600">Technical Density</span>
+                        <span className="font-medium">{Math.round(article.emotional_data.technical_density * 100)}%</span>
+                      </div>
+                      <div className="h-2 bg-gray-200 rounded">
+                        <div 
+                          className="h-full rounded transition-all duration-300 bg-purple-500"
+                          style={{ width: `${article.emotional_data.technical_density * 100}%` }}
+                        />
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Subspecialty (as text label) */}
+                <div className="space-y-3">
+                  <h4 className="text-sm font-medium text-gray-700 mb-3">Classification</h4>
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-600 text-sm">Medical Subspecialty</span>
+                    <span 
+                      className="inline-flex items-center px-3 py-1 rounded-full text-white text-xs font-medium"
+                      style={{ backgroundColor: '#2c3e50' }}
+                    >
+                      {formatSubspecialty(article.emotional_data?.subspecialty || article.subspecialty)}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Emotional Signature Reference */}
+                {article.signature_data?.id && (
+                  <div className="pt-4 border-t border-gray-200">
+                    <div className="flex justify-between items-center">
+                      <span className="text-gray-600 text-sm">Signature ID</span>
+                      <code className="text-xs font-mono bg-gray-100 px-2 py-1 rounded">
+                        {article.signature_data.id}
+                      </code>
+                    </div>
+                  </div>
+                )}
               </div>
             </motion.div>
 
@@ -412,5 +480,52 @@ const getSampleArtwork = (articleId) => ({
   dominant_emotion: 'confidence',
   metadata: { rarity_score: 0.75 }
 });
+
+const formatSubspecialty = (subspecialty) => {
+  if (!subspecialty) return 'General Orthopedics'; 
+  
+  // Recognized orthopedic subspecialties
+  const ORTHOPEDIC_SUBSPECIALTIES = {
+    'sportsMedicine': 'Sports Medicine',
+    'jointReplacement': 'Joint Replacement', 
+    'trauma': 'Trauma',
+    'spine': 'Spine',
+    'handUpperExtremity': 'Hand & Upper Extremity',
+    'footAnkle': 'Foot & Ankle',
+    'shoulderElbow': 'Shoulder & Elbow',
+    'pediatrics': 'Pediatrics',
+    'oncology': 'Oncology'
+  };
+  
+  // Direct mapping to recognized subspecialties
+  if (ORTHOPEDIC_SUBSPECIALTIES[subspecialty]) {
+    return ORTHOPEDIC_SUBSPECIALTIES[subspecialty];
+  }
+  
+  // Handle common variations and legacy values
+  const normalized = subspecialty.toLowerCase().replace(/[^a-z]/g, '');
+  const variations = {
+    'knee': 'Sports Medicine',           
+    'hip': 'Joint Replacement',           
+    'ankle': 'Foot & Ankle',
+    'wrist': 'Hand & Upper Extremity',
+    'shoulder': 'Shoulder & Elbow',
+    'elbow': 'Shoulder & Elbow',
+    'pediatric': 'Pediatrics',
+    'peds': 'Pediatrics',
+    'tumor': 'Oncology',
+    'cancer': 'Oncology'
+  };
+  
+  if (variations[normalized]) {
+    return variations[normalized];
+  }
+  
+  // Final fallback: convert camelCase to Title Case
+  return subspecialty
+    .replace(/([A-Z])/g, ' $1')
+    .replace(/^./, str => str.toUpperCase())
+    .trim();
+};
 
 export default ArticlePage;
