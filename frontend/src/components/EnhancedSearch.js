@@ -40,12 +40,15 @@ const EnhancedSearch = ({ onResults, placeholder = "Search articles, emotions, o
 
   const subspecialties = [
     { key: 'all', label: 'All Subspecialties' },
-    { key: 'sportsMedicine', label: 'Sports Medicine' },
-    { key: 'jointReplacement', label: 'Joint Replacement' },
-    { key: 'trauma', label: 'Trauma' },
-    { key: 'spine', label: 'Spine' },
-    { key: 'handUpperExtremity', label: 'Hand & Upper Extremity' },
-    { key: 'footAnkle', label: 'Foot & Ankle' }
+    { value: 'sportsMedicine', label: 'Sports Medicine' },
+    { value: 'jointReplacement', label: 'Joint Replacement' },
+    { value: 'trauma', label: 'Trauma' },
+    { value: 'spine', label: 'Spine' },
+    { value: 'handUpperExtremity', label: 'Hand & Upper Extremity' },
+    { value: 'footAnkle', label: 'Foot & Ankle' },
+    { value: 'shoulderElbow', label: 'Shoulder & Elbow' },
+    { value: 'pediatrics', label: 'Pediatrics' },
+    { value: 'oncology', label: 'Oncology' }
   ];
 
   const rarityLevels = [
