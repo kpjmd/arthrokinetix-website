@@ -15,8 +15,8 @@ const About = () => {
           >
             <h1 className="text-5xl font-bold mb-6">About Arthrokinetix</h1>
             <p className="text-xl text-blue-100 leading-relaxed">
-              Where medical research meets emotional intelligence and algorithmic art. 
-              We're pioneering the intersection of evidence-based medicine and computational creativity.
+              Where medical content meets emotional intelligence and algorithmic art. 
+              We're pioneering the intersection of evidence-based medical education and computational creativity.
             </p>
           </motion.div>
         </div>
@@ -36,21 +36,22 @@ const About = () => {
             <div className="prose prose-lg max-w-none text-gray-700">
               <p className="mb-6">
                 Arthrokinetix was born from a revolutionary idea: what if we could understand the emotional 
-                undertones hidden within medical research? What if algorithms could feel the hope, confidence, 
-                uncertainty, and breakthroughs embedded in scientific literature?
+                undertones hidden within medical content? What if algorithms could feel the hope, confidence, 
+                uncertainty, and breakthroughs embedded in medical education materials?
               </p>
               
               <p className="mb-6">
                 Our proprietary algorithm doesn't just analyze text—it experiences it. Through advanced 
                 natural language processing and emotional intelligence, we've created a system that develops 
-                its own emotional state based on the research it processes. This emotional journey is then 
+                its own emotional state based on the medical content it processes. This emotional journey is then 
                 transformed into stunning visual art through our unique "Andry Tree" visualization system.
               </p>
               
               <p>
                 Named after the pioneering orthopedic surgeon Nicolas Andry, whose splinted tree symbol 
                 represents healing and correction, our platform bridges the gap between analytical precision 
-                and emotional understanding in medical education.
+                and emotional understanding in medical education. We've evolved from a research-focused platform 
+                to a comprehensive medical content hub that serves as both an educational resource and a digital art gallery.
               </p>
             </div>
           </motion.div>
@@ -70,7 +71,7 @@ const About = () => {
             <h2 className="text-3xl font-bold text-primary mb-6">How the Algorithm Works</h2>
             <p className="text-gray-600 max-w-3xl mx-auto">
               Our Arthrokinetix algorithm represents a breakthrough in computational emotional intelligence, 
-              designed specifically for medical literature analysis.
+              designed specifically for medical content analysis and artistic transformation.
             </p>
           </motion.div>
 
@@ -79,25 +80,25 @@ const About = () => {
               {
                 icon: <Brain className="w-8 h-8" />,
                 title: "Content Analysis",
-                description: "Deep analysis of medical terminology, statistical data, research citations, and evidence quality indicators.",
+                description: "Deep analysis of medical terminology, statistical data, clinical citations, and evidence quality indicators across multiple content formats.",
                 color: "from-blue-500 to-blue-600"
               },
               {
                 icon: <Heart className="w-8 h-8" />,
                 title: "Emotional Detection", 
-                description: "Identification of emotional markers: hope, confidence, uncertainty, tension, breakthrough, and healing potential.",
+                description: "Identification of emotional markers: hope, confidence, uncertainty, tension, breakthrough, and healing potential in medical content.",
                 color: "from-red-500 to-red-600"
               },
               {
                 icon: <Zap className="w-8 h-8" />,
                 title: "Signature Generation",
-                description: "Creation of unique visual signatures with concentric rings, geometric overlays, and floating particles.",
+                description: "Creation of unique visual signatures with concentric rings, geometric overlays, and floating particles representing emotional complexity.",
                 color: "from-yellow-500 to-yellow-600"
               },
               {
                 icon: <Palette className="w-8 h-8" />,
                 title: "Art Creation",
-                description: "Transformation into Andry Tree visualizations with subspecialty-specific styling and healing animations.",
+                description: "Transformation into Andry Tree visualizations with subspecialty-specific styling, emotional gradients, and healing animations.",
                 color: "from-green-500 to-green-600"
               }
             ].map((step, index) => (
@@ -136,8 +137,8 @@ const About = () => {
           >
             <h2 className="text-3xl font-bold text-primary mb-6">Algorithm Evolution</h2>
             <p className="text-gray-600 max-w-3xl mx-auto mb-8">
-              Watch how the algorithm's emotional state evolves based on the medical literature it processes. 
-              Each article influences its understanding and emotional development.
+              Watch how the algorithm's emotional state evolves based on the medical content it processes. 
+              Each article influences its understanding and emotional development, creating a living, learning system.
             </p>
           </motion.div>
 
@@ -170,7 +171,7 @@ const About = () => {
                   <p className="text-lg font-semibold text-secondary">Confidence</p>
                 </div>
                 <div>
-                  <p className="text-sm text-gray-500 mb-1">Articles Processed</p>
+                  <p className="text-sm text-gray-500 mb-1">Content Processed</p>
                   <p className="text-lg font-semibold text-primary">1,247</p>
                 </div>
                 <div>
@@ -219,7 +220,7 @@ const About = () => {
         </div>
       </section>
 
-      {/* Team Section */}
+      {/* Vision Section */}
       <section className="py-20 bg-gray-50">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           <motion.div
@@ -232,22 +233,23 @@ const About = () => {
             <h2 className="text-3xl font-bold text-primary mb-6">Our Vision</h2>
             <div className="prose prose-lg max-w-none text-gray-700">
               <p className="mb-6">
-                We believe that medicine is not just about data and statistics—it's about human stories, 
-                hope, healing, and the emotional journey of discovery. By making these hidden emotions 
-                visible through art, we create a more complete understanding of medical research.
+                We believe that medical education is not just about data and statistics—it's about human stories, 
+                hope, healing, and the emotional journey of medical discovery. By making these hidden emotions 
+                visible through art, we create a more complete understanding of medical content and its impact.
               </p>
               
               <p className="mb-6">
-                Every article processed by our algorithm contributes to its emotional growth, creating 
+                Arthrokinetix serves as both a trusted platform for medical education and an innovative digital art gallery. 
+                Every piece of content processed by our algorithm contributes to its emotional growth, creating 
                 a living, evolving intelligence that reflects the collective emotional journey of 
-                medical progress. Through community feedback and interaction, users become part of 
-                this evolutionary process.
+                medical progress and patient care.
               </p>
               
               <p>
                 Our ultimate goal is to bridge the gap between analytical rigor and emotional intelligence 
                 in medical education, creating a new paradigm for understanding and visualizing 
-                scientific progress.
+                medical content. Through community feedback and interaction, users become part of 
+                this evolutionary process, helping shape the algorithm's emotional understanding.
               </p>
             </div>
           </motion.div>
@@ -271,33 +273,33 @@ const About = () => {
             {[
               {
                 icon: <Award className="w-8 h-8" />,
-                title: "Evidence-Based Analysis",
-                description: "Rigorous evaluation of research quality and evidence strength in every article."
+                title: "Evidence-Based Content",
+                description: "Rigorous curation and evaluation of medical content quality and evidence strength across all subspecialties."
               },
               {
                 icon: <Heart className="w-8 h-8" />,
                 title: "Emotional Intelligence",
-                description: "Unique emotional analysis revealing the human stories behind medical research."
+                description: "Unique emotional analysis revealing the human stories and emotional journeys behind medical education content."
               },
               {
                 icon: <Palette className="w-8 h-8" />,
                 title: "Algorithmic Art",
-                description: "Beautiful visualizations that transform data into meaningful artistic expressions."
+                description: "Beautiful visualizations that transform medical content into meaningful artistic expressions and digital galleries."
               },
               {
                 icon: <Users className="w-8 h-8" />,
                 title: "Community Feedback",
-                description: "User emotions influence the algorithm's evolution and artistic development."
+                description: "User emotions and interactions influence the algorithm's evolution and artistic development over time."
               },
               {
                 icon: <Zap className="w-8 h-8" />,
-                title: "Real-Time Processing",
-                description: "Instant analysis and art generation for new medical research content."
+                title: "Multi-Format Support",
+                description: "Support for HTML, PDF, and text content formats with real-time processing and art generation capabilities."
               },
               {
                 icon: <Brain className="w-8 h-8" />,
                 title: "Subspecialty Focus",
-                description: "Specialized analysis for different orthopedic and sports medicine fields."
+                description: "Specialized analysis for all nine orthopedic and sports medicine subspecialty areas with tailored emotional understanding."
               }
             ].map((feature, index) => (
               <motion.div
@@ -340,15 +342,15 @@ const About = () => {
             {[
               {
                 question: "How does the emotional analysis work?",
-                answer: "Our algorithm uses advanced natural language processing to identify emotional markers in medical literature. It analyzes word choice, sentence structure, and contextual clues to determine the emotional undertones of research articles."
+                answer: "Our algorithm uses advanced natural language processing to identify emotional markers in medical content. It analyzes word choice, sentence structure, clinical outcomes, and contextual clues to determine the emotional undertones of medical education materials."
               },
               {
                 question: "What makes the artworks unique?",
-                answer: "Each artwork is generated based on the specific emotional profile of its source article. The Andry Tree visualization incorporates the research's evidence strength, subspecialty characteristics, and emotional intensity to create one-of-a-kind digital art."
+                answer: "Each artwork is generated based on the specific emotional profile of its source content. The Andry Tree visualization incorporates the content's evidence strength, subspecialty characteristics, and emotional intensity to create one-of-a-kind digital art pieces."
               },
               {
                 question: "How does user feedback influence the algorithm?",
-                answer: "When users provide emotional feedback on articles, it slightly adjusts the algorithm's emotional understanding. Over time, these micro-adjustments help the system better align with human emotional perception of medical research."
+                answer: "When users provide emotional feedback on articles, it slightly adjusts the algorithm's emotional understanding. Over time, these micro-adjustments help the system better align with human emotional perception of medical content."
               },
               {
                 question: "Are the artworks available as NFTs?",
@@ -357,6 +359,10 @@ const About = () => {
               {
                 question: "What subspecialties are covered?",
                 answer: "We focus on orthopedic surgery and sports medicine, covering all nine recognized subspecialties: sports medicine, joint replacement, trauma, spine, hand & upper extremity, foot & ankle, shoulder & elbow, pediatrics, and oncology."
+              },
+              {
+                question: "What content formats are supported?",
+                answer: "Our platform supports multiple content formats including HTML files (which render directly with full styling), PDF documents (stored for future algorithm parsing), and traditional text input. This flexibility allows for rich, varied medical content presentation."
               }
             ].map((faq, index) => (
               <motion.div
@@ -390,7 +396,7 @@ const About = () => {
           >
             <h2 className="text-3xl font-bold mb-6">Get in Touch</h2>
             <p className="text-xl text-blue-100 mb-8">
-              Have questions about Arthrokinetix or want to collaborate? We'd love to hear from you.
+              Have questions about Arthrokinetix or want to collaborate on medical content and algorithmic art? We'd love to hear from you.
             </p>
             
             <div className="flex justify-center gap-6">
