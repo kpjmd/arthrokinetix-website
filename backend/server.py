@@ -83,7 +83,7 @@ async def root():
 async def get_algorithm_state():
     """Get current emotional state of the algorithm"""
     try:
-        if not db:
+        if db is None:
             raise HTTPException(status_code=500, detail="Database not connected")
             
         # Get latest state or create default
