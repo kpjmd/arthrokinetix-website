@@ -8,7 +8,7 @@ const Header = () => {
 
   const navItems = [
     { path: '/', label: 'Home' },
-    { path: '/research', label: 'Research Hub' },
+    { path: '/articles', label: 'Articles' },
     { path: '/gallery', label: 'Art Gallery' },
     { path: '/about', label: 'About' }
   ];
@@ -28,7 +28,7 @@ const Header = () => {
             </div>
             <div>
               <h1 className="text-xl font-bold text-primary">Arthrokinetix</h1>
-              <p className="text-xs text-gray-600">Medical Research & Art</p>
+              <p className="text-xs text-gray-600">Medical Content & Art</p>
             </div>
           </Link>
 
@@ -40,7 +40,8 @@ const Header = () => {
                   key={item.path}
                   to={item.path}
                   className={`px-3 py-2 text-sm font-medium transition-colors duration-200 ${
-                    location.pathname === item.path
+                    location.pathname === item.path || 
+                    (item.path === '/articles' && location.pathname.startsWith('/articles'))
                       ? 'text-secondary border-b-2 border-secondary'
                       : 'text-gray-700 hover:text-secondary'
                   }`}

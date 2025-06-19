@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { HelmetProvider } from 'react-helmet-async';
 import './App.css';
@@ -10,7 +10,7 @@ import ArthrokinetixArtGenerator from './arthrokinetixalgorithm.js';
 // Components
 import Header from './components/Header';
 import Homepage from './pages/Homepage';
-import ResearchHub from './pages/ResearchHub';
+import ArticlesHub from './pages/ArticlesHub';
 import EnhancedResearchHub from './pages/EnhancedResearchHub';
 import ArticlePage from './pages/ArticlePage';
 import Gallery from './pages/Gallery';
@@ -98,14 +98,29 @@ function App() {
                   />
                 } 
               />
+              
+              {/* New Medical Content Routes */}
               <Route 
-                path="/research" 
+                path="/articles" 
                 element={
-                  <ResearchHub 
+                  <ArticlesHub 
                     algorithmState={algorithmState}
                   />
                 } 
               />
+              <Route 
+                path="/articles/:slug" 
+                element={
+                  <ArticlePage 
+                    algorithmState={algorithmState}
+                    onStateUpdate={setAlgorithmState}
+                  />
+                } 
+              />
+
+              {/* Legacy Research Routes - Redirect to Articles */}
+              <Route path="/research" element={<Navigate to="/articles" replace />} />
+              <Route path="/research/:slug" element={<Navigate to="/articles/:slug" replace />} />
               <Route 
                 path="/research-enhanced" 
                 element={
@@ -114,15 +129,8 @@ function App() {
                   />
                 } 
               />
-              <Route 
-                path="/research/:slug" 
-                element={
-                  <ArticlePage 
-                    algorithmState={algorithmState}
-                    onStateUpdate={setAlgorithmState}
-                  />
-                } 
-              />
+              
+              {/* Other Routes */}
               <Route 
                 path="/profile" 
                 element={<UserProfile />} 
