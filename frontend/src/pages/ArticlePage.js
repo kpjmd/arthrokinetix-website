@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ArrowLeft, BookOpen, Palette, Heart, ThumbsUp, ThumbsDown, Star, Award, Clock, User } from 'lucide-react';
+import { ArrowLeft, BookOpen, Palette, Heart, ThumbsUp, ThumbsDown, Star, Award, Clock, User, FileText, File, Download } from 'lucide-react';
 import EmotionalSignature from '../components/EmotionalSignature';
 
-const API_BASE = process.env.REACT_APP_BACKEND_URL || 'http://localhost:3000';
+const API_BASE = process.env.REACT_APP_BACKEND_URL || 'http://localhost:8001';
 
 const ArticlePage = ({ algorithmState, onStateUpdate }) => {
   const { slug } = useParams();
@@ -36,10 +36,14 @@ const ArticlePage = ({ algorithmState, onStateUpdate }) => {
       setArticle(articleData);
 
       // Fetch corresponding artwork
-      const artworkResponse = await fetch(`${API_BASE}/api/artworks?article_id=${slug}`);
+      const artworkResponse = await fetch(`${API_BASE}/api/artworks`);
       const artworkData = await artworkResponse.json();
       if (artworkData.artworks?.length > 0) {
-        setArtwork(artworkData.artworks[0]);
+        // Find artwork that matches this article
+        const matchingArtwork = artworkData.artworks.find(art => art.article_id === slug);
+        if (matchingArtwork) {
+          setArtwork(matchingArtwork);
+        }
       }
     } catch (error) {
       console.error('Error fetching article:', error);
@@ -61,7 +65,7 @@ const ArticlePage = ({ algorithmState, onStateUpdate }) => {
         body: JSON.stringify({
           article_id: article.id,
           emotion: emotion,
-          user_id: 'anonymous' // In real app, use authenticated user ID
+          user_email: 'anonymous@demo.com'
         })
       });
 
@@ -72,13 +76,61 @@ const ArticlePage = ({ algorithmState, onStateUpdate }) => {
         // Refresh algorithm state
         const stateResponse = await fetch(`${API_BASE}/api/algorithm-state`);
         const newState = await stateResponse.json();
-        onStateUpdate(newState);
+        if (onStateUpdate) {
+          onStateUpdate(newState);
+        }
       }
     } catch (error) {
       console.error('Error submitting feedback:', error);
       // Demo success
       setFeedbackSubmitted(true);
       setShowFeedbackForm(false);
+    }
+  };
+
+  const renderContent = () => {
+    if (!article) return null;
+
+    // Render based on content type
+    switch (article.content_type) {
+      case 'html':
+        return (
+          <div className="prose prose-lg max-w-none">
+            <div 
+              dangerouslySetInnerHTML={{ __html: article.html_content || article.content }}
+              className="article-html-content"
+            />
+          </div>
+        );
+      
+      case 'pdf':
+        return (
+          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6 mb-8">
+            <div className="flex items-center mb-4">
+              <File className="w-6 h-6 text-yellow-600 mr-3" />
+              <h3 className="text-lg font-semibold text-yellow-800">PDF Document</h3>
+            </div>
+            <p className="text-yellow-700 mb-4">
+              This content was uploaded as a PDF document. The algorithmic analysis has been completed, 
+              but full PDF rendering is coming soon.
+            </p>
+            {article.file_data && (
+              <div className="flex items-center space-x-4 text-sm text-yellow-600">
+                <span>Filename: {article.file_data.filename}</span>
+                <span>Size: {(article.file_data.size / 1024 / 1024).toFixed(2)} MB</span>
+              </div>
+            )}
+          </div>
+        );
+      
+      default:
+        return (
+          <div className="prose prose-lg max-w-none">
+            <div className="whitespace-pre-wrap">
+              {article.content}
+            </div>
+          </div>
+        );
     }
   };
 
@@ -98,10 +150,15 @@ const ArticlePage = ({ algorithmState, onStateUpdate }) => {
     return (
       <div className="min-h-screen bg-gray-50 pt-16 flex items-center justify-center">
         <div className="text-center">
-          <h2 className="text-2xl font-bold text-gray-600 mb-4">Article not found</h2>
-          <Link to="/research" className="btn-primary">
-            <ArrowLeft className="w-5 h-5 mr-2" />
-            Back to Research Hub
+          <BookOpen className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+          <h2 className="text-2xl font-semibold text-gray-600 mb-2">Article not found</h2>
+          <p className="text-gray-500 mb-6">The article you're looking for doesn't exist.</p>
+          <Link 
+            to="/research" 
+            className="btn-primary inline-flex items-center"
+          >
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Back to Articles
           </Link>
         </div>
       </div>
@@ -110,49 +167,104 @@ const ArticlePage = ({ algorithmState, onStateUpdate }) => {
 
   return (
     <div className="min-h-screen bg-gray-50 pt-16">
-      {/* Header */}
-      <section className={`py-16 text-white subspecialty-${article.subspecialty}`}>
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-          <motion.div
-            initial={{ y: 50, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            transition={{ duration: 0.8 }}
-          >
-            <Link 
-              to="/research"
-              className="inline-flex items-center text-white/80 hover:text-white mb-6 transition-colors"
-            >
-              <ArrowLeft className="w-5 h-5 mr-2" />
-              Back to Research Hub
-            </Link>
+      <style jsx>{`
+        .article-html-content {
+          line-height: 1.7;
+        }
+        .article-html-content h1,
+        .article-html-content h2,
+        .article-html-content h3 {
+          margin-top: 2rem;
+          margin-bottom: 1rem;
+        }
+        .article-html-content p {
+          margin-bottom: 1.5rem;
+        }
+        .article-html-content ul,
+        .article-html-content ol {
+          margin-bottom: 1.5rem;
+          padding-left: 1.5rem;
+        }
+        .article-html-content li {
+          margin-bottom: 0.5rem;
+        }
+        .article-html-content blockquote {
+          border-left: 4px solid #3498db;
+          padding-left: 1rem;
+          margin: 1.5rem 0;
+          font-style: italic;
+        }
+        .article-html-content table {
+          width: 100%;
+          border-collapse: collapse;
+          margin: 1.5rem 0;
+        }
+        .article-html-content th,
+        .article-html-content td {
+          border: 1px solid #ddd;
+          padding: 0.75rem;
+          text-align: left;
+        }
+        .article-html-content th {
+          background-color: #f8f9fa;
+          font-weight: 600;
+        }
+      `}</style>
 
-            <div className="flex items-start gap-8">
+      {/* Header Navigation */}
+      <div className="bg-white border-b">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+          <Link 
+            to="/research" 
+            className="inline-flex items-center text-gray-600 hover:text-gray-900 transition-colors"
+          >
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Back to Medical Content
+          </Link>
+        </div>
+      </div>
+
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+          {/* Article Header */}
+          <div className="px-8 py-6 border-b border-gray-200">
+            <div className="flex justify-between items-start mb-6">
               <div className="flex-1">
-                <h1 className="text-4xl font-bold mb-4">{article.title}</h1>
+                <h1 className="text-3xl font-bold text-gray-900 mb-4">
+                  {article.title}
+                </h1>
                 
-                <div className="flex flex-wrap items-center gap-6 text-white/90 mb-6">
-                  <span className="flex items-center gap-2">
-                    <User className="w-5 h-5" />
-                    Research Team
-                  </span>
-                  <span className="flex items-center gap-2">
-                    <Clock className="w-5 h-5" />
-                    {article.read_time || 5} min read
-                  </span>
-                  <span className="flex items-center gap-2">
-                    <Award className="w-5 h-5" />
-                    {Math.round((article.evidence_strength || 0) * 100)}% evidence strength
-                  </span>
-                  <span className="flex items-center gap-2 capitalize">
-                    <BookOpen className="w-5 h-5" />
+                {/* Article Metadata */}
+                <div className="flex flex-wrap items-center gap-4 text-sm text-gray-600 mb-4">
+                  <span className="flex items-center">
+                    <FileText className="w-4 h-4 mr-1" />
                     {article.subspecialty?.replace(/([A-Z])/g, ' $1')}
                   </span>
+                  <span className="flex items-center">
+                    <Clock className="w-4 h-4 mr-1" />
+                    {article.read_time || 5} min read
+                  </span>
+                  <span className="flex items-center">
+                    <Award className="w-4 h-4 mr-1" />
+                    {Math.round((article.evidence_strength || 0) * 100)}% evidence strength
+                  </span>
+                  <span className="flex items-center">
+                    <User className="w-4 h-4 mr-1" />
+                    {article.content_type?.toUpperCase()} content
+                  </span>
                 </div>
+
+                {/* Meta Description */}
+                {article.meta_description && (
+                  <p className="text-lg text-gray-600 leading-relaxed">
+                    {article.meta_description}
+                  </p>
+                )}
               </div>
 
               {/* Emotional Signature */}
               {article.signature_data && (
-                <div className="flex-shrink-0">
+                <div className="ml-8">
                   <EmotionalSignature 
                     signatureData={article.signature_data}
                     emotionalData={article.emotional_data}
@@ -161,371 +273,158 @@ const ArticlePage = ({ algorithmState, onStateUpdate }) => {
                 </div>
               )}
             </div>
-          </motion.div>
-        </div>
-      </section>
 
-      {/* Main Content */}
-      <section className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="grid lg:grid-cols-3 gap-12">
-          {/* Article Content */}
-          <div className="lg:col-span-2">
-            <motion.div
-              initial={{ y: 50, opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              transition={{ duration: 0.8, delay: 0.2 }}
-              className="bg-white rounded-xl p-8 shadow-lg"
-            >
-              {/* Abstract */}
-              <div className="mb-8">
-                <h2 className="text-2xl font-bold text-primary mb-4">Abstract</h2>
-                <p className="text-gray-700 leading-relaxed">
-                  {article.abstract || `This comprehensive study examines the latest developments in ${article.subspecialty?.replace(/([A-Z])/g, ' $1').toLowerCase()} with a focus on evidence-based approaches and patient outcomes. Through rigorous analysis of current literature and clinical data, we present findings that contribute to the advancement of orthopedic surgical practices.`}
-                </p>
-              </div>
-
-              {/* Main Content */}
-              <div className="prose prose-lg max-w-none mb-8">
-                <h2 className="text-2xl font-bold text-primary mb-4">Introduction</h2>
-                <p className="text-gray-700 leading-relaxed mb-6">
-                  {article.content || `In the evolving landscape of ${article.subspecialty?.replace(/([A-Z])/g, ' $1').toLowerCase()}, recent advances have opened new possibilities for patient care and surgical outcomes. This research contributes to our understanding of optimal treatment protocols and long-term patient benefits.
-
-                  The emotional undertone of this research reflects a ${article.emotional_data?.dominant_emotion} approach to the subject matter, with particular emphasis on evidence-based practices that prioritize patient safety and therapeutic efficacy.
-
-                  Our analysis reveals significant correlations between surgical technique refinements and improved patient outcomes, suggesting a paradigm shift towards more personalized treatment approaches.`}
-                </p>
-
-                <h2 className="text-2xl font-bold text-primary mb-4">Methodology</h2>
-                <p className="text-gray-700 leading-relaxed mb-6">
-                  This study employed a comprehensive systematic review methodology, incorporating both quantitative and qualitative analyses. The research demonstrates a high evidence strength rating of {Math.round((article.evidence_strength || 0) * 100)}%, reflecting robust methodological rigor.
-                </p>
-
-                <h2 className="text-2xl font-bold text-primary mb-4">Results & Discussion</h2>
-                <p className="text-gray-700 leading-relaxed mb-6">
-                  The findings reveal compelling evidence supporting innovative approaches in {article.subspecialty?.replace(/([A-Z])/g, ' $1').toLowerCase()}. The emotional analysis of this research indicates strong themes of {article.emotional_data?.dominant_emotion}, suggesting optimistic prospects for clinical application.
-                </p>
-
-                <h2 className="text-2xl font-bold text-primary mb-4">Conclusion</h2>
-                <p className="text-gray-700 leading-relaxed">
-                  This research contributes valuable insights to the field, with implications for both current practice and future research directions. The {article.emotional_data?.dominant_emotion} nature of these findings reflects the positive trajectory of developments in this subspecialty.
-                </p>
-              </div>
-
-              {/* Feedback Section */}
-              <div className="border-t pt-8">
-                <h3 className="text-xl font-bold text-primary mb-4">Your Emotional Response</h3>
-                <p className="text-gray-600 mb-6">
-                  Help the Arthrokinetix algorithm learn by sharing your emotional response to this research.
-                  {!feedbackSubmitted && (
-                    <span className="text-sm text-blue-600 ml-2">
-                      (Unlock by subscribing to newsletter)
-                    </span>
-                  )}
-                </p>
-
-                {feedbackSubmitted ? (
-                  <motion.div
-                    initial={{ opacity: 0, scale: 0.9 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    className="bg-green-50 border border-green-200 rounded-lg p-4 text-center"
-                  >
-                    <Star className="w-8 h-8 text-green-600 mx-auto mb-2" />
-                    <p className="text-green-800 font-medium">
-                      Thank you! Your feedback influences the algorithm's evolution.
-                    </p>
-                  </motion.div>
-                ) : (
-                  <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                    {emotionOptions.map((emotion) => (
-                      <button
-                        key={emotion.key}
-                        onClick={() => handleFeedbackSubmit(emotion.key)}
-                        className="p-4 border-2 border-gray-200 rounded-lg hover:border-gray-400 transition-all duration-200 text-center group"
-                        style={{ '--hover-color': emotion.color }}
-                      >
-                        <span className="text-2xl mb-2 block">{emotion.icon}</span>
-                        <span className="text-sm font-medium text-gray-700 group-hover:text-gray-900">
-                          {emotion.label}
-                        </span>
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </motion.div>
-          </div>
-
-          {/* Sidebar */}
-          <div className="space-y-8">
-            {/* Emotional Analysis - CORRECTED VERSION */}
-            <motion.div
-              initial={{ x: 50, opacity: 0 }}
-              animate={{ x: 0, opacity: 1 }}
-              transition={{ duration: 0.8, delay: 0.4 }}
-              className="bg-white rounded-xl p-6 shadow-lg"
-            >
-              <h3 className="text-xl font-bold text-primary mb-4">Emotional Analysis</h3>
-  
-              <div className="space-y-6">
-                {/* Dominant Emotion Display */}
-                <div className="text-center">
-                  <p className="text-sm text-gray-500 mb-2">Dominant Emotion</p>
-                  <div 
-                    className="inline-flex items-center px-3 py-2 rounded-full text-white font-medium text-sm"
-                    style={{ backgroundColor: getEmotionColor(article.emotional_data?.dominant_emotion) }}
-                  >
-                    {article.emotional_data?.dominant_emotion || 'Unknown'}
-                  </div>
-                </div>
-
-                {/* Core Emotions Only (as percentages) */}
-                <div className="space-y-3">
-                  <h4 className="text-sm font-medium text-gray-700 mb-3">Core Emotions</h4>
-                  {['hope', 'confidence', 'healing', 'breakthrough', 'tension', 'uncertainty'].map((emotion) => {
-                     const value = article.emotional_data?.[emotion];
-        
-                    if (typeof value !== 'number' || isNaN(value) || value < 0.05) return null;
-        
+            {/* Emotional Analysis Bar */}
+            {article.emotional_data && (
+              <div className="bg-gray-50 rounded-lg p-4">
+                <h3 className="text-sm font-medium text-gray-700 mb-3">Emotional Analysis</h3>
+                <div className="grid grid-cols-3 md:grid-cols-6 gap-4">
+                  {emotionOptions.map(emotion => {
+                    const value = article.emotional_data[emotion.key] || 0;
+                    const isDominant = article.emotional_data.dominant_emotion === emotion.key;
+                    
                     return (
-                      <div key={emotion} className="space-y-1">
-                        <div className="flex justify-between text-sm">
-                          <span className="capitalize text-gray-600">{emotion}</span>
-                          <span className="font-medium">{Math.round(value * 100)}%</span>
+                      <div key={emotion.key} className="text-center">
+                        <div className="relative mb-2">
+                          <div className="w-12 h-12 mx-auto rounded-full border-2 flex items-center justify-center text-lg"
+                               style={{ 
+                                 borderColor: emotion.color,
+                                 backgroundColor: isDominant ? emotion.color + '20' : 'transparent'
+                               }}>
+                            {emotion.icon}
+                          </div>
+                          {isDominant && (
+                            <div className="absolute -top-1 -right-1 w-4 h-4 bg-yellow-400 rounded-full flex items-center justify-center">
+                              <Star className="w-2 h-2 text-yellow-800" />
+                            </div>
+                          )}
                         </div>
-                        <div className="h-2 bg-gray-200 rounded">
-                          <div 
-                            className="h-full rounded transition-all duration-300"
-                            style={{ 
-                              width: `${value * 100}%`, 
-                              backgroundColor: getEmotionColor(emotion)
-                            }}
-                          />
-                        </div>
+                        <div className="text-xs font-medium text-gray-700">{emotion.label}</div>
+                        <div className="text-xs text-gray-500">{Math.round(value * 100)}%</div>
                       </div>
                     );
                   })}
                 </div>
+              </div>
+            )}
+          </div>
 
-                {/* Research Metrics (as percentages) */}
-                <div className="space-y-3">
-                  <h4 className="text-sm font-medium text-gray-700 mb-3">Research Quality</h4>
-      
-                  {/* Evidence Strength */}
-                  {article.emotional_data?.evidence_strength && (
-                    <div className="space-y-1">
-                      <div className="flex justify-between text-sm">
-                        <span className="text-gray-600">Evidence Strength</span>
-                        <span className="font-medium">{Math.round(article.emotional_data.evidence_strength * 100)}%</span>
-                      </div>
-                      <div className="h-2 bg-gray-200 rounded">
-                        <div 
-                          className="h-full rounded transition-all duration-300 bg-blue-500"
-                          style={{ width: `${article.emotional_data.evidence_strength * 100}%` }}
-                        />
-                      </div>
-                    </div>
-                  )}
+          {/* Article Content */}
+          <div className="px-8 py-8">
+            {renderContent()}
+          </div>
 
-                  {/* Technical Density */}
-                  {article.emotional_data?.technical_density && (
-                    <div className="space-y-1">
-                      <div className="flex justify-between text-sm">
-                        <span className="text-gray-600">Technical Density</span>
-                        <span className="font-medium">{Math.round(article.emotional_data.technical_density * 100)}%</span>
-                      </div>
-                      <div className="h-2 bg-gray-200 rounded">
-                        <div 
-                          className="h-full rounded transition-all duration-300 bg-purple-500"
-                          style={{ width: `${article.emotional_data.technical_density * 100}%` }}
-                        />
-                      </div>
-                    </div>
-                  )}
-                </div>
+          {/* Article Footer */}
+          <div className="px-8 py-6 bg-gray-50 border-t border-gray-200">
+            <div className="flex justify-between items-center">
+              {/* Feedback Section */}
+              <div className="flex items-center space-x-4">
+                {!feedbackSubmitted && !showFeedbackForm && (
+                  <button
+                    onClick={() => setShowFeedbackForm(true)}
+                    className="flex items-center px-4 py-2 bg-secondary text-white rounded-lg hover:bg-secondary/90 transition-colors"
+                  >
+                    <Heart className="w-4 h-4 mr-2" />
+                    Share Emotional Feedback
+                  </button>
+                )}
 
-                {/* Subspecialty (as text label) */}
-                <div className="space-y-3">
-                  <h4 className="text-sm font-medium text-gray-700 mb-3">Classification</h4>
-                  <div className="flex justify-between items-center">
-                    <span className="text-gray-600 text-sm">Medical Subspecialty</span>
-                    <span 
-                      className="inline-flex items-center px-3 py-1 rounded-full text-white text-xs font-medium"
-                      style={{ backgroundColor: '#2c3e50' }}
-                    >
-                      {formatSubspecialty(article.emotional_data?.subspecialty || article.subspecialty)}
-                    </span>
+                {showFeedbackForm && (
+                  <div className="flex items-center space-x-2">
+                    <span className="text-sm text-gray-600">How does this content make you feel?</span>
+                    {emotionOptions.slice(0, 4).map(emotion => (
+                      <button
+                        key={emotion.key}
+                        onClick={() => handleFeedbackSubmit(emotion.key)}
+                        className="p-2 rounded-lg hover:bg-gray-200 transition-colors"
+                        title={emotion.label}
+                      >
+                        {emotion.icon}
+                      </button>
+                    ))}
                   </div>
-                </div>
+                )}
 
-                {/* Emotional Signature Reference */}
-                {article.signature_data?.id && (
-                  <div className="pt-4 border-t border-gray-200">
-                    <div className="flex justify-between items-center">
-                      <span className="text-gray-600 text-sm">Signature ID</span>
-                      <code className="text-xs font-mono bg-gray-100 px-2 py-1 rounded">
-                        {article.signature_data.id}
-                      </code>
-                    </div>
+                {feedbackSubmitted && (
+                  <div className="flex items-center text-green-600">
+                    <ThumbsUp className="w-4 h-4 mr-2" />
+                    <span className="text-sm">Thank you for your feedback!</span>
                   </div>
                 )}
               </div>
-            </motion.div>
 
-            {/* View Artwork CTA */}
-            {artwork && (
-              <motion.div
-                initial={{ x: 50, opacity: 0 }}
-                animate={{ x: 0, opacity: 1 }}
-                transition={{ duration: 0.8, delay: 0.6 }}
-                className="bg-gradient-to-br from-innovation to-accent text-white rounded-xl p-6 shadow-lg"
-              >
-                <Palette className="w-12 h-12 mb-4 text-orange-200" />
-                <h3 className="text-xl font-bold mb-2">Generated Artwork</h3>
-                <p className="text-orange-100 mb-4">
-                  View the algorithmic art piece generated from this research's emotional data.
-                </p>
-                <Link 
+              {/* View Artwork Button */}
+              {artwork && (
+                <Link
                   to={`/gallery/${artwork.id}`}
-                  className="inline-flex items-center bg-white text-primary px-4 py-2 rounded-lg hover:bg-orange-50 transition-colors font-medium"
+                  className="flex items-center px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors"
                 >
-                  <Palette className="w-5 h-5 mr-2" />
-                  View Artwork
+                  <Palette className="w-4 h-4 mr-2" />
+                  View Generated Artwork
                 </Link>
-              </motion.div>
-            )}
+              )}
+            </div>
 
-            {/* Algorithm State */}
-            {algorithmState && (
-              <motion.div
-                initial={{ x: 50, opacity: 0 }}
-                animate={{ x: 0, opacity: 1 }}
-                transition={{ duration: 0.8, delay: 0.8 }}
-                className="bg-white rounded-xl p-6 shadow-lg"
-              >
-                <h3 className="text-xl font-bold text-primary mb-4">Algorithm State</h3>
-                
-                <div className="text-center mb-4">
-                  <div 
-                    className="w-16 h-16 mx-auto mb-3 rounded-full border-2 animate-pulse"
-                    style={{ 
-                      borderColor: algorithmState.visual_representation?.color,
-                      backgroundColor: `${algorithmState.visual_representation?.color}20`
-                    }}
-                  />
-                  <p className="text-sm text-gray-500">Currently feeling:</p>
-                  <p 
-                    className="text-lg font-bold capitalize"
-                    style={{ color: algorithmState.visual_representation?.color }}
-                  >
-                    {algorithmState.emotional_state?.dominant_emotion}
-                  </p>
+            {/* Signature Information */}
+            {article.signature_data && (
+              <div className="mt-4 pt-4 border-t border-gray-200">
+                <div className="text-sm text-gray-600">
+                  <span className="font-medium">Emotional Signature ID:</span> {article.signature_data.id} | 
+                  <span className="font-medium"> Rarity Score:</span> {Math.round(article.signature_data.rarity_score * 100)}%
+                  {article.published_date && (
+                    <>
+                     | <span className="font-medium">Published:</span> {new Date(article.published_date).toLocaleDateString()}
+                    </>
+                  )}
                 </div>
-
-                <p className="text-sm text-gray-600 text-center">
-                  Articles processed: {algorithmState.articles_processed || 0}
-                </p>
-              </motion.div>
+              </div>
             )}
           </div>
         </div>
-      </section>
+      </div>
     </div>
   );
 };
 
-const getEmotionColor = (emotion) => {
-  const colors = {
-    hope: '#27ae60',
-    tension: '#e74c3c',
-    confidence: '#3498db',
-    uncertainty: '#95a5a6',
-    breakthrough: '#f39c12',
-    healing: '#16a085'
-  };
-  return colors[emotion] || '#3498db';
-};
-
+// Sample data functions
 const getSampleArticle = (id) => ({
-  id: id,
-  title: 'ACL Reconstruction Outcomes in Elite Athletes: A Comprehensive Meta-Analysis',
-  subspecialty: 'sportsMedicine',
+  id,
+  title: "Advanced Arthroscopic Techniques in Sports Medicine",
+  content_type: "text",
+  content: `Sports medicine has evolved significantly with the advancement of arthroscopic techniques. These minimally invasive procedures have revolutionized how we approach joint injuries and disorders.
+
+The development of high-definition cameras and specialized instruments has enabled surgeons to perform complex procedures with unprecedented precision. This technological advancement has led to better patient outcomes, reduced recovery times, and improved long-term joint function.
+
+Recent studies show that arthroscopic procedures result in 85% patient satisfaction rates, with most patients returning to their pre-injury activity levels within 3-6 months. The emotional impact of these successful outcomes cannot be understated - patients experience renewed hope and confidence in their recovery journey.`,
+  subspecialty: "sportsMedicine",
+  published_date: new Date().toISOString(),
   read_time: 8,
   evidence_strength: 0.85,
-  published_date: '2024-03-01',
+  meta_description: "Exploring the latest advances in arthroscopic techniques and their impact on sports medicine outcomes.",
   emotional_data: {
-    dominant_emotion: 'confidence',
-    hope: 0.6,
+    dominant_emotion: "confidence",
+    hope: 0.75,
     confidence: 0.85,
-    healing: 0.7,
-    breakthrough: 0.3,
-    tension: 0.2,
-    uncertainty: 0.1
+    healing: 0.70,
+    breakthrough: 0.60,
+    tension: 0.20,
+    uncertainty: 0.15
   },
   signature_data: {
-    id: 'AKX-2024-0301-A1B2',
+    id: "AKX-2024-DEMO-001",
+    rarity_score: 0.78,
     concentric_rings: { count: 4, thickness: 2, rotation_speed: 1.2 },
-    geometric_overlays: { shape: 'circle', color: '#3498db', scale: 1.1 },
-    floating_particles: { count: 10, color: '#3498db' },
-    rarity_score: 0.75
-  },
-  abstract: 'This comprehensive meta-analysis examines ACL reconstruction outcomes in elite athletes, focusing on return-to-sport rates, long-term joint health, and factors influencing successful recovery. Through analysis of 45 studies encompassing 3,200 elite athletes, we demonstrate significant improvements in surgical techniques and rehabilitation protocols over the past decade.',
-  content: 'Recent advances in anterior cruciate ligament (ACL) reconstruction have revolutionized treatment approaches for elite athletes. This study represents the most comprehensive analysis to date, incorporating data from multiple high-level sports and examining both short-term and long-term outcomes. The confidence reflected in our findings stems from robust methodology and consistent results across diverse athletic populations.'
+    geometric_overlays: { shape: "circle", color: "#3498db", scale: 1.1 },
+    floating_particles: { count: 10, color: "#3498db" }
+  }
 });
 
 const getSampleArtwork = (articleId) => ({
   id: `artwork-${articleId}`,
   article_id: articleId,
-  title: 'Algorithmic Synthesis #AKX-2024-0301-A1B2',
-  subspecialty: 'sportsMedicine',
-  dominant_emotion: 'confidence',
-  metadata: { rarity_score: 0.75 }
+  title: "Algorithmic Synthesis #AKX-2024-DEMO-001",
+  dominant_emotion: "confidence",
+  created_date: new Date().toISOString()
 });
-
-const formatSubspecialty = (subspecialty) => {
-  if (!subspecialty) return 'General Orthopedics'; 
-  
-  // Recognized orthopedic subspecialties
-  const ORTHOPEDIC_SUBSPECIALTIES = {
-    'sportsMedicine': 'Sports Medicine',
-    'jointReplacement': 'Joint Replacement', 
-    'trauma': 'Trauma',
-    'spine': 'Spine',
-    'handUpperExtremity': 'Hand & Upper Extremity',
-    'footAnkle': 'Foot & Ankle',
-    'shoulderElbow': 'Shoulder & Elbow',
-    'pediatrics': 'Pediatrics',
-    'oncology': 'Oncology'
-  };
-  
-  // Direct mapping to recognized subspecialties
-  if (ORTHOPEDIC_SUBSPECIALTIES[subspecialty]) {
-    return ORTHOPEDIC_SUBSPECIALTIES[subspecialty];
-  }
-  
-  // Handle common variations and legacy values
-  const normalized = subspecialty.toLowerCase().replace(/[^a-z]/g, '');
-  const variations = {
-    'knee': 'Sports Medicine',           
-    'hip': 'Joint Replacement',           
-    'ankle': 'Foot & Ankle',
-    'wrist': 'Hand & Upper Extremity',
-    'shoulder': 'Shoulder & Elbow',
-    'elbow': 'Shoulder & Elbow',
-    'pediatric': 'Pediatrics',
-    'peds': 'Pediatrics',
-    'tumor': 'Oncology',
-    'cancer': 'Oncology'
-  };
-  
-  if (variations[normalized]) {
-    return variations[normalized];
-  }
-  
-  // Final fallback: convert camelCase to Title Case
-  return subspecialty
-    .replace(/([A-Z])/g, ' $1')
-    .replace(/^./, str => str.toUpperCase())
-    .trim();
-};
 
 export default ArticlePage;
