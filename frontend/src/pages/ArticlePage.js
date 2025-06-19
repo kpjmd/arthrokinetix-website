@@ -154,7 +154,7 @@ const ArticlePage = ({ algorithmState, onStateUpdate }) => {
           <h2 className="text-2xl font-semibold text-gray-600 mb-2">Article not found</h2>
           <p className="text-gray-500 mb-6">The article you're looking for doesn't exist.</p>
           <Link 
-            to="/research" 
+            to="/articles" 
             className="btn-primary inline-flex items-center"
           >
             <ArrowLeft className="w-4 h-4 mr-2" />
@@ -215,7 +215,7 @@ const ArticlePage = ({ algorithmState, onStateUpdate }) => {
       <div className="bg-white border-b">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <Link 
-            to="/research" 
+            to="/articles" 
             className="inline-flex items-center text-gray-600 hover:text-gray-900 transition-colors"
           >
             <ArrowLeft className="w-4 h-4 mr-2" />
