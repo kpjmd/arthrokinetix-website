@@ -561,6 +561,37 @@ async def update_algorithm_state(emotional_data: dict):
             
             algorithm_states_collection.insert_one(new_state)
             print(f"Algorithm state updated. Articles processed: {new_state['articles_processed']}")
+        else:
+            # Create initial algorithm state if none exists
+            print("Creating initial algorithm state from first article...")
+            
+            # Use the emotional data from the article to create initial state
+            emotions = ["hope", "tension", "confidence", "uncertainty", "breakthrough", "healing"]
+            initial_emotional_mix = {}
+            
+            for emotion in emotions:
+                initial_emotional_mix[emotion] = emotional_data.get(emotion, 0.5)
+            
+            # Find dominant emotion
+            dominant_emotion = max(initial_emotional_mix, key=initial_emotional_mix.get)
+            
+            # Create visual representation
+            visual_rep = generate_visual_representation(dominant_emotion, initial_emotional_mix[dominant_emotion])
+            
+            initial_state = {
+                "emotional_state": {
+                    "dominant_emotion": dominant_emotion,
+                    "emotional_intensity": initial_emotional_mix[dominant_emotion],
+                    "emotional_mix": initial_emotional_mix
+                },
+                "visual_representation": visual_rep,
+                "timestamp": datetime.utcnow(),
+                "articles_processed": 1,
+                "feedback_influences": []
+            }
+            
+            algorithm_states_collection.insert_one(initial_state)
+            print(f"Initial algorithm state created. Articles processed: 1")
             
     except Exception as e:
         print(f"Error updating algorithm state: {e}")
