@@ -599,7 +599,7 @@ const generateEmotionalParticles = (artwork) => {
   const intensity = artwork.algorithm_parameters?.emotional_intensity || 0.5;
   const count = Math.floor(intensity * 20) + 8;
   const particles = [];
-  const color = getEmotionColor(artwork.dominant_emotion);
+  const color = getEmotionColor(artwork.dominant_emotion || 'confidence');
   
   for (let i = 0; i < count; i++) {
     const angle = (i / count) * 360;
