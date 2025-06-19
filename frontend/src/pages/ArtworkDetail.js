@@ -91,7 +91,7 @@ const ArtworkDetail = () => {
     const { dominant_emotion, algorithm_parameters, subspecialty } = artwork;
     const complexity = algorithm_parameters?.tree_complexity || 0.7;
     const emotionalIntensity = algorithm_parameters?.emotional_intensity || 0.8;
-    const colorPalette = algorithm_parameters?.color_palette || [{ color: getEmotionColor(dominant_emotion) }];
+    const colorPalette = algorithm_parameters?.color_palette || [{ color: getEmotionColor(artwork.dominant_emotion || 'confidence') }];
 
     return (
       <svg 
