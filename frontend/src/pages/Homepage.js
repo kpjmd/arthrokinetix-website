@@ -10,6 +10,7 @@ const API_BASE = process.env.REACT_APP_BACKEND_URL || 'http://localhost:8001';
 const Homepage = ({ algorithmState, onStateUpdate }) => {
   const [articles, setArticles] = useState([]);
   const [artworks, setArtworks] = useState([]);
+  const [totalArtworks, setTotalArtworks] = useState(0);
   const [loading, setLoading] = useState(true);
   const [newsletterEmail, setNewsletterEmail] = useState('');
   const [newsletterStatus, setNewsletterStatus] = useState('');
