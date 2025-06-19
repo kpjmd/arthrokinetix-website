@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ArrowLeft, BookOpen, Palette, Heart, ThumbsUp, ThumbsDown, Star, Award, Clock, User, FileText, File, Download } from 'lucide-react';
+import { ArrowLeft, BookOpen, Palette, Heart, ThumbsUp, ThumbsDown, Star, Award, Clock, User, FileText, File, Download, Image } from 'lucide-react';
 import EmotionalSignature from '../components/EmotionalSignature';
 
 const API_BASE = process.env.REACT_APP_BACKEND_URL || 'http://localhost:8001';
@@ -100,6 +100,9 @@ const ArticlePage = ({ algorithmState, onStateUpdate }) => {
               dangerouslySetInnerHTML={{ __html: article.html_content || article.content }}
               className="article-html-content"
             />
+            
+            {/* Render associated infographics */}
+            {renderInfographics()}
           </div>
         );
       
@@ -120,6 +123,9 @@ const ArticlePage = ({ algorithmState, onStateUpdate }) => {
                 <span>Size: {(article.file_data.size / 1024 / 1024).toFixed(2)} MB</span>
               </div>
             )}
+            
+            {/* Render associated infographics for PDF articles too */}
+            {renderInfographics()}
           </div>
         );
       
@@ -129,9 +135,94 @@ const ArticlePage = ({ algorithmState, onStateUpdate }) => {
             <div className="whitespace-pre-wrap">
               {article.content}
             </div>
+            
+            {/* Render associated infographics */}
+            {renderInfographics()}
           </div>
         );
     }
+  };
+
+  const renderInfographics = () => {
+    if (!article) return null;
+
+    // Check for infographics in various possible locations
+    const infographics = [];
+
+    // Check for infographic_html in article data
+    if (article.infographic_html) {
+      infographics.push({
+        type: 'html',
+        content: article.infographic_html,
+        title: 'Associated Infographic'
+      });
+    }
+
+    // Check for infographics array
+    if (article.infographics && Array.isArray(article.infographics)) {
+      article.infographics.forEach((infographic, index) => {
+        if (infographic.html_content) {
+          infographics.push({
+            type: 'html',
+            content: infographic.html_content,
+            title: infographic.title || `Infographic ${index + 1}`
+          });
+        }
+      });
+    }
+
+    // Check for infographic data in file_data (for HTML uploads that might include infographics)
+    if (article.file_data && article.file_data.infographic_content) {
+      infographics.push({
+        type: 'html',
+        content: article.file_data.infographic_content,
+        title: 'Embedded Infographic'
+      });
+    }
+
+    // Check if the HTML content itself contains infographic markers
+    if (article.content_type === 'html' && article.html_content) {
+      const infographicMatch = article.html_content.match(/<!-- INFOGRAPHIC START -->([\s\S]*?)<!-- INFOGRAPHIC END -->/g);
+      if (infographicMatch) {
+        infographicMatch.forEach((match, index) => {
+          const content = match.replace(/<!-- INFOGRAPHIC START -->|<!-- INFOGRAPHIC END -->/g, '').trim();
+          infographics.push({
+            type: 'html',
+            content: content,
+            title: `Article Infographic ${index + 1}`
+          });
+        });
+      }
+    }
+
+    if (infographics.length === 0) return null;
+
+    return (
+      <div className="mt-8">
+        {infographics.map((infographic, index) => (
+          <div key={index} className="mb-8">
+            <div className="flex items-center mb-4">
+              <Image className="w-6 h-6 text-blue-600 mr-3" />
+              <h3 className="text-xl font-semibold text-gray-900">{infographic.title}</h3>
+            </div>
+            
+            <div className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
+              {infographic.type === 'html' ? (
+                <div 
+                  dangerouslySetInnerHTML={{ __html: infographic.content }}
+                  className="infographic-content"
+                />
+              ) : (
+                <div className="text-center text-gray-500">
+                  <Image className="w-16 h-16 mx-auto mb-4 text-gray-300" />
+                  <p>Infographic content not available</p>
+                </div>
+              )}
+            </div>
+          </div>
+        ))}
+      </div>
+    );
   };
 
   if (loading) {
@@ -208,6 +299,18 @@ const ArticlePage = ({ algorithmState, onStateUpdate }) => {
         .article-html-content th {
           background-color: #f8f9fa;
           font-weight: 600;
+        }
+        .infographic-content {
+          max-width: 100%;
+          overflow-x: auto;
+        }
+        .infographic-content img {
+          max-width: 100%;
+          height: auto;
+        }
+        .infographic-content svg {
+          max-width: 100%;
+          height: auto;
         }
       `}</style>
 
@@ -416,7 +519,40 @@ Recent studies show that arthroscopic procedures result in 85% patient satisfact
     concentric_rings: { count: 4, thickness: 2, rotation_speed: 1.2 },
     geometric_overlays: { shape: "circle", color: "#3498db", scale: 1.1 },
     floating_particles: { count: 10, color: "#3498db" }
-  }
+  },
+  // Sample infographic data
+  infographics: [
+    {
+      title: "Arthroscopic Procedure Steps",
+      html_content: `
+        <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 2rem; border-radius: 1rem; color: white; text-align: center;">
+          <h3 style="margin-bottom: 1.5rem; font-size: 1.5rem;">Arthroscopic Surgery Process</h3>
+          <div style="display: flex; justify-content: space-around; flex-wrap: wrap; gap: 1rem;">
+            <div style="background: rgba(255,255,255,0.1); padding: 1rem; border-radius: 0.5rem; flex: 1; min-width: 150px;">
+              <div style="font-size: 2rem; margin-bottom: 0.5rem;">🔍</div>
+              <h4>Insertion</h4>
+              <p style="font-size: 0.9rem;">Arthroscope inserted through small incision</p>
+            </div>
+            <div style="background: rgba(255,255,255,0.1); padding: 1rem; border-radius: 0.5rem; flex: 1; min-width: 150px;">
+              <div style="font-size: 2rem; margin-bottom: 0.5rem;">👁️</div>
+              <h4>Visualization</h4>
+              <p style="font-size: 0.9rem;">High-definition camera provides clear view</p>
+            </div>
+            <div style="background: rgba(255,255,255,0.1); padding: 1rem; border-radius: 0.5rem; flex: 1; min-width: 150px;">
+              <div style="font-size: 2rem; margin-bottom: 0.5rem;">🔧</div>
+              <h4>Treatment</h4>
+              <p style="font-size: 0.9rem;">Specialized instruments perform repair</p>
+            </div>
+            <div style="background: rgba(255,255,255,0.1); padding: 1rem; border-radius: 0.5rem; flex: 1; min-width: 150px;">
+              <div style="font-size: 2rem; margin-bottom: 0.5rem;">💚</div>
+              <h4>Recovery</h4>
+              <p style="font-size: 0.9rem;">Faster healing with minimal scarring</p>
+            </div>
+          </div>
+        </div>
+      `
+    }
+  ]
 });
 
 const getSampleArtwork = (articleId) => ({
