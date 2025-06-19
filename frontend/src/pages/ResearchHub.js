@@ -4,7 +4,7 @@ import { motion } from 'framer-motion';
 import { Search, Filter, Grid, List, BookOpen, Clock, Award } from 'lucide-react';
 import EmotionalSignature from '../components/EmotionalSignature';
 
-const API_BASE = process.env.REACT_APP_BACKEND_URL || 'http://localhost:3000';
+const API_BASE = process.env.REACT_APP_BACKEND_URL || 'http://localhost:8001';
 
 const ResearchHub = ({ algorithmState }) => {
   const [articles, setArticles] = useState([]);
@@ -15,7 +15,7 @@ const ResearchHub = ({ algorithmState }) => {
   const [viewMode, setViewMode] = useState('grid');
 
   const subspecialties = [
-    { key: 'all', label: 'All Subspecialties' },
+    { value: 'all', label: 'All Subspecialties' },
     { value: 'sportsMedicine', label: 'Sports Medicine' },
     { value: 'jointReplacement', label: 'Joint Replacement' },
     { value: 'trauma', label: 'Trauma' },
@@ -118,7 +118,7 @@ const ResearchHub = ({ algorithmState }) => {
                 className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-secondary focus:border-transparent"
               >
                 {subspecialties.map(sub => (
-                  <option key={sub.key} value={sub.key}>{sub.label}</option>
+                  <option key={sub.value} value={sub.value}>{sub.label}</option>
                 ))}
               </select>
 

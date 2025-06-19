@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Palette, Filter, Grid, Search, Download, Star, Eye } from 'lucide-react';
 
-const API_BASE = process.env.REACT_APP_BACKEND_URL || 'http://localhost:3000';
+const API_BASE = process.env.REACT_APP_BACKEND_URL || 'http://localhost:8001';
 
 const Gallery = ({ algorithmState }) => {
   const [artworks, setArtworks] = useState([]);
@@ -20,7 +20,10 @@ const Gallery = ({ algorithmState }) => {
     { key: 'trauma', label: 'Trauma' },
     { key: 'spine', label: 'Spine' },
     { key: 'handUpperExtremity', label: 'Hand & Upper Extremity' },
-    { key: 'footAnkle', label: 'Foot & Ankle' }
+    { key: 'footAnkle', label: 'Foot & Ankle' },
+    { key: 'shoulderElbow', label: 'Shoulder & Elbow' },
+    { key: 'pediatrics', label: 'Pediatrics' },
+    { key: 'oncology', label: 'Oncology' }
   ];
 
   const emotions = [

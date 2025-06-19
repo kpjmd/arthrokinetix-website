@@ -356,7 +356,7 @@ const About = () => {
               },
               {
                 question: "What subspecialties are covered?",
-                answer: "We focus on orthopedic surgery and sports medicine, including subspecialties like sports medicine, joint replacement, trauma, spine, hand & upper extremity, and foot & ankle surgery."
+                answer: "We focus on orthopedic surgery and sports medicine, covering all nine recognized subspecialties: sports medicine, joint replacement, trauma, spine, hand & upper extremity, foot & ankle, shoulder & elbow, pediatrics, and oncology."
               }
             ].map((faq, index) => (
               <motion.div
