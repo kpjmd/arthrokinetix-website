@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, File, UploadFile, Form
 from fastapi.middleware.cors import CORSMiddleware
 from pymongo import MongoClient
 import os
@@ -8,6 +8,8 @@ from datetime import datetime
 import uuid
 from typing import List, Dict, Optional
 import anthropic
+import base64
+from pathlib import Path
 
 # Load environment variables
 load_dotenv()
@@ -74,7 +76,7 @@ algorithm_states_collection = db.algorithm_states
 
 @app.get("/")
 async def root():
-    return {"message": "Arthrokinetix API - Emotional Medical Research & Art Generation"}
+    return {"message": "Arthrokinetix API - Emotional Medical Content & Art Generation"}
 
 # Algorithm state management
 @app.get("/api/algorithm-state")
@@ -152,27 +154,81 @@ async def get_algorithm_state():
             "_id": "fallback_state"
         }
 
+# Enhanced article creation with file upload support
 @app.post("/api/articles")
-async def create_article(article_data: dict):
-    """Create new article and generate emotional signature"""
+async def create_article(
+    title: str = Form(...),
+    subspecialty: str = Form("sportsMedicine"),
+    content_type: str = Form("text"),  # 'text', 'html', 'pdf'
+    content: Optional[str] = Form(None),
+    file: Optional[UploadFile] = File(None),
+    evidence_strength: float = Form(0.5),
+    meta_description: Optional[str] = Form(None)
+):
+    """Create new article with support for text input or file upload"""
     try:
         # Generate unique ID
         article_id = str(uuid.uuid4())
         
-        # Process article with Arthrokinetix algorithm (simulated)
-        emotional_data = await process_article_emotions(article_data.get("content", ""))
+        # Process content based on type
+        processed_content = ""
+        html_content = ""
+        file_data = None
+        
+        if content_type == "text" and content:
+            processed_content = content
+            
+        elif content_type in ["html", "pdf"] and file:
+            # Read and store file content
+            file_content = await file.read()
+            
+            if content_type == "html":
+                # For HTML files, extract content for analysis but keep full HTML for display
+                html_content = file_content.decode('utf-8')
+                # Extract text content for emotional analysis (strip HTML tags roughly)
+                import re
+                processed_content = re.sub('<[^<]+?>', '', html_content)
+                
+                # Store file data
+                file_data = {
+                    "filename": file.filename,
+                    "content_type": file.content_type,
+                    "size": len(file_content),
+                    "content": html_content
+                }
+                
+            elif content_type == "pdf":
+                # For PDF files, store for future processing
+                file_data = {
+                    "filename": file.filename,
+                    "content_type": file.content_type,
+                    "size": len(file_content),
+                    "content": base64.b64encode(file_content).decode('utf-8')
+                }
+                processed_content = f"PDF content from {file.filename}"
+                
+        else:
+            raise HTTPException(status_code=400, detail="Invalid content type or missing content/file")
+        
+        # Process article with Arthrokinetix algorithm
+        emotional_data = await process_article_emotions(processed_content)
         signature_data = generate_emotional_signature(emotional_data)
         
         article = {
             "id": article_id,
-            "title": article_data.get("title"),
-            "content": article_data.get("content"),
-            "subspecialty": article_data.get("subspecialty", "sportsMedicine"),
+            "title": title,
+            "content_type": content_type,
+            "content_source": "file_upload" if file else "text_input",
+            "content": processed_content,
+            "html_content": html_content if content_type == "html" else None,
+            "file_data": file_data,
+            "subspecialty": subspecialty,
             "published_date": datetime.utcnow(),
             "emotional_data": emotional_data,
             "signature_data": signature_data,
-            "evidence_strength": emotional_data.get("evidence_strength", 0.5),
-            "read_time": calculate_read_time(article_data.get("content", ""))
+            "evidence_strength": evidence_strength,
+            "meta_description": meta_description,
+            "read_time": calculate_read_time(processed_content)
         }
         
         articles_collection.insert_one(article)
@@ -187,6 +243,7 @@ async def create_article(article_data: dict):
         return {"article": article, "artwork": artwork}
         
     except Exception as e:
+        print(f"Error creating article: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/api/articles")
@@ -256,17 +313,20 @@ async def get_artwork(artwork_id: str):
         raise HTTPException(status_code=500, detail=str(e))
 
 # Helper functions
-# Fix 2: Ensure emotional data has proper numeric values
 async def process_article_emotions(content: str) -> dict:
     """Process article content for emotional analysis using Claude as supplement"""
     try:
+        if not anthropic_client:
+            print("Claude API not available, using fallback analysis")
+            return get_fallback_emotional_data()
+            
         # Use Claude for sophisticated emotional analysis
         message = anthropic_client.messages.create(
             model="claude-3-sonnet-20240229",
             max_tokens=1000,
             messages=[{
                 "role": "user",
-                "content": f"""Analyze this medical research text for emotional undertones and return a JSON response:
+                "content": f"""Analyze this medical content text for emotional undertones and return a JSON response:
 
 {content[:2000]}  # Limit content length
 
@@ -314,19 +374,22 @@ Return only valid JSON with numeric values."""
     except Exception as e:
         print(f"Error in emotional analysis: {e}")
         # Fallback to basic analysis with guaranteed numeric values
-        return {
-            "hope": 0.5,
-            "tension": 0.3,
-            "confidence": 0.6,
-            "uncertainty": 0.2,
-            "breakthrough": 0.4,
-            "healing": 0.7,
-            "dominant_emotion": "healing",
-            "evidence_strength": 0.6,
-            "technical_density": 0.5,
-            "subspecialty": "sportsMedicine"
-        }
+        return get_fallback_emotional_data()
 
+def get_fallback_emotional_data():
+    """Fallback emotional data when Claude API is unavailable"""
+    return {
+        "hope": 0.5,
+        "tension": 0.3,
+        "confidence": 0.6,
+        "uncertainty": 0.2,
+        "breakthrough": 0.4,
+        "healing": 0.7,
+        "dominant_emotion": "healing",
+        "evidence_strength": 0.6,
+        "technical_density": 0.5,
+        "subspecialty": "sportsMedicine"
+    }
 
 def generate_emotional_signature(emotional_data: dict) -> dict:
     """Generate unique visual signature based on emotional data"""
@@ -461,7 +524,6 @@ def calculate_read_time(content: str) -> int:
     words = len(content.split())
     return max(1, round(words / 200))  # Assuming 200 words per minute
 
-# Fix 1: Update algorithm state properly when creating articles
 async def update_algorithm_state(emotional_data: dict):
     """Update the persistent algorithm emotional state"""
     try:
@@ -493,7 +555,7 @@ async def update_algorithm_state(emotional_data: dict):
                 },
                 "visual_representation": visual_rep,
                 "timestamp": datetime.utcnow(),
-                "articles_processed": current_state.get("articles_processed", 0) + 1,  # FIX: Increment count
+                "articles_processed": current_state.get("articles_processed", 0) + 1,
                 "feedback_influences": current_state.get("feedback_influences", [])
             }
             
@@ -524,40 +586,7 @@ def generate_visual_representation(dominant_emotion: str, intensity: float) -> d
         "scale": 0.8 + intensity * 0.4
     }
 
-async def process_feedback_influence(feedback: dict):
-    """Process user feedback to influence algorithm state"""
-    try:
-        # Weight feedback based on user type (for now, all equal)
-        influence_weight = feedback.get("influence_weight", 1.0)
-        
-        # Update algorithm state slightly based on feedback
-        current_state = algorithm_states_collection.find_one({}, sort=[("timestamp", -1)])
-        
-        if current_state:
-            feedback_emotion = feedback["emotion"]
-            current_mix = current_state["emotional_state"]["emotional_mix"]
-            
-            # Slight adjustment based on feedback
-            if feedback_emotion in current_mix:
-                adjustment = influence_weight * 0.05  # Small adjustment
-                current_mix[feedback_emotion] = min(1.0, current_mix[feedback_emotion] + adjustment)
-                
-                # Create new state with feedback influence
-                new_state = current_state.copy()
-                new_state["emotional_state"]["emotional_mix"] = current_mix
-                new_state["timestamp"] = datetime.utcnow()
-                new_state["feedback_influences"].append({
-                    "feedback_id": feedback["id"],
-                    "emotion": feedback_emotion,
-                    "weight": influence_weight,
-                    "timestamp": datetime.utcnow()
-                })
-                
-                algorithm_states_collection.insert_one(new_state)
-                
-    except Exception as e:
-        print(f"Error processing feedback influence: {e}")
-
+# Admin endpoints
 @app.post("/api/admin/authenticate")
 async def admin_authenticate(credentials: dict):
     """Authenticate admin user"""
@@ -572,54 +601,33 @@ async def admin_authenticate(credentials: dict):
             raise HTTPException(status_code=401, detail="Invalid password")
             
     except HTTPException:
-        # Re-raise HTTP exceptions as-is
         raise
     except Exception as e:
-        # Only catch unexpected exceptions
         raise HTTPException(status_code=500, detail=f"Authentication error: {str(e)}")
 
-@app.post("/api/admin/infographics")
-async def create_infographic(infographic_data: dict):
-    """Create new infographic"""
+@app.get("/api/admin/articles")
+async def get_articles_admin():
+    """Get all articles with admin details"""
     try:
-        infographic = {
-            "id": str(uuid.uuid4()),
-            "title": infographic_data.get("title"),
-            "html_content": infographic_data.get("htmlContent"),
-            "linked_article_id": infographic_data.get("linkedArticleId"),
-            "created_date": datetime.utcnow(),
-            "status": "active"
-        }
+        articles = list(articles_collection.find({}).sort("published_date", -1))
         
-        # Store in database (you can create an infographics collection)
-        # For now, we'll just return success
-        
-        return {"infographic": infographic}
+        # Convert ObjectIds to strings and add admin metadata
+        for article in articles:
+            article["_id"] = str(article["_id"])
+            
+            # Add associated artwork count
+            artwork_count = artworks_collection.count_documents({"article_id": article["id"]})
+            article["artwork_count"] = artwork_count
+            
+            # Add feedback count
+            feedback_count = feedback_collection.count_documents({"article_id": article["id"]})
+            article["feedback_count"] = feedback_count
+            
+        return {"articles": articles, "total": len(articles)}
         
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.post("/api/admin/artworks")
-async def upload_artwork():
-    """Upload SVG artwork with metadata"""
-    try:
-        # Handle file upload and metadata parsing
-        # This would need proper file handling in a real implementation
-        
-        artwork = {
-            "id": str(uuid.uuid4()),
-            "title": "Manual Upload",
-            "file_type": "svg",
-            "uploaded_date": datetime.utcnow(),
-            "status": "uploaded"
-        }
-        
-        return {"artwork": artwork}
-        
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-# Fix 3: Add article deletion endpoint
 @app.delete("/api/admin/articles/{article_id}")
 async def delete_article(article_id: str):
     """Delete article and associated artwork"""
@@ -648,31 +656,6 @@ async def delete_article(article_id: str):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-# Fix 4: Add batch article management
-@app.get("/api/admin/articles")
-async def get_articles_admin():
-    """Get all articles with admin details"""
-    try:
-        articles = list(articles_collection.find({}).sort("published_date", -1))
-        
-        # Convert ObjectIds to strings and add admin metadata
-        for article in articles:
-            article["_id"] = str(article["_id"])
-            
-            # Add associated artwork count
-            artwork_count = artworks_collection.count_documents({"article_id": article["id"]})
-            article["artwork_count"] = artwork_count
-            
-            # Add feedback count
-            feedback_count = feedback_collection.count_documents({"article_id": article["id"]})
-            article["feedback_count"] = feedback_count
-            
-        return {"articles": articles, "total": len(articles)}
-        
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-# Fix 5: Fix algorithm state count by recalculating
 @app.post("/api/admin/recalculate-algorithm-state")
 async def recalculate_algorithm_state():
     """Recalculate algorithm state based on existing articles"""
@@ -705,7 +688,7 @@ async def recalculate_algorithm_state():
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-# Newsletter Management
+# Newsletter and feedback endpoints (keeping existing functionality)
 @app.post("/api/newsletter/subscribe")
 async def newsletter_subscribe(subscription_data: dict):
     """Subscribe to newsletter"""
@@ -725,7 +708,7 @@ async def newsletter_subscribe(subscription_data: dict):
             "email": email,
             "subscribed_date": datetime.utcnow(),
             "status": "active",
-            "verified": False,  # In production, send verification email
+            "verified": False,
             "preferences": {
                 "algorithm_updates": True,
                 "new_articles": True,
@@ -746,20 +729,6 @@ async def newsletter_subscribe(subscription_data: dict):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.get("/api/newsletter/status/{email}")
-async def get_newsletter_status(email: str):
-    """Check newsletter subscription status"""
-    try:
-        subscription = db.newsletter_subscribers.find_one({"email": email})
-        if subscription:
-            subscription["_id"] = str(subscription["_id"])
-            return {"subscribed": True, "subscription": subscription}
-        else:
-            return {"subscribed": False}
-            
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
 @app.post("/api/feedback")
 async def submit_feedback_enhanced(feedback_data: dict):
     """Enhanced feedback submission with access control"""
@@ -776,8 +745,7 @@ async def submit_feedback_enhanced(feedback_data: dict):
                 has_access = True
                 access_type = "subscriber"
         
-        # TODO: Add NFT verification here
-        # For now, also grant access to anonymous users for demo purposes
+        # Also grant access to anonymous users for demo purposes
         if not has_access:
             has_access = True
             access_type = "demo"
@@ -797,9 +765,6 @@ async def submit_feedback_enhanced(feedback_data: dict):
         
         feedback_collection.insert_one(feedback)
         
-        # Update algorithm state based on feedback
-        await process_feedback_influence(feedback)
-        
         feedback["_id"] = str(feedback["_id"])
         return {
             "feedback": feedback,
@@ -811,493 +776,16 @@ async def submit_feedback_enhanced(feedback_data: dict):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.get("/api/search")
-async def enhanced_search(q: str, type: str = "all", emotion: str = "all", subspecialty: str = "all", rarity: str = "all", timeRange: str = "all"):
-    """Enhanced search functionality"""
-    try:
-        # Implement search logic here
-        # For now, return sample data
-        sample_article = {
-            "id": "search-result-1",
-            "title": f"Research on {q}",
-            "subspecialty": "sportsMedicine",
-            "emotional_data": {
-                "dominant_emotion": "confidence",
-                "hope": 0.7,
-                "confidence": 0.8,
-                "healing": 0.6,
-                "breakthrough": 0.5,
-                "tension": 0.3,
-                "uncertainty": 0.2
-            },
-            "signature_data": {
-                "id": "AKX-2024-0301-SRCH",
-                "rarity_score": 0.75
-            },
-            "evidence_strength": 0.8,
-            "read_time": 5
-        }
-        
-        sample_signature = {
-            "id": "AKX-2024-0302-SRCH",
-            "rarity_score": 0.85,
-            "source_data": {
-                "dominant_emotion": "breakthrough",
-                "subspecialty": "sportsMedicine"
-            }
-        }
-        
-        sample_artwork = {
-            "id": "artwork-search-1",
-            "title": f"Algorithmic Art: {q}",
-            "dominant_emotion": "healing",
-            "subspecialty": "sportsMedicine"
-        }
-        
-        return {
-            "articles": [sample_article],
-            "signatures": [sample_signature],
-            "artworks": [sample_artwork]
-        }
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-@app.get("/api/signatures/available")
-async def get_available_signatures():
-    """Get available signatures for collection"""
-    try:
-        # Return sample data
-        signatures = [
-            {
-                "id": "AKX-2024-0305-E7F8",
-                "rarity_score": 0.68,
-                "source_data": {
-                    "dominant_emotion": "healing",
-                    "subspecialty": "trauma"
-                },
-                "concentric_rings": {"count": 3, "thickness": 2, "rotation_speed": 1.0},
-                "geometric_overlays": {"shape": "hexagon", "color": "#16a085", "scale": 1.0},
-                "floating_particles": {"count": 8, "color": "#16a085"}
-            },
-            {
-                "id": "AKX-2024-0306-I9J0",
-                "rarity_score": 0.45,
-                "source_data": {
-                    "dominant_emotion": "hope",
-                    "subspecialty": "jointReplacement"
-                },
-                "concentric_rings": {"count": 2, "thickness": 1.5, "rotation_speed": 0.8},
-                "geometric_overlays": {"shape": "circle", "color": "#27ae60", "scale": 0.9},
-                "floating_particles": {"count": 6, "color": "#27ae60"}
-            }
-        ]
-        return {"signatures": signatures}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-@app.get("/api/signatures/collection/{email}")
-async def get_user_signature_collection(email: str):
-    """Get user's signature collection"""
-    try:
-        # Check if user exists
-        subscriber = db.newsletter_subscribers.find_one({"email": email})
-        
-        # Return sample data
-        if subscriber:
-            signatures = [
-                {
-                    "id": "AKX-2024-0301-A1B2",
-                    "rarity_score": 0.75,
-                    "source_data": {
-                        "dominant_emotion": "confidence",
-                        "subspecialty": "sportsMedicine"
-                    },
-                    "concentric_rings": {"count": 4, "thickness": 2, "rotation_speed": 1.2},
-                    "geometric_overlays": {"shape": "circle", "color": "#3498db", "scale": 1.1},
-                    "floating_particles": {"count": 10, "color": "#3498db"}
-                }
-            ]
-        else:
-            signatures = []
-            
-        return {"signatures": signatures}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-@app.post("/api/signatures/collect")
-async def collect_signature(collection_data: dict):
-    """Collect a signature"""
-    try:
-        signature_id = collection_data.get("signature_id")
-        user_email = collection_data.get("user_email")
-        
-        if not signature_id or not user_email:
-            raise HTTPException(status_code=400, detail="Missing signature_id or user_email")
-            
-        # Check if user is subscribed
-        subscriber = db.newsletter_subscribers.find_one({"email": user_email})
-        if not subscriber:
-            raise HTTPException(status_code=403, detail="User must be subscribed to collect signatures")
-            
-        # In a real implementation, we would add the signature to the user's collection
-        # For now, just return success
-        
-        return {"success": True, "message": f"Signature {signature_id} collected successfully"}
-    except HTTPException:
-        raise
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-@app.get("/api/algorithm/evolution")
-async def get_algorithm_evolution(range: str = "7d"):
-    """Get algorithm evolution data"""
-    try:
-        # Return sample data
-        evolution_data = {
-            "total_state_changes": 12,
-            "feedback_influences": 8,
-            "emotional_volatility": 0.34,
-            "growth_rate": 1.7,
-            "timeline": [
-                {
-                    "timestamp": "2024-03-07T10:30:00Z",
-                    "dominant_emotion": "breakthrough",
-                    "intensity": 0.85,
-                    "articles_processed": 3,
-                    "feedback_count": 2,
-                    "description": "Algorithm discovered new patterns in regenerative medicine research"
-                },
-                {
-                    "timestamp": "2024-03-06T15:45:00Z",
-                    "dominant_emotion": "confidence",
-                    "intensity": 0.72,
-                    "articles_processed": 5,
-                    "feedback_count": 1,
-                    "description": "Processed high-evidence articles in sports medicine"
-                },
-                {
-                    "timestamp": "2024-03-05T09:15:00Z",
-                    "dominant_emotion": "healing",
-                    "intensity": 0.68,
-                    "articles_processed": 2,
-                    "feedback_count": 3,
-                    "description": "Community feedback emphasized therapeutic potential"
-                }
-            ],
-            "current_distribution": {
-                "hope": 0.45,
-                "confidence": 0.72,
-                "healing": 0.68,
-                "breakthrough": 0.35,
-                "tension": 0.15,
-                "uncertainty": 0.22
-            },
-            "article_influences": [
-                {
-                    "subspecialty": "Sports Medicine",
-                    "article_count": 5,
-                    "dominant_emotion": "confidence",
-                    "influence_weight": 0.65
-                },
-                {
-                    "subspecialty": "Joint Replacement",
-                    "article_count": 3,
-                    "dominant_emotion": "healing",
-                    "influence_weight": 0.45
-                }
-            ],
-            "feedback_influences": [
-                {
-                    "emotion": "healing",
-                    "feedback_count": 4,
-                    "total_weight": 0.8
-                },
-                {
-                    "emotion": "hope",
-                    "feedback_count": 2,
-                    "total_weight": 0.4
-                }
-            ],
-            "predicted_emotion": "healing",
-            "prediction_confidence": 0.78,
-            "learning_pattern": "adaptive",
-            "responsiveness": "moderately",
-            "feedback_impact": 0.42
-        }
-        
-        return evolution_data
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-@app.get("/api/search/suggestions")
-async def get_search_suggestions():
-    """Get search suggestions"""
-    try:
-        suggestions = [
-            {"term": "ACL reconstruction", "count": 12},
-            {"term": "healing breakthrough", "count": 8},
-            {"term": "confidence sports medicine", "count": 15},
-            {"term": "rare signatures", "count": 6},
-            {"term": "joint replacement hope", "count": 9}
-        ]
-        
-        return {"suggestions": suggestions}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-# =============================================================================
-# PRIORITY 5: ENHANCED ENDPOINTS
-# =============================================================================
-
-@app.get("/api/signatures/available")
-async def get_available_signatures():
-    """Get available signatures for collection"""
-    try:
-        signatures = [
-            {
-                "id": "AKX-2024-0305-E7F8",
-                "rarity_score": 0.68,
-                "source_data": {
-                    "dominant_emotion": "healing",
-                    "subspecialty": "trauma"
-                },
-                "concentric_rings": {"count": 3, "thickness": 2, "rotation_speed": 1.0},
-                "geometric_overlays": {"shape": "hexagon", "color": "#16a085", "scale": 1.0},
-                "floating_particles": {"count": 8, "color": "#16a085"}
-            },
-            {
-                "id": "AKX-2024-0306-I9J0", 
-                "rarity_score": 0.45,
-                "source_data": {
-                    "dominant_emotion": "hope",
-                    "subspecialty": "jointReplacement"
-                },
-                "concentric_rings": {"count": 2, "thickness": 1.5, "rotation_speed": 0.8},
-                "geometric_overlays": {"shape": "circle", "color": "#27ae60", "scale": 0.9},
-                "floating_particles": {"count": 6, "color": "#27ae60"}
-            },
-            {
-                "id": "AKX-2024-0307-K1L2",
-                "rarity_score": 0.88,
-                "source_data": {
-                    "dominant_emotion": "breakthrough",
-                    "subspecialty": "spine"
-                },
-                "concentric_rings": {"count": 6, "thickness": 3.5, "rotation_speed": 2.0},
-                "geometric_overlays": {"shape": "star", "color": "#f39c12", "scale": 1.5},
-                "floating_particles": {"count": 20, "color": "#f39c12"}
-            }
-        ]
-        return {"signatures": signatures}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-@app.get("/api/signatures/collection/{email}")
-async def get_user_signature_collection(email: str):
-    """Get user's signature collection"""
-    try:
-        subscriber = db.newsletter_subscribers.find_one({"email": email})
-        
-        if not subscriber:
-            return {"signatures": [], "total": 0, "message": "User not subscribed"}
-            
-        signatures = [
-            {
-                "id": "AKX-2024-0301-A1B2",
-                "rarity_score": 0.75,
-                "source_data": {
-                    "dominant_emotion": "confidence",
-                    "subspecialty": "sportsMedicine"
-                },
-                "concentric_rings": {"count": 4, "thickness": 2, "rotation_speed": 1.2},
-                "geometric_overlays": {"shape": "circle", "color": "#3498db", "scale": 1.1},
-                "floating_particles": {"count": 10, "color": "#3498db"}
-            }
-        ]
-        
-        return {"signatures": signatures}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-@app.post("/api/signatures/collect")
-async def collect_signature(collection_data: dict):
-    """Collect a signature"""
-    try:
-        signature_id = collection_data.get("signature_id")
-        user_email = collection_data.get("user_email")
-        
-        if not signature_id or not user_email:
-            raise HTTPException(status_code=400, detail="Missing signature_id or user_email")
-            
-        subscriber = db.newsletter_subscribers.find_one({"email": user_email})
-        if not subscriber:
-            raise HTTPException(status_code=403, detail="User must be subscribed to collect signatures")
-            
-        return {"success": True, "message": f"Signature {signature_id} collected successfully"}
-    except HTTPException:
-        raise
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-@app.get("/api/algorithm/evolution")
-async def get_algorithm_evolution(range: str = "7d"):
-    """Get algorithm evolution data"""
-    try:
-        evolution_data = {
-            "total_state_changes": 12,
-            "feedback_influences": 8,
-            "emotional_volatility": 0.34,
-            "growth_rate": 1.7,
-            "timeline": [
-                {
-                    "timestamp": "2024-03-07T10:30:00Z",
-                    "dominant_emotion": "breakthrough",
-                    "intensity": 0.85,
-                    "articles_processed": 3,
-                    "feedback_count": 2,
-                    "description": "Algorithm discovered new patterns in regenerative medicine research"
-                },
-                {
-                    "timestamp": "2024-03-06T15:45:00Z",
-                    "dominant_emotion": "confidence",
-                    "intensity": 0.72,
-                    "articles_processed": 5,
-                    "feedback_count": 1,
-                    "description": "Processed high-evidence articles in sports medicine"
-                }
-            ],
-            "current_distribution": {
-                "hope": 0.45,
-                "confidence": 0.72,
-                "healing": 0.68,
-                "breakthrough": 0.35,
-                "tension": 0.15,
-                "uncertainty": 0.22
-            },
-            "article_influences": [
-                {
-                    "subspecialty": "Sports Medicine",
-                    "article_count": 5,
-                    "dominant_emotion": "confidence",
-                    "influence_weight": 0.65
-                }
-            ],
-            "feedback_influences": [
-                {
-                    "emotion": "healing",
-                    "feedback_count": 4,
-                    "total_weight": 0.8
-                }
-            ],
-            "predicted_emotion": "healing",
-            "prediction_confidence": 0.78,
-            "learning_pattern": "adaptive",
-            "responsiveness": "moderately",
-            "feedback_impact": 0.42
-        }
-        
-        return evolution_data
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-@app.get("/api/search")
-async def enhanced_search(
-    q: str,
-    type: str = "all",
-    emotion: str = "all", 
-    subspecialty: str = "all",
-    rarity: str = "all",
-    timeRange: str = "all"
-):
-    """Enhanced search functionality"""
-    try:
-        search_results = {
-            "articles": [],
-            "signatures": [],
-            "artworks": [],
-            "total_results": 0
-        }
-        
-        if type in ["all", "articles"]:
-            articles_query = {}
-            if subspecialty != "all":
-                articles_query["subspecialty"] = subspecialty
-            if emotion != "all":
-                articles_query["emotional_data.dominant_emotion"] = emotion
-            
-            if q:
-                articles_query["$or"] = [
-                    {"title": {"$regex": q, "$options": "i"}},
-                    {"content": {"$regex": q, "$options": "i"}}
-                ]
-            
-            articles = list(articles_collection.find(articles_query).limit(20))
-            for article in articles:
-                article["_id"] = str(article["_id"])
-            search_results["articles"] = articles
-        
-        if type in ["all", "signatures"]:
-            sample_signatures = [
-                {
-                    "id": "AKX-2024-0301-A1B2",
-                    "rarity_score": 0.75,
-                    "source_data": {
-                        "dominant_emotion": "confidence",
-                        "subspecialty": "sportsMedicine"
-                    }
-                }
-            ]
-            search_results["signatures"] = sample_signatures
-        
-        if type in ["all", "artworks"]:
-            sample_artworks = [
-                {
-                    "id": "artwork-1",
-                    "title": f"Algorithmic Art: {q}" if q else "Algorithmic Art",
-                    "subspecialty": "sportsMedicine",
-                    "dominant_emotion": "confidence"
-                }
-            ]
-            search_results["artworks"] = sample_artworks
-        
-        search_results["total_results"] = (
-            len(search_results["articles"]) +
-            len(search_results["signatures"]) +
-            len(search_results["artworks"])
-        )
-        
-        return search_results
-        
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-@app.get("/api/search/suggestions")
-async def get_search_suggestions():
-    """Get search suggestions"""
-    try:
-        suggestions = [
-            {"term": "ACL reconstruction", "count": 12},
-            {"term": "healing breakthrough", "count": 8},
-            {"term": "confidence sports medicine", "count": 15},
-            {"term": "rare signatures", "count": 6},
-            {"term": "joint replacement hope", "count": 9}
-        ]
-        
-        return {"suggestions": suggestions}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
 if __name__ == "__main__":
     import uvicorn
-    import os
     
     # Railway provides PORT environment variable
-    port = int(os.environ.get("PORT", 8000))
-    print(f"Starting server on port {port}")  # Debug log
+    port = int(os.environ.get("PORT", 8001))
+    print(f"Starting server on port {port}")
     
     uvicorn.run(
-        "server:app",  # Use string reference instead of app object
+        "server:app",
         host="0.0.0.0", 
         port=port,
-        reload=False  # Disable reload in production
+        reload=False
     )
