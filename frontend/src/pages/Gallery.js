@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Palette, Filter, Grid, Search, Download, Star, Eye } from 'lucide-react';
+import { Palette, Filter, Grid, Search, Star, Eye, Zap } from 'lucide-react';
 
 const API_BASE = process.env.REACT_APP_BACKEND_URL || 'http://localhost:8001';
 
@@ -80,6 +80,11 @@ const Gallery = ({ algorithmState }) => {
     return matchesSearch && matchesEmotion && matchesRarity;
   });
 
+  const handleMintNFT = (artworkId) => {
+    // Placeholder for future Manifold integration
+    alert(`NFT minting for artwork ${artworkId} will be available soon via Manifold integration!`);
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 pt-16">
       {/* Header */}
@@ -93,7 +98,7 @@ const Gallery = ({ algorithmState }) => {
           >
             <h1 className="text-4xl font-bold mb-4">Algorithmic Art Gallery</h1>
             <p className="text-xl text-orange-100 max-w-3xl mx-auto">
-              Experience the transformation of medical research into stunning visual art 
+              Experience the transformation of medical content into stunning visual art 
               through our proprietary Arthrokinetix emotional analysis algorithm.
             </p>
           </motion.div>
@@ -281,12 +286,15 @@ const Gallery = ({ algorithmState }) => {
                     </g>
                   </svg>
 
-                  {/* Hover overlay */}
+                  {/* Hover overlay with functional View Details link */}
                   <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
-                    <div className="text-white text-center">
+                    <Link 
+                      to={`/gallery/${artwork.id}`}
+                      className="text-white text-center hover:scale-105 transition-transform"
+                    >
                       <Eye className="w-8 h-8 mx-auto mb-2" />
                       <p className="text-sm font-medium">View Details</p>
-                    </div>
+                    </Link>
                   </div>
 
                   {/* Rarity indicator */}
@@ -349,8 +357,13 @@ const Gallery = ({ algorithmState }) => {
                       View
                     </Link>
                     
-                    <button className="btn-secondary text-sm py-2 px-3">
-                      <Download className="w-4 h-4" />
+                    <button 
+                      onClick={() => handleMintNFT(artwork.id)}
+                      className="btn-secondary text-sm py-2 px-3 flex items-center"
+                      title="Mint NFT (Coming Soon)"
+                    >
+                      <Zap className="w-4 h-4 mr-1" />
+                      Mint NFT
                     </button>
                   </div>
                 </div>
