@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ArrowLeft, Download, Share2, Eye, Palette, Award, Calendar, Tag, X } from 'lucide-react';
+import { ArrowLeft, Share2, Eye, Palette, Award, Calendar, Tag, X, Zap } from 'lucide-react';
 
 const API_BASE = process.env.REACT_APP_BACKEND_URL || 'http://localhost:8001';
 
@@ -41,14 +41,47 @@ const ArtworkDetail = () => {
         const foundArtwork = allArtworks.artworks?.find(art => art.id === id);
         if (foundArtwork) {
           setArtwork(foundArtwork);
+          
+          // Try to fetch associated article
+          if (foundArtwork.article_id) {
+            try {
+              const articleResponse = await fetch(`${API_BASE}/api/articles/${foundArtwork.article_id}`);
+              if (articleResponse.ok) {
+                const articleData = await articleResponse.json();
+                setArticle(articleData);
+              }
+            } catch (error) {
+              console.log('Could not fetch associated article');
+            }
+          }
         }
       }
     } catch (error) {
       console.error('Error fetching artwork:', error);
       // Set sample artwork for demo
       setArtwork(getSampleArtwork(id));
+      setArticle(getSampleArticle(id));
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleMintNFT = () => {
+    // Placeholder for future Manifold integration
+    alert(`NFT minting for artwork "${artwork.title}" will be available soon via Manifold integration!`);
+  };
+
+  const handleShare = () => {
+    if (navigator.share) {
+      navigator.share({
+        title: artwork.title,
+        text: `Check out this algorithmic artwork generated from medical content: ${artwork.title}`,
+        url: window.location.href
+      });
+    } else {
+      // Fallback: copy to clipboard
+      navigator.clipboard.writeText(window.location.href);
+      alert('Artwork link copied to clipboard!');
     }
   };
 
@@ -249,12 +282,18 @@ const ArtworkDetail = () => {
                 Fullscreen
               </button>
               
-              <button className="inline-flex items-center px-4 py-2 bg-secondary text-white rounded-lg hover:bg-secondary/90 transition-colors">
-                <Download className="w-5 h-5 mr-2" />
-                Download SVG
+              <button 
+                onClick={handleMintNFT}
+                className="inline-flex items-center px-4 py-2 bg-secondary text-white rounded-lg hover:bg-secondary/90 transition-colors"
+              >
+                <Zap className="w-5 h-5 mr-2" />
+                Mint NFT
               </button>
               
-              <button className="inline-flex items-center px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors">
+              <button 
+                onClick={handleShare}
+                className="inline-flex items-center px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors"
+              >
                 <Share2 className="w-5 h-5 mr-2" />
                 Share
               </button>
@@ -335,6 +374,13 @@ const ArtworkDetail = () => {
                   <span className="text-gray-600">Algorithm Version:</span>
                   <span className="font-medium">{artwork.metadata?.algorithm_version || '2.0'}</span>
                 </div>
+
+                {artwork.metadata?.signature_id && (
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-600">Signature ID:</span>
+                    <span className="font-medium text-sm">{artwork.metadata.signature_id}</span>
+                  </div>
+                )}
               </div>
             </motion.div>
 
@@ -405,8 +451,12 @@ const ArtworkDetail = () => {
               >
                 <h3 className="text-xl font-bold mb-4">Source Article</h3>
                 <p className="text-blue-100 mb-4 line-clamp-3">{article.title}</p>
+                <div className="flex items-center justify-between text-sm text-blue-200 mb-4">
+                  <span>Evidence: {Math.round((article.evidence_strength || 0) * 100)}%</span>
+                  <span>{article.read_time || 5} min read</span>
+                </div>
                 <Link 
-                  to={`/research/${article.id}`}
+                  to={`/articles/${article.id}`}
                   className="inline-flex items-center bg-white text-primary px-4 py-2 rounded-lg hover:bg-blue-50 transition-colors font-medium"
                 >
                   <Eye className="w-5 h-5 mr-2" />
@@ -415,30 +465,47 @@ const ArtworkDetail = () => {
               </motion.div>
             )}
 
-            {/* Download Options */}
+            {/* NFT Minting Section */}
             <motion.div
               initial={{ x: 50, opacity: 0 }}
               animate={{ x: 0, opacity: 1 }}
               transition={{ duration: 0.8, delay: 0.8 }}
               className="bg-white rounded-xl p-6 shadow-lg"
             >
-              <h3 className="text-xl font-bold text-primary mb-4">Download Options</h3>
+              <h3 className="text-xl font-bold text-primary mb-4">NFT Minting</h3>
               
-              <div className="space-y-3">
-                {artwork.download_formats?.map((format) => (
-                  <button
-                    key={format}
-                    className="w-full flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
-                  >
-                    <span className="font-medium uppercase">{format}</span>
-                    <Download className="w-5 h-5 text-gray-500" />
-                  </button>
-                )) || (
-                  <button className="w-full flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
-                    <span className="font-medium">SVG Format</span>
-                    <Download className="w-5 h-5 text-gray-500" />
-                  </button>
+              <div className="space-y-4">
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-600">Current Status:</span>
+                  <span className={`font-medium ${artwork.nft_status === 'minted' ? 'text-green-600' : 'text-blue-600'}`}>
+                    {artwork.nft_status === 'minted' ? 'Already Minted' : 'Available for Minting'}
+                  </span>
+                </div>
+
+                {artwork.metadata?.rarity_score && (
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-600">Rarity Tier:</span>
+                    <span className="font-medium">
+                      {artwork.metadata.rarity_score >= 0.8 ? 'Legendary' :
+                       artwork.metadata.rarity_score >= 0.6 ? 'Rare' :
+                       artwork.metadata.rarity_score >= 0.3 ? 'Uncommon' : 'Common'}
+                    </span>
+                  </div>
                 )}
+
+                <div className="pt-4">
+                  <button 
+                    onClick={handleMintNFT}
+                    disabled={artwork.nft_status === 'minted'}
+                    className="w-full flex items-center justify-center px-6 py-3 bg-gradient-to-r from-secondary to-primary text-white rounded-lg hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+                  >
+                    <Zap className="w-5 h-5 mr-2" />
+                    {artwork.nft_status === 'minted' ? 'Already Minted' : 'Mint as NFT'}
+                  </button>
+                  <p className="text-xs text-gray-500 mt-2 text-center">
+                    Powered by Manifold (Coming Soon)
+                  </p>
+                </div>
               </div>
             </motion.div>
           </div>
@@ -566,6 +633,7 @@ const getSampleArtwork = (id) => ({
   subspecialty: 'sportsMedicine',
   dominant_emotion: 'healing',
   created_date: '2024-03-01',
+  article_id: `article-${id}`,
   algorithm_parameters: {
     tree_complexity: 0.8,
     emotional_intensity: 0.75,
@@ -574,10 +642,18 @@ const getSampleArtwork = (id) => ({
   },
   metadata: {
     rarity_score: 0.65,
-    algorithm_version: '2.0'
+    algorithm_version: '2.0',
+    signature_id: `AKX-2024-${id.slice(0, 4).toUpperCase()}`
   },
-  nft_status: 'available',
-  download_formats: ['svg', 'png', 'metadata']
+  nft_status: 'available'
+});
+
+const getSampleArticle = (artworkId) => ({
+  id: `article-${artworkId}`,
+  title: "Advanced Arthroscopic Techniques in Sports Medicine: A Comprehensive Analysis",
+  evidence_strength: 0.85,
+  read_time: 8,
+  subspecialty: 'sportsMedicine'
 });
 
 export default ArtworkDetail;
