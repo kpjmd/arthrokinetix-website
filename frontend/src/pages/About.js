@@ -1,8 +1,48 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Brain, Heart, Palette, Zap, Award, Users, Mail, Github } from 'lucide-react';
 
+const API_BASE = process.env.REACT_APP_BACKEND_URL || 'http://localhost:8001';
+
 const About = () => {
+  const [algorithmState, setAlgorithmState] = useState(null);
+  const [articles, setArticles] = useState([]);
+  const [artworks, setArtworks] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchRealTimeData();
+  }, []);
+
+  const fetchRealTimeData = async () => {
+    try {
+      const [stateRes, articlesRes, artworksRes] = await Promise.all([
+        fetch(`${API_BASE}/api/algorithm-state`),
+        fetch(`${API_BASE}/api/articles`),
+        fetch(`${API_BASE}/api/artworks`)
+      ]);
+      
+      const stateData = await stateRes.json();
+      const articlesData = await articlesRes.json();
+      const artworksData = await artworksRes.json();
+      
+      setAlgorithmState(stateData);
+      setArticles(articlesData.articles || []);
+      setArtworks(artworksData.artworks || []);
+    } catch (error) {
+      console.error('Error fetching real-time data:', error);
+      // Set fallback data
+      setAlgorithmState({
+        emotional_state: { dominant_emotion: 'confidence', emotional_intensity: 0.6 },
+        articles_processed: 0
+      });
+      setArticles([]);
+      setArtworks([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 pt-16">
       {/* Hero Section */}
@@ -125,7 +165,7 @@ const About = () => {
         </div>
       </section>
 
-      {/* Interactive Demo */}
+      {/* Interactive Demo with Real Data */}
       <section className="py-20 bg-white">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           <motion.div
@@ -142,12 +182,12 @@ const About = () => {
             </p>
           </motion.div>
 
-          {/* Demo Visualization */}
+          {/* Demo Visualization with Real Data */}
           <div className="bg-gradient-to-br from-gray-100 to-gray-200 rounded-xl p-8 mb-8">
             <div className="text-center">
               <h3 className="text-xl font-semibold text-primary mb-6">Current Algorithm State</h3>
               
-              {/* Simulated algorithm mood indicator */}
+              {/* Real algorithm mood indicator */}
               <div className="flex justify-center mb-8">
                 <motion.div
                   animate={{ 
@@ -160,23 +200,34 @@ const About = () => {
                     ease: "easeInOut"
                   }}
                   className="w-32 h-32 bg-gradient-to-br from-secondary to-primary rounded-full flex items-center justify-center text-white text-2xl font-bold shadow-lg"
+                  style={{
+                    backgroundColor: algorithmState?.visual_representation?.color || '#3498db'
+                  }}
                 >
-                  ■
+                  {algorithmState?.visual_representation?.shape === 'square' ? '■' : 
+                   algorithmState?.visual_representation?.shape === 'star' ? '★' : 
+                   algorithmState?.visual_representation?.shape === 'triangle' ? '▲' : '●'}
                 </motion.div>
               </div>
 
               <div className="grid md:grid-cols-3 gap-6 text-center">
                 <div>
                   <p className="text-sm text-gray-500 mb-1">Dominant Emotion</p>
-                  <p className="text-lg font-semibold text-secondary">Confidence</p>
+                  <p className="text-lg font-semibold text-secondary capitalize">
+                    {loading ? 'Loading...' : algorithmState?.emotional_state?.dominant_emotion || 'Confidence'}
+                  </p>
                 </div>
                 <div>
                   <p className="text-sm text-gray-500 mb-1">Content Processed</p>
-                  <p className="text-lg font-semibold text-primary">1,247</p>
+                  <p className="text-lg font-semibold text-primary">
+                    {loading ? 'Loading...' : (algorithmState?.articles_processed || articles.length || 0)}
+                  </p>
                 </div>
                 <div>
                   <p className="text-sm text-gray-500 mb-1">Artworks Generated</p>
-                  <p className="text-lg font-semibold text-healing">1,247</p>
+                  <p className="text-lg font-semibold text-healing">
+                    {loading ? 'Loading...' : artworks.length || 0}
+                  </p>
                 </div>
               </div>
             </div>
