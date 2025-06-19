@@ -714,7 +714,40 @@ async def recalculate_algorithm_state():
                 "articles_processed": article_count
             }
         else:
-            raise HTTPException(status_code=404, detail="No algorithm state found")
+            # Create initial algorithm state if none exists
+            print("Creating initial algorithm state during recalculation...")
+            
+            initial_state = {
+                "emotional_state": {
+                    "dominant_emotion": "confidence",
+                    "emotional_intensity": 0.6,
+                    "emotional_mix": {
+                        "hope": 0.4,
+                        "confidence": 0.6,
+                        "healing": 0.3,
+                        "innovation": 0.2,
+                        "tension": 0.1,
+                        "uncertainty": 0.2
+                    }
+                },
+                "visual_representation": {
+                    "shape": "circle",
+                    "color": "#3498db",
+                    "glow_intensity": 0.6,
+                    "pulse_rate": 1.2
+                },
+                "timestamp": datetime.utcnow(),
+                "articles_processed": article_count,
+                "feedback_influences": []
+            }
+            
+            algorithm_states_collection.insert_one(initial_state)
+            
+            return {
+                "success": True,
+                "message": f"Initial algorithm state created. Articles processed: {article_count}",
+                "articles_processed": article_count
+            }
             
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
