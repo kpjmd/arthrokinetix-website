@@ -342,24 +342,81 @@ class ArthrokinetixAPITester:
             200
         )
 
-    def test_collect_signature(self):
-        """Test collecting a signature"""
-        if not self.test_signature_id or not self.test_email:
-            print("❌ Cannot test signature collection - missing signature ID or email")
-            return False, {}
-            
-        collection_data = {
-            "signature_id": self.test_signature_id,
-            "user_email": self.test_email
-        }
-        
+    def test_recalculate_algorithm_state(self):
+        """Test the recalculate algorithm state endpoint"""
         return self.run_test(
-            "Collect Signature",
+            "Recalculate Algorithm State",
             "POST",
-            "api/signatures/collect",
-            200,
-            data=collection_data
+            "api/admin/recalculate-algorithm-state",
+            200
         )
+
+    def test_algorithm_state_details(self):
+        """Test the algorithm state endpoint and verify the articles_processed count"""
+        success, response = self.run_test(
+            "Algorithm State Details",
+            "GET",
+            "api/algorithm-state",
+            200
+        )
+        
+        if success:
+            # Check if the response contains the expected fields
+            if "_id" in response and response["_id"] != "fallback_state":
+                print("✅ Algorithm state is not using fallback state")
+            else:
+                print("❌ Algorithm state is using fallback state")
+                success = False
+                
+            # Check if articles_processed is present and has the expected value
+            if "articles_processed" in response:
+                articles_count = response["articles_processed"]
+                print(f"Articles processed count: {articles_count}")
+                
+                # Verify that articles_processed is 6 as expected
+                if articles_count == 6:
+                    print("✅ Articles processed count is correct (6)")
+                else:
+                    print(f"❌ Articles processed count is incorrect. Expected: 6, Got: {articles_count}")
+                    success = False
+            else:
+                print("❌ articles_processed field not found in response")
+                success = False
+                
+            # Check if emotional_state is present
+            if "emotional_state" in response:
+                dominant_emotion = response["emotional_state"].get("dominant_emotion")
+                print(f"Dominant emotion: {dominant_emotion}")
+            else:
+                print("❌ emotional_state field not found in response")
+                success = False
+        
+        return success, response
+
+    def test_articles_count(self):
+        """Test the articles endpoint and verify the count"""
+        success, response = self.run_test(
+            "Articles Count",
+            "GET",
+            "api/articles",
+            200
+        )
+        
+        if success and "articles" in response:
+            articles_count = len(response["articles"])
+            print(f"Number of articles: {articles_count}")
+            
+            # Verify that there are 6 articles as expected
+            if articles_count == 6:
+                print("✅ Articles count is correct (6)")
+            else:
+                print(f"❌ Articles count is incorrect. Expected: 6, Got: {articles_count}")
+                success = False
+        else:
+            print("❌ articles field not found in response")
+            success = False
+        
+        return success, response
 
 def test_search_suggestions(self):
     """Test search suggestions endpoint"""
