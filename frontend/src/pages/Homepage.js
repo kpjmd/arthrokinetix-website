@@ -34,6 +34,7 @@ const Homepage = ({ algorithmState, onStateUpdate }) => {
       
       setArticles(articlesData.articles?.slice(0, 4) || []);
       setArtworks(artworksData.artworks?.slice(0, 4) || []);
+      setTotalArtworks(artworksData.artworks?.length || 0);
     } catch (error) {
       console.error('Error fetching home data:', error);
       // Set sample data for demo
