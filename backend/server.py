@@ -12,7 +12,7 @@ import base64
 from pathlib import Path
 
 # Load environment variables
-load_dotenv()
+load_dotenv('/app/backend/.env')
 
 app = FastAPI(title="Arthrokinetix API")
 
