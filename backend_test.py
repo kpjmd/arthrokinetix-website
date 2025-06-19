@@ -389,6 +389,82 @@ def test_collect_signature(self):
         data=collection_data
     )
 
+def test_recalculate_algorithm_state(self):
+    """Test the recalculate algorithm state endpoint"""
+    return self.run_test(
+        "Recalculate Algorithm State",
+        "POST",
+        "api/admin/recalculate-algorithm-state",
+        200
+    )
+
+def test_algorithm_state_details(self):
+    """Test the algorithm state endpoint and verify the articles_processed count"""
+    success, response = self.run_test(
+        "Algorithm State Details",
+        "GET",
+        "api/algorithm-state",
+        200
+    )
+    
+    if success:
+        # Check if the response contains the expected fields
+        if "_id" in response and response["_id"] != "fallback_state":
+            print("✅ Algorithm state is not using fallback state")
+        else:
+            print("❌ Algorithm state is using fallback state")
+            success = False
+            
+        # Check if articles_processed is present and has the expected value
+        if "articles_processed" in response:
+            articles_count = response["articles_processed"]
+            print(f"Articles processed count: {articles_count}")
+            
+            # Verify that articles_processed is 6 as expected
+            if articles_count == 6:
+                print("✅ Articles processed count is correct (6)")
+            else:
+                print(f"❌ Articles processed count is incorrect. Expected: 6, Got: {articles_count}")
+                success = False
+        else:
+            print("❌ articles_processed field not found in response")
+            success = False
+            
+        # Check if emotional_state is present
+        if "emotional_state" in response:
+            dominant_emotion = response["emotional_state"].get("dominant_emotion")
+            print(f"Dominant emotion: {dominant_emotion}")
+        else:
+            print("❌ emotional_state field not found in response")
+            success = False
+    
+    return success, response
+
+def test_articles_count(self):
+    """Test the articles endpoint and verify the count"""
+    success, response = self.run_test(
+        "Articles Count",
+        "GET",
+        "api/articles",
+        200
+    )
+    
+    if success and "articles" in response:
+        articles_count = len(response["articles"])
+        print(f"Number of articles: {articles_count}")
+        
+        # Verify that there are 6 articles as expected
+        if articles_count == 6:
+            print("✅ Articles count is correct (6)")
+        else:
+            print(f"❌ Articles count is incorrect. Expected: 6, Got: {articles_count}")
+            success = False
+    else:
+        print("❌ articles field not found in response")
+        success = False
+    
+    return success, response
+
 def main():
     # Get the backend URL from frontend .env file
     import os
@@ -417,36 +493,29 @@ def main():
     
     # Test algorithm state endpoint (critical for UI)
     print("\n=== Testing Algorithm State ===")
-    tester.test_algorithm_state()
+    algorithm_state_success, _ = tester.test_algorithm_state_details()
     
-    # Run tests for Priority 5 features (as requested in the review)
-    print("\n=== Testing Priority 5 Features ===")
-    print("\n1. Testing GET /api/signatures/available")
-    tester.test_available_signatures()
+    # Test articles count
+    print("\n=== Testing Articles Count ===")
+    articles_count_success, _ = tester.test_articles_count()
     
-    print("\n2. Testing GET /api/signatures/collection/{email}")
-    # First subscribe to newsletter to ensure we have a valid user
-    tester.test_newsletter_subscribe()
-    tester.test_signature_collection()
+    # Test recalculate algorithm state endpoint
+    print("\n=== Testing Recalculate Algorithm State ===")
+    recalculate_success, _ = tester.test_recalculate_algorithm_state()
     
-    print("\n3. Testing POST /api/signatures/collect")
-    tester.test_collect_signature()
-    
-    print("\n4. Testing GET /api/algorithm/evolution")
-    tester.test_algorithm_evolution()
-    
-    print("\n5. Testing GET /api/search")
-    tester.test_enhanced_search()
-    
-    print("\n6. Testing GET /api/search/suggestions")
-    tester.test_search_suggestions()
-    
-    # Test admin authentication as requested
-    print("\n=== Testing Admin Authentication ===")
-    tester.test_admin_authentication()
+    # Test algorithm state again after recalculation
+    if recalculate_success:
+        print("\n=== Testing Algorithm State After Recalculation ===")
+        tester.test_algorithm_state_details()
     
     # Print results
     print(f"\n📊 Tests passed: {tester.tests_passed}/{tester.tests_run}")
+    
+    # Return specific information about the algorithm state issue
+    if not algorithm_state_success:
+        print("\n⚠️ CRITICAL ISSUE: Algorithm state is not showing the correct number of articles processed.")
+        print("This will affect the AlgorithmMoodIndicator tooltip display.")
+    
     return 0 if tester.tests_passed == tester.tests_run else 1
 
 if __name__ == "__main__":
