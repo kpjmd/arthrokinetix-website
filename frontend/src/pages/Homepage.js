@@ -471,7 +471,7 @@ const Homepage = ({ algorithmState, onStateUpdate }) => {
                     viewport={{ once: true }}
                     transition={{ duration: 0.5, delay: 0.4 }}
                   >
-                    {artworks.length > 0 ? artworks.length * 312 : '1,247'}
+                    {totalArtworks || '7'}
                   </motion.div>
                   <p className="text-blue-100">Artworks Generated</p>
                 </div>
