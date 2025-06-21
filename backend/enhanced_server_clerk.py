@@ -11,8 +11,8 @@ import anthropic
 import base64
 from pathlib import Path
 import requests
-from clerk_auth import clerk_auth
-from web3_auth import web3_auth
+from backend.clerk_auth import clerk_auth
+from backend.web3_auth import web3_auth
 
 # Load environment variables
 load_dotenv('/app/backend/.env')
