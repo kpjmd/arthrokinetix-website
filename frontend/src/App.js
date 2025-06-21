@@ -11,6 +11,7 @@ import ArthrokinetixArtGenerator from './arthrokinetixalgorithm.js';
 
 // Components
 import Header from './components/Header';
+import Footer from './components/Footer';
 import Homepage from './pages/Homepage';
 import ArticlesHub from './pages/ArticlesHub';
 import EnhancedResearchHub from './pages/EnhancedResearchHub';
@@ -20,6 +21,8 @@ import About from './pages/About';
 import AdminDashboard from './pages/AdminDashboard';
 import ArtworkDetail from './pages/ArtworkDetail';
 import UserProfile from './pages/UserProfile';
+import PrivacyPolicy from './pages/PrivacyPolicy';
+import TermsOfService from './pages/TermsOfService';
 import AlgorithmMoodIndicator from './components/AlgorithmMoodIndicator';
 
 // API Base URL
