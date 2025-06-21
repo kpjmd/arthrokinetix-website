@@ -168,6 +168,9 @@ function AppContent() {
           />
         </Routes>
       </AnimatePresence>
+      
+      {/* Footer */}
+      <Footer />
     </div>
   );
 }
