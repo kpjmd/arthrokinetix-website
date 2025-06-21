@@ -5,7 +5,8 @@ import { ArrowLeft, BookOpen, Palette, Heart, ThumbsUp, ThumbsDown, Star, Award,
 import { useUser } from '@clerk/clerk-react';
 import EmotionalSignature from '../components/EmotionalSignature';
 import FeedbackForm from '../components/FeedbackForm';
-import { AccessGate, AuthModal, SignedIn, SignedOut } from '../components/AuthComponents';
+import { AuthModal, SignedIn, SignedOut } from '../components/AuthComponents';
+import { Web3AccessGate } from '../components/Web3AuthComponents';
 
 const API_BASE = process.env.REACT_APP_BACKEND_URL || 'http://localhost:8001';
 
