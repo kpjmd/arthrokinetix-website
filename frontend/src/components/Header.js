@@ -91,7 +91,7 @@ const Header = () => {
                 </SignedIn>
 
                 {/* Web3 Integration - Always visible */}
-                <Web3Integration />
+                <EnhancedWeb3Integration />
               </div>
             </div>
 
