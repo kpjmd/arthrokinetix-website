@@ -3,7 +3,7 @@ import { useParams, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { ArrowLeft, Clock, FileText, Award, User, Star, BookOpen, Image, Palette } from 'lucide-react';
 import { useUser, SignedIn, SignedOut } from '../hooks/useAuth';
-import { AuthModal, Web3AccessGate } from '../components/AuthComponents';
+import { AuthModal, AccessGate } from '../components/AuthComponents';
 import FeedbackForm from '../components/FeedbackForm';
 import EmotionalSignature from '../components/EmotionalSignature';
 import ShareButtons from '../components/ShareButtons';
