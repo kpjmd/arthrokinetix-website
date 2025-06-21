@@ -165,9 +165,11 @@ function App() {
   return (
     <HelmetProvider>
       <ClerkProvider>
-        <Router>
-          <AppContent />
-        </Router>
+        <Web3Provider>
+          <Router>
+            <AppContent />
+          </Router>
+        </Web3Provider>
       </ClerkProvider>
     </HelmetProvider>
   );
