@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Brain, Heart, Palette, Zap, Award, Users, Mail, Github } from 'lucide-react';
+import { AboutNewsletterForm } from '../components/NewsletterForms';
 
 const API_BASE = process.env.REACT_APP_BACKEND_URL || 'http://localhost:8001';
 
