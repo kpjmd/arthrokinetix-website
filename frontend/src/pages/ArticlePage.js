@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ArrowLeft, Clock, FileText, Award, User, Star, BookOpen, Image, Palette } from 'lucide-react';
+import { ArrowLeft, Clock, FileText, File, Award, User, Star, BookOpen, Image, Palette } from 'lucide-react';
 import { useUser, SignedIn, SignedOut } from '../hooks/useAuth';
 import { AuthModal, AccessGate } from '../components/AuthComponents';
 import FeedbackForm from '../components/FeedbackForm';
