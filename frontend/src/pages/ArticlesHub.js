@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 import { Search, Filter, Grid, List, BookOpen, Clock, Award } from 'lucide-react';
 import EmotionalSignature from '../components/EmotionalSignature';
 import { ArticlesNewsletterForm } from '../components/NewsletterForms';
+import { ArticlesNewsletterForm } from '../components/NewsletterForms';
 
 const API_BASE = process.env.REACT_APP_BACKEND_URL || 'http://localhost:8001';
 
