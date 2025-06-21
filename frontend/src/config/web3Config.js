@@ -1,7 +1,7 @@
 import { createWeb3Modal } from '@web3modal/wagmi/react'
-import { defaultWagmiConfig } from '@web3modal/wagmi/react/config'
-import { WagmiConfig } from 'wagmi'
+import { http, createConfig } from 'wagmi'
 import { base } from 'wagmi/chains'
+import { walletConnect, injected, coinbaseWallet } from 'wagmi/connectors'
 
 // 1. Get projectId from environment
 const projectId = process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID || process.env.REACT_APP_WALLETCONNECT_PROJECT_ID || '09861ae0475dc4c586c66bbda1a5e918'
@@ -15,14 +15,20 @@ const metadata = {
 }
 
 const chains = [base]
-const config = defaultWagmiConfig({
+
+const config = createConfig({
   chains,
-  projectId,
-  metadata,
-  enableWalletConnect: true,
-  enableInjected: true,
-  enableEIP6963: true,
-  enableCoinbase: true,
+  transports: {
+    [base.id]: http()
+  },
+  connectors: [
+    walletConnect({ projectId, metadata, showQrModal: false }),
+    injected({ shimDisconnect: true }),
+    coinbaseWallet({
+      appName: metadata.name,
+      appLogoUrl: metadata.icons[0]
+    })
+  ]
 })
 
 // 3. Create modal
