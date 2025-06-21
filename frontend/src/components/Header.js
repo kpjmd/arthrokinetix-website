@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useUser } from '@clerk/clerk-react';
-import Web3Integration from './Web3Integration';
+import EnhancedWeb3Integration from './EnhancedWeb3Integration';
 import { AuthModal, EnhancedUserButton, SignedIn, SignedOut } from './AuthComponents';
 
 const Header = () => {
