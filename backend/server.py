@@ -793,6 +793,33 @@ async def newsletter_subscribe(subscription_data: dict):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+@app.post("/api/web3/verify-nft")
+async def verify_nft_ownership(verification_data: dict):
+    """Verify NFT ownership for Web3 authentication"""
+    try:
+        wallet_address = verification_data.get("address")
+        if not wallet_address:
+            raise HTTPException(status_code=400, detail="Wallet address is required")
+        
+        # Check NFT ownership using Alchemy API
+        alchemy_api_url = os.environ.get('ALCHEMY_API_URL')
+        erc721_contract = os.environ.get('NFT_CONTRACT_ERC721')
+        erc1155_contract = os.environ.get('NFT_CONTRACT_ERC1155')
+        
+        # For demo purposes, we'll return a mock response
+        # In a real implementation, this would check actual NFT ownership
+        return {
+            "verified": False,  # Set to False for demo
+            "wallet_address": wallet_address,
+            "erc721_balance": 0,
+            "erc1155_balance": 0,
+            "contracts_owned": [],
+            "verification_timestamp": datetime.utcnow().isoformat()
+        }
+    except Exception as e:
+        print(f"NFT verification error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
 @app.post("/api/feedback")
 async def submit_feedback_enhanced(feedback_data: dict):
     """Enhanced feedback submission with access control"""
