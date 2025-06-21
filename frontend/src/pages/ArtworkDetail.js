@@ -3,6 +3,7 @@ import { useParams, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { ArrowLeft, Share2, Eye, Palette, Award, Calendar, Tag, X, Zap } from 'lucide-react';
 import ShareButtons from '../components/ShareButtons';
+import NFTMintButton, { NFTInfoPanel } from '../components/NFTMintButton';
 
 const API_BASE = process.env.REACT_APP_BACKEND_URL || 'http://localhost:8001';
 
