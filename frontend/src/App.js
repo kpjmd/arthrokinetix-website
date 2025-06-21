@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { HelmetProvider } from 'react-helmet-async';
+import ClerkProvider from './components/ClerkProvider';
 import './App.css';
 
 // Import the Arthrokinetix algorithm
@@ -23,7 +24,7 @@ import AlgorithmMoodIndicator from './components/AlgorithmMoodIndicator';
 // API Base URL
 const API_BASE = process.env.REACT_APP_BACKEND_URL || 'http://localhost:8001';
 
-function App() {
+function AppContent() {
   const [algorithmState, setAlgorithmState] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -76,89 +77,97 @@ function App() {
   }
 
   return (
-    <HelmetProvider>
-      <Router>
-        <div className="App">
-          <Header />
+    <div className="App">
+      <Header />
+      
+      {/* Persistent Algorithm Mood Indicator */}
+      <AlgorithmMoodIndicator 
+        algorithmState={algorithmState}
+        onStateUpdate={setAlgorithmState}
+      />
+
+      <AnimatePresence mode="wait">
+        <Routes>
+          <Route 
+            path="/" 
+            element={
+              <Homepage 
+                algorithmState={algorithmState}
+                onStateUpdate={setAlgorithmState}
+              />
+            } 
+          />
           
-          {/* Persistent Algorithm Mood Indicator */}
-          <AlgorithmMoodIndicator 
-            algorithmState={algorithmState}
-            onStateUpdate={setAlgorithmState}
+          {/* New Medical Content Routes */}
+          <Route 
+            path="/articles" 
+            element={
+              <ArticlesHub 
+                algorithmState={algorithmState}
+              />
+            } 
+          />
+          <Route 
+            path="/articles/:slug" 
+            element={
+              <ArticlePage 
+                algorithmState={algorithmState}
+                onStateUpdate={setAlgorithmState}
+              />
+            } 
           />
 
-          <AnimatePresence mode="wait">
-            <Routes>
-              <Route 
-                path="/" 
-                element={
-                  <Homepage 
-                    algorithmState={algorithmState}
-                    onStateUpdate={setAlgorithmState}
-                  />
-                } 
+          {/* Legacy Research Routes - Redirect to Articles */}
+          <Route path="/research" element={<Navigate to="/articles" replace />} />
+          <Route path="/research/:slug" element={<Navigate to="/articles/:slug" replace />} />
+          <Route 
+            path="/research-enhanced" 
+            element={
+              <EnhancedResearchHub 
+                algorithmState={algorithmState}
               />
-              
-              {/* New Medical Content Routes */}
-              <Route 
-                path="/articles" 
-                element={
-                  <ArticlesHub 
-                    algorithmState={algorithmState}
-                  />
-                } 
+            } 
+          />
+          
+          {/* Other Routes */}
+          <Route 
+            path="/profile" 
+            element={<UserProfile />} 
+          />
+          <Route 
+            path="/gallery" 
+            element={
+              <Gallery 
+                algorithmState={algorithmState}
               />
-              <Route 
-                path="/articles/:slug" 
-                element={
-                  <ArticlePage 
-                    algorithmState={algorithmState}
-                    onStateUpdate={setAlgorithmState}
-                  />
-                } 
-              />
+            } 
+          />
+          <Route 
+            path="/gallery/:id" 
+            element={<ArtworkDetail />} 
+          />
+          <Route 
+            path="/about" 
+            element={<About />} 
+          />
+          <Route 
+            path="/admin" 
+            element={<AdminDashboard />} 
+          />
+        </Routes>
+      </AnimatePresence>
+    </div>
+  );
+}
 
-              {/* Legacy Research Routes - Redirect to Articles */}
-              <Route path="/research" element={<Navigate to="/articles" replace />} />
-              <Route path="/research/:slug" element={<Navigate to="/articles/:slug" replace />} />
-              <Route 
-                path="/research-enhanced" 
-                element={
-                  <EnhancedResearchHub 
-                    algorithmState={algorithmState}
-                  />
-                } 
-              />
-              
-              {/* Other Routes */}
-              <Route 
-                path="/profile" 
-                element={<UserProfile />} 
-              />
-              <Route 
-                path="/gallery" 
-                element={
-                  <Gallery 
-                    algorithmState={algorithmState}
-                  />
-                } 
-              />
-              <Route 
-                path="/gallery/:id" 
-                element={<ArtworkDetail />} 
-              />
-              <Route 
-                path="/about" 
-                element={<About />} 
-              />
-              <Route 
-                path="/admin" 
-                element={<AdminDashboard />} 
-              />
-            </Routes>
-          </AnimatePresence>
-        </div>
-      </Router>
+function App() {
+  return (
+    <HelmetProvider>
+      <ClerkProvider>
+        <Router>
+          <AppContent />
+        </Router>
+      </ClerkProvider>
     </HelmetProvider>
   );
 }
