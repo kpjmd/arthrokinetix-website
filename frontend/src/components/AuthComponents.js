@@ -154,12 +154,15 @@ export const EnhancedUserButton = () => {
         className="flex items-center space-x-3 p-2 rounded-lg hover:bg-gray-100 transition-colors"
       >
         <img 
-          src={user.imageUrl} 
-          alt={user.fullName}
+          src={user.imageUrl || '/default-avatar.png'} 
+          alt={user.fullName || 'User'}
           className="w-8 h-8 rounded-full"
+          onError={(e) => {
+            e.target.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzIiIGhlaWdodD0iMzIiIHZpZXdCb3g9IjAgMCAzMiAzMiIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPGNpcmNsZSBjeD0iMTYiIGN5PSIxNiIgcj0iMTYiIGZpbGw9IiNFNUU3RUIiLz4KPHN2ZyB3aWR0aD0iMTYiIGhlaWdodD0iMTYiIHZpZXdCb3g9IjAgMCAxNiAxNiIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIiB4PSI4IiB5PSI4Ij4KPHBhdGggZD0iTTggMTBDMTAuMjA5MSAxMCAxMiA4LjIwOTEgMTIgNkMxMiAzLjc5MDkgMTAuMjA5MSAyIDggMkM1Ljc5MDkgMiA0IDMuNzkwOSA0IDZDNCA4LjIwOTEgNS43OTA5IDEwIDggMTBaIiBmaWxsPSIjNkI3Mjg3Ii8+CjxwYXRoIGQ9Ik0xNiAxNEMxNiAxMS43OTA5IDEyLjQxODMgMTAgOCAxMEM2IDEwIDQgMTAuNSA0IDEyQzQgMTMuNSA2IDE0IDggMTRDMTAgMTQgMTIgMTMuNSAxMiAxMkMxMiAxMC41IDE0IDEwLjUgMTYgMTJWMTRaIiBmaWxsPSIjNkI3Mjg3Ii8+Cjwvc3ZnPgo8L3N2Zz4K';
+          }}
         />
         <span className="text-sm font-medium hidden md:block">
-          {user.firstName || user.emailAddresses[0].emailAddress}
+          {user.firstName || user.emailAddresses?.[0]?.emailAddress || 'User'}
         </span>
       </button>
 
@@ -172,8 +175,8 @@ export const EnhancedUserButton = () => {
             className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50"
           >
             <div className="px-4 py-2 border-b border-gray-100">
-              <p className="text-sm font-medium text-gray-900">{user.fullName}</p>
-              <p className="text-xs text-gray-500">{user.emailAddresses[0].emailAddress}</p>
+              <p className="text-sm font-medium text-gray-900">{user.fullName || 'User'}</p>
+              <p className="text-xs text-gray-500">{user.emailAddresses?.[0]?.emailAddress || 'user@example.com'}</p>
             </div>
             
             <button
