@@ -1,74 +1,115 @@
 import React, { useState } from 'react';
-import { 
-  SignIn, 
-  SignUp, 
-  UserButton, 
-  useUser, 
-  useClerk,
-  SignedIn,
-  SignedOut
-} from '@clerk/clerk-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Mail, User, LogOut, Settings } from 'lucide-react';
+import { useUser, useClerk, SignedIn, SignedOut } from '../hooks/useAuth';
+
+// Check if Clerk is available
+const CLERK_PUBLISHABLE_KEY = process.env.REACT_APP_CLERK_PUBLISHABLE_KEY || process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY;
 
 // Auth Modal Component
 export const AuthModal = ({ isOpen, onClose, mode = 'sign-in' }) => {
   if (!isOpen) return null;
 
-  return (
-    <AnimatePresence>
-      <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-        <motion.div
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          exit={{ opacity: 0, scale: 0.95 }}
-          className="bg-white rounded-xl shadow-2xl max-w-md w-full max-h-[90vh] overflow-y-auto"
-        >
-          <div className="flex justify-between items-center p-6 border-b">
-            <h2 className="text-xl font-semibold">
-              {mode === 'sign-in' ? 'Sign In' : 'Sign Up'}
-            </h2>
-            <button
-              onClick={onClose}
-              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-            >
-              <X className="w-5 h-5" />
-            </button>
-          </div>
-          
-          <div className="p-6">
-            {mode === 'sign-in' ? (
-              <SignIn 
-                appearance={{
-                  elements: {
-                    formButtonPrimary: 'bg-primary hover:bg-primary/90',
-                    card: 'shadow-none',
-                    headerTitle: 'hidden',
-                    headerSubtitle: 'hidden'
-                  }
-                }}
-                redirectUrl="/articles"
-                signUpUrl="#"
-              />
-            ) : (
-              <SignUp 
-                appearance={{
-                  elements: {
-                    formButtonPrimary: 'bg-primary hover:bg-primary/90',
-                    card: 'shadow-none',
-                    headerTitle: 'hidden',
-                    headerSubtitle: 'hidden'
-                  }
-                }}
-                redirectUrl="/articles"
-                signInUrl="#"
-              />
-            )}
-          </div>
-        </motion.div>
-      </div>
-    </AnimatePresence>
-  );
+  // If Clerk is not available, show a message
+  if (!CLERK_PUBLISHABLE_KEY) {
+    return (
+      <AnimatePresence>
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.95 }}
+            className="bg-white rounded-xl shadow-2xl max-w-md w-full max-h-[90vh] overflow-y-auto"
+          >
+            <div className="flex justify-between items-center p-6 border-b">
+              <h2 className="text-xl font-semibold">Authentication</h2>
+              <button
+                onClick={onClose}
+                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            
+            <div className="p-6 text-center">
+              <Mail className="w-12 h-12 mx-auto mb-4 text-gray-400" />
+              <h3 className="text-lg font-semibold mb-2">Authentication Demo Mode</h3>
+              <p className="text-gray-600 mb-4">
+                Clerk authentication is not configured. In production, this would show 
+                the full sign-up/sign-in experience.
+              </p>
+              <p className="text-sm text-blue-600 bg-blue-50 p-3 rounded-lg">
+                You can still explore the application and use Web3 authentication features!
+              </p>
+            </div>
+          </motion.div>
+        </div>
+      </AnimatePresence>
+    );
+  }
+
+  // Try to load Clerk components dynamically
+  try {
+    const { SignIn, SignUp } = require('@clerk/clerk-react');
+    
+    return (
+      <AnimatePresence>
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.95 }}
+            className="bg-white rounded-xl shadow-2xl max-w-md w-full max-h-[90vh] overflow-y-auto"
+          >
+            <div className="flex justify-between items-center p-6 border-b">
+              <h2 className="text-xl font-semibold">
+                {mode === 'sign-in' ? 'Sign In' : 'Sign Up'}
+              </h2>
+              <button
+                onClick={onClose}
+                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            
+            <div className="p-6">
+              {mode === 'sign-in' ? (
+                <SignIn 
+                  appearance={{
+                    elements: {
+                      formButtonPrimary: 'bg-primary hover:bg-primary/90',
+                      card: 'shadow-none',
+                      headerTitle: 'hidden',
+                      headerSubtitle: 'hidden'
+                    }
+                  }}
+                  redirectUrl="/articles"
+                  signUpUrl="#"
+                />
+              ) : (
+                <SignUp 
+                  appearance={{
+                    elements: {
+                      formButtonPrimary: 'bg-primary hover:bg-primary/90',
+                      card: 'shadow-none',
+                      headerTitle: 'hidden',
+                      headerSubtitle: 'hidden'
+                    }
+                  }}
+                  redirectUrl="/articles"
+                  signInUrl="#"
+                />
+              )}
+            </div>
+          </motion.div>
+        </div>
+      </AnimatePresence>
+    );
+  } catch (error) {
+    console.warn('Failed to load Clerk components:', error.message);
+    return null;
+  }
 };
 
 // Sign Up Prompt Component
