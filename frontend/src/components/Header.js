@@ -90,7 +90,7 @@ const Header = () => {
                   <EnhancedUserButton />
                 </SignedIn>
 
-                {/* Web3 Integration - Always visible */}
+                {/* Web3 Integration - Temporarily disabled */}
                 {/* <EnhancedWeb3Integration /> */}
               </div>
             </div>
