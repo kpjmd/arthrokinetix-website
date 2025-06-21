@@ -3,11 +3,11 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { motion, AnimatePresence } from 'framer-motion';
 import { HelmetProvider } from 'react-helmet-async';
 import ClerkProvider from './components/ClerkProvider';
-import Web3Provider from './components/Web3Provider';
+// import Web3Provider from './components/Web3Provider';
 import './App.css';
 
 // Import the Arthrokinetix algorithm
-import ArthrokinetixArtGenerator from './arthrokinetixalgorithm.js';
+// import ArthrokinetixArtGenerator from './arthrokinetixalgorithm.js';
 
 // Components
 import Header from './components/Header';
