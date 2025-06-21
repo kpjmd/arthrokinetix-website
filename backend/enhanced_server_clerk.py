@@ -198,25 +198,34 @@ async def get_user_profile(clerk_user_id: str):
 
 @app.post("/api/feedback")
 async def submit_feedback_enhanced(feedback_data: dict):
-    """Enhanced feedback submission with Clerk authentication"""
+    """Enhanced feedback submission with Clerk and Web3 authentication"""
     try:
         if db is None:
             raise HTTPException(status_code=500, detail="Database not connected")
 
         email = feedback_data.get("user_email")
         clerk_user_id = feedback_data.get("clerk_user_id")
+        wallet_address = feedback_data.get("wallet_address")
         
         # Check authentication
         has_access = False
         access_type = "none"
         user_record = None
         
+        # Check Clerk authentication
         if clerk_user_id:
-            # Check Clerk user
             user_record = users_collection.find_one({"clerk_user_id": clerk_user_id})
             if user_record and user_record.get("email_verified"):
                 has_access = True
                 access_type = "email_verified"
+        
+        # Check Web3 NFT authentication
+        if not has_access and wallet_address:
+            web3_user = users_collection.find_one({"wallet_address": wallet_address.lower()})
+            if web3_user and web3_user.get("nft_verified"):
+                has_access = True
+                access_type = "nft_verified"
+                user_record = web3_user
         
         # For demo purposes, allow anonymous feedback
         if not has_access:
@@ -232,9 +241,10 @@ async def submit_feedback_enhanced(feedback_data: dict):
             "emotion": feedback_data.get("emotion"),
             "user_email": email,
             "clerk_user_id": clerk_user_id,
+            "wallet_address": wallet_address,
             "access_type": access_type,
             "timestamp": datetime.utcnow(),
-            "influence_weight": 1.0 if access_type == "email_verified" else 0.5
+            "influence_weight": 1.0 if access_type in ["email_verified", "nft_verified"] else 0.5
         }
         
         feedback_collection.insert_one(feedback)
@@ -247,6 +257,141 @@ async def submit_feedback_enhanced(feedback_data: dict):
             "feedback": feedback,
             "message": f"Feedback submitted successfully ({access_type} access)"
         }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Feedback submission error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+# ========== WEB3 NFT AUTHENTICATION ENDPOINTS ==========
+
+@app.post("/api/web3/verify-nft")
+async def verify_nft_ownership(wallet_data: dict):
+    """Verify NFT ownership for Web3 authentication"""
+    try:
+        if db is None:
+            raise HTTPException(status_code=500, detail="Database not connected")
+
+        wallet_address = wallet_data.get("address")
+        if not wallet_address:
+            raise HTTPException(status_code=400, detail="Wallet address is required")
+
+        # Verify NFT ownership via Alchemy
+        verification_result = await web3_auth.verify_nft_ownership(wallet_address)
+        
+        if verification_result.get("verified"):
+            # Create or update user record
+            user_record = web3_auth.create_user_from_web3_data(wallet_address, verification_result)
+            
+            # Upsert user record
+            users_collection.update_one(
+                {"wallet_address": wallet_address.lower()},
+                {"$set": user_record},
+                upsert=True
+            )
+            
+            print(f"NFT verification successful for {wallet_address}")
+            
+            return {
+                "verified": True,
+                "feedback_access": True,
+                "wallet_address": wallet_address,
+                "erc721_balance": verification_result.get("erc721_balance", 0),
+                "erc1155_balance": verification_result.get("erc1155_balance", 0),
+                "contracts_owned": verification_result.get("contracts_owned", []),
+                "message": "NFT ownership verified successfully"
+            }
+        else:
+            # Still create a user record but without verification
+            user_record = web3_auth.create_user_from_web3_data(wallet_address, verification_result)
+            user_record["feedback_access"] = False
+            user_record["access_type"] = "web3_connected"
+            
+            users_collection.update_one(
+                {"wallet_address": wallet_address.lower()},
+                {"$set": user_record},
+                upsert=True
+            )
+            
+            return {
+                "verified": False,
+                "feedback_access": False,
+                "wallet_address": wallet_address,
+                "erc721_balance": 0,
+                "erc1155_balance": 0,
+                "contracts_owned": [],
+                "message": "No qualifying NFTs found",
+                "error": verification_result.get("error")
+            }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"NFT verification error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/web3/verify-and-sync")
+async def verify_and_sync_wallet(wallet_data: dict):
+    """Verify NFT ownership and sync user data"""
+    try:
+        if db is None:
+            raise HTTPException(status_code=500, detail="Database not connected")
+
+        wallet_address = wallet_data.get("address")
+        if not wallet_address:
+            raise HTTPException(status_code=400, detail="Wallet address is required")
+
+        # Verify NFT ownership
+        verification_result = await web3_auth.verify_nft_ownership(wallet_address)
+        
+        # Create user record
+        user_record = web3_auth.create_user_from_web3_data(wallet_address, verification_result)
+        
+        # Update user record in database
+        result = users_collection.update_one(
+            {"wallet_address": wallet_address.lower()},
+            {"$set": user_record},
+            upsert=True
+        )
+        
+        # Get the updated user record
+        updated_user = users_collection.find_one({"wallet_address": wallet_address.lower()})
+        if updated_user:
+            updated_user["_id"] = str(updated_user["_id"])
+        
+        return {
+            "success": True,
+            "user": updated_user,
+            "verification": verification_result,
+            "message": "Wallet verification and sync completed"
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Wallet sync error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/web3/user/{wallet_address}")
+async def get_web3_user_profile(wallet_address: str):
+    """Get Web3 user profile by wallet address"""
+    try:
+        if db is None:
+            raise HTTPException(status_code=500, detail="Database not connected")
+
+        user = users_collection.find_one({"wallet_address": wallet_address.lower()})
+        if not user:
+            raise HTTPException(status_code=404, detail="Web3 user not found")
+
+        user["_id"] = str(user["_id"])
+        return user
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Get Web3 user profile error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
         
     except HTTPException:
         raise
