@@ -75,14 +75,23 @@ const FeedbackForm = ({ articleId, onFeedbackSubmitted }) => {
         })
       });
 
-      if (response.ok) {
+      const data = await response.json();
+
+      if (response.ok && data.success) {
         setSubmitted(true);
         setSelectedEmotion(emotion);
+        
+        // Pass algorithm influence data to parent component
         if (onFeedbackSubmitted) {
-          onFeedbackSubmitted(emotion);
+          onFeedbackSubmitted({
+            emotion,
+            algorithmInfluenced: data.algorithm_influenced,
+            influenceWeight: data.influence_weight,
+            accessType: data.access_type
+          });
         }
       } else {
-        console.error('Failed to submit feedback');
+        console.error('Failed to submit feedback:', data.message || 'Unknown error');
       }
     } catch (error) {
       console.error('Error submitting feedback:', error);
