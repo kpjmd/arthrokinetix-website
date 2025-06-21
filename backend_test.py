@@ -522,6 +522,28 @@ def test_articles_count(self):
     
     return success, response
 
+def test_feedback_with_clerk_auth(self):
+    """Test feedback submission with Clerk authentication"""
+    if not self.test_article_id:
+        print("❌ Cannot test feedback - no test article created")
+        return False, {}
+            
+    feedback_data = {
+        "article_id": self.test_article_id,
+        "emotion": "hope",
+        "user_email": self.test_email,
+        "clerk_user_id": "user_2NNpCQXMJVdxpuXoHxLwExxxx", # Mock Clerk user ID
+        "access_type": "email_verified"
+    }
+    
+    return self.run_test(
+        "Submit Feedback with Clerk Auth",
+        "POST",
+        "api/feedback",
+        200,
+        data=feedback_data
+    )
+
 def main():
     # Get the backend URL from frontend .env file
     import os
@@ -550,28 +572,32 @@ def main():
     
     # Test algorithm state endpoint (critical for UI)
     print("\n=== Testing Algorithm State ===")
-    algorithm_state_success, _ = tester.test_algorithm_state_details()
+    algorithm_state_success, _ = tester.test_algorithm_state()
     
-    # Test articles count
-    print("\n=== Testing Articles Count ===")
-    articles_count_success, _ = tester.test_articles_count()
+    # Test articles endpoint
+    print("\n=== Testing Articles Endpoint ===")
+    tester.test_get_articles()
     
-    # Test recalculate algorithm state endpoint
-    print("\n=== Testing Recalculate Algorithm State ===")
-    recalculate_success, _ = tester.test_recalculate_algorithm_state()
+    # Test creating an article (needed for feedback test)
+    print("\n=== Testing Article Creation ===")
+    article_success, _ = tester.test_create_article()
     
-    # Test algorithm state again after recalculation
-    if recalculate_success:
-        print("\n=== Testing Algorithm State After Recalculation ===")
-        tester.test_algorithm_state_details()
+    # Test feedback submission with Clerk authentication
+    if article_success:
+        print("\n=== Testing Feedback with Clerk Authentication ===")
+        tester.test_feedback_with_clerk_auth()
+    
+    # Test newsletter subscription (part of email verification flow)
+    print("\n=== Testing Newsletter Subscription ===")
+    tester.test_newsletter_subscribe()
     
     # Print results
     print(f"\n📊 Tests passed: {tester.tests_passed}/{tester.tests_run}")
     
     # Return specific information about the algorithm state issue
     if not algorithm_state_success:
-        print("\n⚠️ CRITICAL ISSUE: Algorithm state is not showing the correct number of articles processed.")
-        print("This will affect the AlgorithmMoodIndicator tooltip display.")
+        print("\n⚠️ CRITICAL ISSUE: Algorithm state is not working properly.")
+        print("This will affect the AlgorithmMoodIndicator display.")
     
     return 0 if tester.tests_passed == tester.tests_run else 1
 
