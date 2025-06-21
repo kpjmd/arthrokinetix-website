@@ -365,14 +365,11 @@ const Gallery = ({ algorithmState }) => {
                       className="text-sm py-2 px-3 border border-gray-300"
                     />
                     
-                    <button 
-                      onClick={() => handleMintNFT(artwork.id)}
-                      className="btn-secondary text-sm py-2 px-3 flex items-center"
-                      title="Mint NFT (Coming Soon)"
-                    >
-                      <Zap className="w-4 h-4 mr-1" />
-                      Mint NFT
-                    </button>
+                    <NFTMintButton 
+                      artwork={artwork}
+                      size="small"
+                      className="text-sm py-2 px-3"
+                    />
                   </div>
                 </div>
               </motion.div>
