@@ -358,6 +358,12 @@ const Gallery = ({ algorithmState }) => {
                       View
                     </Link>
                     
+                    <ShareButtons 
+                      content={artwork} 
+                      type="artwork"
+                      className="text-sm py-2 px-3 border border-gray-300"
+                    />
+                    
                     <button 
                       onClick={() => handleMintNFT(artwork.id)}
                       className="btn-secondary text-sm py-2 px-3 flex items-center"
