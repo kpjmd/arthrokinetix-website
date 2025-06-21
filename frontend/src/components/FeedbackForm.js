@@ -103,7 +103,7 @@ const FeedbackForm = ({ articleId, onFeedbackSubmitted }) => {
       <motion.div
         initial={{ opacity: 0, scale: 0.9 }}
         animate={{ opacity: 1, scale: 1 }}
-        className="bg-green-50 border border-green-200 rounded-lg p-6 text-center"
+        className="bg-gradient-to-r from-green-50 to-blue-50 border border-green-200 rounded-lg p-6 text-center"
       >
         <motion.div
           initial={{ scale: 0 }}
@@ -118,16 +118,23 @@ const FeedbackForm = ({ articleId, onFeedbackSubmitted }) => {
           />
         </motion.div>
         
-        <h3 className="text-lg font-semibold text-green-800 mb-2">
-          Thank You for Your Feedback!
+        <div className="text-4xl mb-3">✨</div>
+        <h3 className="text-xl font-bold text-gray-800 mb-2">
+          Thank You! Algorithm Influenced
         </h3>
-        <p className="text-green-700 mb-4">
-          Your <span className="font-medium capitalize">{selectedEmotion}</span> emotion 
-          has been recorded and will help evolve the algorithm.
+        <p className="text-gray-600 mb-4">
+          Your <span className="font-semibold capitalize">{selectedEmotion}</span> feedback 
+          has been integrated into the Arthrokinetix algorithm's emotional evolution.
         </p>
-        <div className="text-sm text-green-600">
+        <div className="bg-white rounded-lg p-3 inline-block">
+          <p className="text-sm text-gray-500">
+            🧠 Algorithm Learning: <span className="font-medium">+{selectedEmotion} influence</span>
+          </p>
+        </div>
+        <div className="mt-4 text-sm text-green-600">
           <p>✓ Feedback submitted as verified user</p>
-          <p>✓ Algorithm state updated</p>
+          <p>✓ Algorithm state updated in real-time</p>
+          <p>✓ Your influence will shape future art generation</p>
         </div>
       </motion.div>
     );
