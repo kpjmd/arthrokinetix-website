@@ -320,6 +320,11 @@ const ArticlesHub = ({ algorithmState }) => {
           </div>
         )}
       </section>
+
+      {/* Newsletter Signup Section */}
+      <section className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pb-16">
+        <ArticlesNewsletterForm />
+      </section>
     </div>
   );
 };
