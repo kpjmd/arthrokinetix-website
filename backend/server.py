@@ -926,6 +926,66 @@ async def update_algorithm_with_feedback(emotion: str, influence_weight: float, 
     except Exception as e:
         print(f"Error updating algorithm with feedback: {e}")
         return False
+
+async def update_algorithm_with_feedback(emotion: str, influence_weight: float, feedback_id: str) -> bool:
+    """Update algorithm state based on user feedback"""
+    try:
+        # Get current algorithm state
+        current_state = algorithm_states_collection.find_one({}, sort=[("timestamp", -1)])
+        if not current_state:
+            print("No current algorithm state found")
+            return False
+            
+        # Get current emotional mix
+        current_mix = current_state["emotional_state"]["emotional_mix"]
+        
+        # Calculate influence based on weight
+        influence_factor = min(influence_weight * 0.2, 0.3)  # Cap maximum influence at 30%
+        
+        # Update emotional mix
+        new_mix = current_mix.copy()
+        for emotion_key in new_mix:
+            if emotion_key == emotion:
+                # Increase the feedback emotion
+                new_mix[emotion_key] = min(1.0, new_mix[emotion_key] + influence_factor)
+            else:
+                # Slightly decrease other emotions to maintain balance
+                new_mix[emotion_key] = max(0.1, new_mix[emotion_key] - (influence_factor / 5))
+                
+        # Normalize values to ensure they sum to a reasonable range
+        total = sum(new_mix.values())
+        if total > 0:
+            factor = 2.5 / total  # We want the sum to be around 2.5
+            new_mix = {k: v * factor for k, v in new_mix.items()}
+        
+        # Find new dominant emotion
+        dominant_emotion = max(new_mix, key=new_mix.get)
+        
+        # Generate new visual representation
+        visual_rep = generate_visual_representation(dominant_emotion, new_mix[dominant_emotion])
+        
+        # Create new algorithm state
+        new_state = {
+            "emotional_state": {
+                "dominant_emotion": dominant_emotion,
+                "emotional_intensity": new_mix[dominant_emotion],
+                "emotional_mix": new_mix
+            },
+            "visual_representation": visual_rep,
+            "timestamp": datetime.utcnow(),
+            "articles_processed": current_state["articles_processed"],
+            "feedback_influences": current_state.get("feedback_influences", []) + [feedback_id]
+        }
+        
+        # Insert new state
+        algorithm_states_collection.insert_one(new_state)
+        print(f"Algorithm state updated based on feedback. New dominant emotion: {dominant_emotion}")
+        return True
+        
+    except Exception as e:
+        print(f"Error updating algorithm with feedback: {e}")
+        return False
+
 if __name__ == "__main__":
     import uvicorn
     
