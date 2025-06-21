@@ -2,11 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { ArrowLeft, BookOpen, Palette, Heart, ThumbsUp, ThumbsDown, Star, Award, Clock, User, FileText, File, Download, Image } from 'lucide-react';
-import { useUser } from '@clerk/clerk-react';
 import EmotionalSignature from '../components/EmotionalSignature';
 import FeedbackForm from '../components/FeedbackForm';
-import { AuthModal, SignedIn, SignedOut } from '../components/AuthComponents';
+import { AuthModal } from '../components/AuthComponents';
 import { Web3AccessGate } from '../components/Web3AuthComponents';
+import { useUser, SignedIn, SignedOut } from '../hooks/useAuth';
 
 const API_BASE = process.env.REACT_APP_BACKEND_URL || 'http://localhost:8001';
 
