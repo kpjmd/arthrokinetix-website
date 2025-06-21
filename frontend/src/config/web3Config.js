@@ -1,5 +1,4 @@
-import { createWeb3Modal } from '@web3modal/wagmi/react'
-import { configureChains, createConfig } from 'wagmi'
+import { createConfig, configureChains } from 'wagmi'
 import { base } from 'wagmi/chains'
 import { publicProvider } from 'wagmi/providers/public'
 import { WalletConnectConnector } from 'wagmi/connectors/walletConnect'
@@ -50,14 +49,6 @@ const config = createConfig({
   ],
   publicClient,
   webSocketPublicClient
-})
-
-// 4. Create modal
-createWeb3Modal({
-  wagmiConfig: config,
-  projectId,
-  enableAnalytics: true,
-  enableOnramp: true
 })
 
 export { config }
