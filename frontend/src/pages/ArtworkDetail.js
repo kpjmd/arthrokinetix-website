@@ -284,13 +284,11 @@ const ArtworkDetail = () => {
                 Fullscreen
               </button>
               
-              <button 
-                onClick={handleMintNFT}
-                className="inline-flex items-center px-4 py-2 bg-secondary text-white rounded-lg hover:bg-secondary/90 transition-colors"
-              >
-                <Zap className="w-5 h-5 mr-2" />
-                Mint NFT
-              </button>
+              <NFTMintButton 
+                artwork={artwork}
+                size="default"
+                className="px-4 py-2"
+              />
               
               {artwork && (
                 <ShareButtons 
