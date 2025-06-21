@@ -986,6 +986,53 @@ async def update_algorithm_with_feedback(emotion: str, influence_weight: float, 
         print(f"Error updating algorithm with feedback: {e}")
         return False
 
+@app.get("/api/share/metadata/{content_type}/{content_id}")
+async def get_share_metadata(content_type: str, content_id: str):
+    """Get sharing metadata for articles or artworks"""
+    try:
+        if content_type == "article":
+            article = articles_collection.find_one({"id": content_id})
+            if not article:
+                raise HTTPException(status_code=404, detail="Article not found")
+            
+            article["_id"] = str(article["_id"])
+            return {
+                "type": "article",
+                "title": article["title"],
+                "description": article.get("meta_description", f"Evidence-based medical content in {article.get('subspecialty', 'orthopedics')}"),
+                "url": f"/articles/{content_id}",
+                "image": None,  # Could add article thumbnails in future
+                "hashtags": ["Arthrokinetix", "Medicine", "EvidenceBased", article.get("subspecialty"), article.get("emotional_data", {}).get("dominant_emotion")],
+                "subspecialty": article.get("subspecialty"),
+                "emotion": article.get("emotional_data", {}).get("dominant_emotion")
+            }
+            
+        elif content_type == "artwork":
+            artwork = artworks_collection.find_one({"id": content_id})
+            if not artwork:
+                raise HTTPException(status_code=404, detail="Artwork not found")
+            
+            artwork["_id"] = str(artwork["_id"])
+            rarity_score = artwork.get("metadata", {}).get("rarity_score", 0)
+            return {
+                "type": "artwork",
+                "title": artwork["title"],
+                "description": f"Algorithmic art generated from medical research. Emotion: {artwork.get('dominant_emotion', 'unknown')}. Rarity: {round(rarity_score * 100)}%",
+                "url": f"/gallery/{content_id}",
+                "image": None,  # Could add artwork previews in future
+                "hashtags": ["Arthrokinetix", "GenerativeArt", "MedicalArt", "NFT", artwork.get("dominant_emotion"), artwork.get("subspecialty")],
+                "subspecialty": artwork.get("subspecialty"),
+                "emotion": artwork.get("dominant_emotion"),
+                "rarity_score": rarity_score
+            }
+        else:
+            raise HTTPException(status_code=400, detail="Invalid content type. Must be 'article' or 'artwork'")
+            
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 if __name__ == "__main__":
     import uvicorn
     
