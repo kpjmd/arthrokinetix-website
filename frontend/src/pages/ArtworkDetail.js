@@ -494,8 +494,11 @@ const ArtworkDetail = () => {
                 )}
 
                 <div className="pt-4">
-            {/* NFT Information Panel */}
-            <NFTInfoPanel artwork={artwork} />
+                  {/* NFT Information Panel */}
+                  <NFTInfoPanel artwork={artwork} />
+                </div>
+              </div>
+            </motion.div>
           </div>
         </div>
       </section>
