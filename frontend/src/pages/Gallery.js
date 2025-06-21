@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Palette, Filter, Grid, Search, Star, Eye, Zap } from 'lucide-react';
+import ShareButtons from '../components/ShareButtons';
 
 const API_BASE = process.env.REACT_APP_BACKEND_URL || 'http://localhost:8001';
 
