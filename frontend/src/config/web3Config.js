@@ -1,12 +1,21 @@
 import { createWeb3Modal } from '@web3modal/wagmi/react'
-import { http, createConfig } from 'wagmi'
+import { configureChains, createConfig } from 'wagmi'
 import { base } from 'wagmi/chains'
-import { walletConnect, injected, coinbaseWallet } from 'wagmi/connectors'
+import { publicProvider } from 'wagmi/providers/public'
+import { WalletConnectConnector } from 'wagmi/connectors/walletConnect'
+import { InjectedConnector } from 'wagmi/connectors/injected'
+import { CoinbaseWalletConnector } from 'wagmi/connectors/coinbaseWallet'
 
 // 1. Get projectId from environment
 const projectId = process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID || process.env.REACT_APP_WALLETCONNECT_PROJECT_ID || '09861ae0475dc4c586c66bbda1a5e918'
 
-// 2. Create wagmiConfig
+// 2. Configure chains & providers
+const { chains, publicClient, webSocketPublicClient } = configureChains(
+  [base],
+  [publicProvider()]
+)
+
+// 3. Create wagmiConfig
 const metadata = {
   name: 'Arthrokinetix',
   description: 'Revolutionary platform where medical research meets emotional intelligence and algorithmic art',
@@ -14,24 +23,36 @@ const metadata = {
   icons: ['https://avatars.githubusercontent.com/u/37784886']
 }
 
-const chains = [base]
-
 const config = createConfig({
-  chains,
-  transports: {
-    [base.id]: http()
-  },
+  autoConnect: true,
   connectors: [
-    walletConnect({ projectId, metadata, showQrModal: false }),
-    injected({ shimDisconnect: true }),
-    coinbaseWallet({
-      appName: metadata.name,
-      appLogoUrl: metadata.icons[0]
+    new WalletConnectConnector({
+      chains,
+      options: {
+        projectId,
+        metadata
+      }
+    }),
+    new InjectedConnector({
+      chains,
+      options: {
+        name: 'Injected',
+        shimDisconnect: true
+      }
+    }),
+    new CoinbaseWalletConnector({
+      chains,
+      options: {
+        appName: metadata.name,
+        appLogoUrl: metadata.icons[0]
+      }
     })
-  ]
+  ],
+  publicClient,
+  webSocketPublicClient
 })
 
-// 3. Create modal
+// 4. Create modal
 createWeb3Modal({
   wagmiConfig: config,
   projectId,
