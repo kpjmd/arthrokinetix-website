@@ -19,7 +19,7 @@ app = FastAPI(title="Arthrokinetix API")
 # CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["https://904d118b-2810-48a9-8104-ca77055c206f.preview.emergentagent.com"],
+    allow_origins=["http://localhost:3000", "https://904d118b-2810-48a9-8104-ca77055c206f.preview.emergentagent.com"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
