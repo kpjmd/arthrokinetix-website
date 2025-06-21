@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 import { BookOpen, Palette, Zap, Users, TrendingUp, Heart } from 'lucide-react';
 import EmotionalSignature from '../components/EmotionalSignature';
 import ShareButtons from '../components/ShareButtons';
+import { HeroNewsletterForm } from '../components/NewsletterForms';
 import SEOHead from '../components/SEOHead';
 
 const API_BASE = process.env.REACT_APP_BACKEND_URL || 'http://localhost:8001';
