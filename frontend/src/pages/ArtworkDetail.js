@@ -494,20 +494,8 @@ const ArtworkDetail = () => {
                 )}
 
                 <div className="pt-4">
-                  <button 
-                    onClick={handleMintNFT}
-                    disabled={artwork.nft_status === 'minted'}
-                    className="w-full flex items-center justify-center px-6 py-3 bg-gradient-to-r from-secondary to-primary text-white rounded-lg hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed font-medium"
-                  >
-                    <Zap className="w-5 h-5 mr-2" />
-                    {artwork.nft_status === 'minted' ? 'Already Minted' : 'Mint as NFT'}
-                  </button>
-                  <p className="text-xs text-gray-500 mt-2 text-center">
-                    Powered by Manifold (Coming Soon)
-                  </p>
-                </div>
-              </div>
-            </motion.div>
+            {/* NFT Information Panel */}
+            <NFTInfoPanel artwork={artwork} />
           </div>
         </div>
       </section>
