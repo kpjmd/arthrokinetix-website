@@ -453,6 +453,13 @@ const ArticlePage = ({ algorithmState, onStateUpdate }) => {
                       View Generated Artwork
                     </Link>
                   )}
+                  
+                  {/* Share Button */}
+                  <ShareButtons 
+                    content={article} 
+                    type="article"
+                    className="border border-blue-200"
+                  />
                 </div>
 
                 {/* User Status Indicator */}
