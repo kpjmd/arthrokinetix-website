@@ -28,6 +28,7 @@ class ArthrokinetixAPITester:
         self.test_artwork_id = None
         self.test_email = f"test_{datetime.now().strftime('%Y%m%d%H%M%S')}@example.com"
         self.test_signature_id = None
+        self.test_wallet_address = "0x742d35Cc6634C0532925a3b844Bc454e4438f44e"  # Test wallet address
 
     def run_test(self, name, method, endpoint, expected_status, data=None, params=None):
         """Run a single API test"""
@@ -218,6 +219,91 @@ class ArthrokinetixAPITester:
             data=feedback_data
         )
 
+    def test_feedback_with_web3_auth(self):
+        """Test feedback submission with Web3 authentication"""
+        if not self.test_article_id:
+            print("❌ Cannot test feedback - no test article created")
+            return False, {}
+                
+        feedback_data = {
+            "article_id": self.test_article_id,
+            "emotion": "confidence",
+            "wallet_address": self.test_wallet_address,
+            "access_type": "web3_verified"
+        }
+        
+        return self.run_test(
+            "Submit Feedback with Web3 Auth",
+            "POST",
+            "api/feedback",
+            200,
+            data=feedback_data
+        )
+
+    def test_web3_verify_nft(self):
+        """Test Web3 NFT verification endpoint"""
+        verification_data = {
+            "address": self.test_wallet_address
+        }
+        
+        success, response = self.run_test(
+            "Web3 NFT Verification",
+            "POST",
+            "api/web3/verify-nft",
+            200,
+            data=verification_data
+        )
+        
+        if success:
+            print(f"NFT verification result: {response.get('verified', False)}")
+            if 'erc721_balance' in response:
+                print(f"ERC721 balance: {response.get('erc721_balance')}")
+            if 'erc1155_balance' in response:
+                print(f"ERC1155 balance: {response.get('erc1155_balance')}")
+            
+        return success, response
+
+    def test_clerk_webhook(self):
+        """Test Clerk webhook endpoint"""
+        # This is a simplified test as we can't generate a real Clerk webhook signature
+        webhook_data = {
+            "type": "user.created",
+            "data": {
+                "id": "user_2NNpCQXMJVdxpuXoHxLwExxxx",
+                "email_addresses": [
+                    {"email_address": self.test_email}
+                ],
+                "first_name": "Test",
+                "last_name": "User"
+            }
+        }
+        
+        return self.run_test(
+            "Clerk Webhook",
+            "POST",
+            "api/webhooks/clerk",
+            200,
+            data=webhook_data
+        )
+
+    def test_user_profile(self):
+        """Test user profile endpoint"""
+        return self.run_test(
+            "User Profile",
+            "GET",
+            "api/users/profile?clerk_user_id=user_2NNpCQXMJVdxpuXoHxLwExxxx",
+            200
+        )
+
+    def test_web3_user_profile(self):
+        """Test Web3 user profile endpoint"""
+        return self.run_test(
+            "Web3 User Profile",
+            "GET",
+            f"api/web3/user?address={self.test_wallet_address}",
+            200
+        )
+
 def main():
     # Get the backend URL from frontend .env file
     import os
@@ -256,10 +342,47 @@ def main():
     print("\n=== Testing Article Creation ===")
     article_success, _ = tester.test_create_article()
     
-    # Test feedback submission with Clerk authentication
+    # Test dual authentication system
+    print("\n=== Testing Dual Authentication System ===")
+    
+    # Test Clerk authentication
+    print("\n--- Testing Clerk Email Authentication ---")
+    clerk_webhook_success, _ = tester.test_clerk_webhook()
+    if not clerk_webhook_success:
+        print("⚠️ Clerk webhook endpoint not implemented or not working")
+    
+    user_profile_success, _ = tester.test_user_profile()
+    if not user_profile_success:
+        print("⚠️ User profile endpoint not implemented or not working")
+    
+    # Test Web3 authentication
+    print("\n--- Testing Web3 NFT Authentication ---")
+    web3_verify_success, _ = tester.test_web3_verify_nft()
+    if not web3_verify_success:
+        print("⚠️ Web3 NFT verification endpoint not implemented or not working")
+    
+    web3_user_success, _ = tester.test_web3_user_profile()
+    if not web3_user_success:
+        print("⚠️ Web3 user profile endpoint not implemented or not working")
+    
+    # Test feedback submission with both auth methods
     if article_success:
-        print("\n=== Testing Feedback with Clerk Authentication ===")
-        tester.test_feedback_with_clerk_auth()
+        print("\n=== Testing Dual Feedback System ===")
+        
+        # Test email auth feedback
+        print("\n--- Testing Email Auth Feedback ---")
+        email_feedback_success, _ = tester.test_feedback_with_clerk_auth()
+        
+        # Test Web3 auth feedback
+        print("\n--- Testing Web3 Auth Feedback ---")
+        web3_feedback_success, _ = tester.test_feedback_with_web3_auth()
+        
+        if not email_feedback_success and not web3_feedback_success:
+            print("⚠️ CRITICAL ISSUE: Both feedback authentication methods are failing")
+        elif not email_feedback_success:
+            print("⚠️ Email authentication feedback is not working")
+        elif not web3_feedback_success:
+            print("⚠️ Web3 authentication feedback is not working")
     
     # Test newsletter subscription (part of email verification flow)
     print("\n=== Testing Newsletter Subscription ===")
@@ -268,7 +391,7 @@ def main():
     # Print results
     print(f"\n📊 Tests passed: {tester.tests_passed}/{tester.tests_run}")
     
-    # Return specific information about the algorithm state issue
+    # Return specific information about critical issues
     if not algorithm_state_success:
         print("\n⚠️ CRITICAL ISSUE: Algorithm state is not working properly.")
         print("This will affect the AlgorithmMoodIndicator display.")
