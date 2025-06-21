@@ -432,9 +432,9 @@ const ArticlePage = ({ algorithmState, onStateUpdate }) => {
                 />
               </SignedIn>
 
-              {/* Signed Out - Show Web3 Access Gate */}
+              {/* Signed Out - Show Access Gate */}
               <SignedOut>
-                <Web3AccessGate 
+                <AccessGate 
                   onEmailSignUp={handleSignUp}
                   onEmailSignIn={handleSignIn}
                 />
