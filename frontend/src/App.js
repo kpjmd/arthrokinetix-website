@@ -155,6 +155,14 @@ function AppContent() {
             element={<About />} 
           />
           <Route 
+            path="/privacy" 
+            element={<PrivacyPolicy />} 
+          />
+          <Route 
+            path="/terms" 
+            element={<TermsOfService />} 
+          />
+          <Route 
             path="/admin" 
             element={<AdminDashboard />} 
           />
