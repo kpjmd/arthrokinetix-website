@@ -510,63 +510,8 @@ const Homepage = ({ algorithmState, onStateUpdate }) => {
               whileInView={{ x: 0, opacity: 1 }}
               viewport={{ once: true }}
               transition={{ duration: 0.8 }}
-              className="bg-white/10 backdrop-blur-lg rounded-xl p-8 border border-white/20"
             >
-              <h3 className="text-2xl font-bold mb-4">Stay Updated</h3>
-              <p className="text-blue-100 mb-6">
-                Subscribe to our newsletter for the latest medical content, algorithm insights, 
-                and exclusive access to new artworks.
-              </p>
-
-              <form onSubmit={handleNewsletterSubmit} className="space-y-4">
-                <input
-                  type="email"
-                  placeholder="Enter your email"
-                  value={newsletterEmail}
-                  onChange={(e) => setNewsletterEmail(e.target.value)}
-                  className="w-full px-4 py-3 rounded-lg text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-accent focus:outline-none"
-                  required
-                />
-                
-                <button
-                  type="submit"
-                  disabled={newsletterStatus === 'subscribing'}
-                  className="w-full bg-accent hover:bg-accent/90 text-white font-semibold py-3 px-6 rounded-lg transition-colors duration-200 flex items-center justify-center disabled:opacity-50"
-                >
-                  {newsletterStatus === 'subscribing' ? (
-                    <motion.div
-                      animate={{ rotate: 360 }}
-                      transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-                      className="w-5 h-5 border-2 border-white border-t-transparent rounded-full"
-                    />
-                  ) : (
-                    <>
-                      <TrendingUp className="w-5 h-5 mr-2" />
-                      Subscribe
-                    </>
-                  )}
-                </button>
-
-                {newsletterStatus === 'success' && (
-                  <motion.p
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="text-healing text-sm text-center"
-                  >
-                    ✓ Thank you for subscribing! Check your email for confirmation.
-                  </motion.p>
-                )}
-
-                {newsletterStatus === 'error' && (
-                  <motion.p
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="text-red-300 text-sm text-center"
-                  >
-                    Something went wrong. Please try again.
-                  </motion.p>
-                )}
-              </form>
+              <HeroNewsletterForm />
             </motion.div>
           </div>
         </div>
