@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { useUser } from '@clerk/clerk-react';
 import EnhancedWeb3Integration from './EnhancedWeb3Integration';
-import { AuthModal, EnhancedUserButton, SignedIn, SignedOut } from './AuthComponents';
+import { AuthModal, EnhancedUserButton } from './AuthComponents';
+import { useUser, SignedIn, SignedOut } from '../hooks/useAuth';
 
 const Header = () => {
   const location = useLocation();
