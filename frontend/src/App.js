@@ -179,11 +179,11 @@ function App() {
   return (
     <HelmetProvider>
       <ClerkProvider>
-        <Web3Provider>
+        {/* <Web3Provider> */}
           <Router>
             <AppContent />
           </Router>
-        </Web3Provider>
+        {/* </Web3Provider> */}
       </ClerkProvider>
     </HelmetProvider>
   );
