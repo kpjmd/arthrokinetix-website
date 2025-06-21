@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ArrowLeft, BookOpen, Palette, Heart, ThumbsUp, ThumbsDown, Star, Award, Clock, User, FileText, File, Download, Image } from 'lucide-react';
-import EmotionalSignature from '../components/EmotionalSignature';
-import FeedbackForm from '../components/FeedbackForm';
-import { AuthModal } from '../components/AuthComponents';
-import { Web3AccessGate } from '../components/Web3AuthComponents';
+import { ArrowLeft, Clock, FileText, Award, User, Star, BookOpen, Image, Palette } from 'lucide-react';
 import { useUser, SignedIn, SignedOut } from '../hooks/useAuth';
+import { AuthModal, Web3AccessGate } from '../components/AuthComponents';
+import FeedbackForm from '../components/FeedbackForm';
+import EmotionalSignature from '../components/EmotionalSignature';
+import ShareButtons from '../components/ShareButtons';
+import SEOHead from '../components/SEOHead';
 
 const API_BASE = process.env.REACT_APP_BACKEND_URL || 'http://localhost:8001';
 
