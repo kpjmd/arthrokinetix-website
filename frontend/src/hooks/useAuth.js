@@ -5,30 +5,52 @@ const CLERK_PUBLISHABLE_KEY = process.env.REACT_APP_CLERK_PUBLISHABLE_KEY || pro
 
 // Custom hook that safely handles Clerk or falls back to mock
 export const useUser = () => {
-  if (!CLERK_PUBLISHABLE_KEY) {
-    return useMockUser();
-  }
+  // Always call both hooks (Rules of Hooks compliance)
+  const mockUser = useMockUser();
+  
+  // Only call Clerk hook if key is available
+  let clerkUser = null;
+  let clerkError = false;
   
   try {
-    return useClerkUser();
+    // This will only work if Clerk is properly configured
+    clerkUser = CLERK_PUBLISHABLE_KEY ? useClerkUser() : null;
   } catch (error) {
     console.warn('Clerk useUser failed, using mock:', error.message);
-    return useMockUser();
+    clerkError = true;
   }
+  
+  // Return Clerk user if available, otherwise mock
+  if (CLERK_PUBLISHABLE_KEY && !clerkError && clerkUser) {
+    return clerkUser;
+  }
+  
+  return mockUser;
 };
 
 // Custom hook that safely handles Clerk or falls back to mock
 export const useClerk = () => {
-  if (!CLERK_PUBLISHABLE_KEY) {
-    return useMockClerk();
-  }
+  // Always call both hooks (Rules of Hooks compliance)
+  const mockClerk = useMockClerk();
+  
+  // Only call Clerk hook if key is available
+  let clerkHook = null;
+  let clerkError = false;
   
   try {
-    return useClerkHook();
+    // This will only work if Clerk is properly configured
+    clerkHook = CLERK_PUBLISHABLE_KEY ? useClerkHook() : null;
   } catch (error) {
     console.warn('Clerk useClerk failed, using mock:', error.message);
-    return useMockClerk();
+    clerkError = true;
   }
+  
+  // Return Clerk hook if available, otherwise mock
+  if (CLERK_PUBLISHABLE_KEY && !clerkError && clerkHook) {
+    return clerkHook;
+  }
+  
+  return mockClerk;
 };
 
 // Safe SignedIn component
