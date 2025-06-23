@@ -10,7 +10,7 @@ export const useUser = () => {
   const clerkUser = useClerkUser(); // Always called, no conditions
   
   // Use conditional logic AFTER all hooks are called
-  // Check if Clerk is properly configured and working
+  // Check if Clerk is properly configured and working first
   const hasClerkKey = Boolean(CLERK_PUBLISHABLE_KEY);
   const isClerkWorking = hasClerkKey && clerkUser && !clerkUser.error;
   
