@@ -5,49 +5,39 @@ const CLERK_PUBLISHABLE_KEY = process.env.REACT_APP_CLERK_PUBLISHABLE_KEY || pro
 
 // Custom hook that safely handles Clerk or falls back to mock
 export const useUser = () => {
-  // Always call all hooks at the top level - Rules of Hooks compliance
+  // Always call all hooks unconditionally - Rules of Hooks compliance
   const mockUser = useMockUser();
-  
-  // Always call Clerk hooks, but handle errors gracefully
-  let clerkUser = null;
-  let clerkError = false;
-  
-  try {
-    clerkUser = useClerkUser();
-  } catch (error) {
-    console.warn('Clerk useUser failed, using mock:', error.message);
-    clerkError = true;
-  }
+  const clerkUser = useClerkUser(); // Always called, no conditions
   
   // Use conditional logic AFTER all hooks are called
-  if (CLERK_PUBLISHABLE_KEY && !clerkError && clerkUser) {
+  // Check if Clerk is properly configured and working
+  const hasClerkKey = Boolean(CLERK_PUBLISHABLE_KEY);
+  const isClerkWorking = hasClerkKey && clerkUser && !clerkUser.error;
+  
+  if (isClerkWorking) {
     return clerkUser;
   }
   
+  // Fall back to mock user
   return mockUser;
 };
 
 // Custom hook that safely handles Clerk or falls back to mock
 export const useClerk = () => {
-  // Always call all hooks at the top level - Rules of Hooks compliance
+  // Always call all hooks unconditionally - Rules of Hooks compliance
   const mockClerk = useMockClerk();
-  
-  // Always call Clerk hooks, but handle errors gracefully
-  let clerkHook = null;
-  let clerkError = false;
-  
-  try {
-    clerkHook = useClerkHook();
-  } catch (error) {
-    console.warn('Clerk useClerk failed, using mock:', error.message);
-    clerkError = true;
-  }
+  const clerkHook = useClerkHook(); // Always called, no conditions
   
   // Use conditional logic AFTER all hooks are called
-  if (CLERK_PUBLISHABLE_KEY && !clerkError && clerkHook) {
+  // Check if Clerk is properly configured and working
+  const hasClerkKey = Boolean(CLERK_PUBLISHABLE_KEY);
+  const isClerkWorking = hasClerkKey && clerkHook && !clerkHook.error;
+  
+  if (isClerkWorking) {
     return clerkHook;
   }
   
+  // Fall back to mock clerk
   return mockClerk;
 };
 
