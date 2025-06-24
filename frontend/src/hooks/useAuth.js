@@ -2,6 +2,12 @@ import { useMockUser, useMockClerk } from '../components/ClerkProvider';
 
 const CLERK_PUBLISHABLE_KEY = process.env.REACT_APP_CLERK_PUBLISHABLE_KEY || process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY;
 
+// Debug logging
+console.log('useAuth Debug:', {
+  CLERK_KEY: CLERK_PUBLISHABLE_KEY ? 'EXISTS' : 'MISSING',
+  CLERK_KEY_TYPE: CLERK_PUBLISHABLE_KEY?.includes('test') ? 'DEV' : 'PROD'
+});
+
 // Safely import Clerk hooks only if Clerk is available
 let useClerkUser = null;
 let useClerkHook = null;
@@ -60,62 +66,37 @@ export const useClerk = () => {
   }
 };
 
-// Safe SignedIn component that checks context properly
+// Completely safe SignedIn component that never crashes
 export const SignedIn = ({ children }) => {
-  if (!CLERK_PUBLISHABLE_KEY) {
-    return null;
-  }
-  
   try {
-    const { SignedIn: ClerkSignedIn, useUser } = require('@clerk/clerk-react');
+    const user = useUser();
     
-    // Wrapper component that checks if we're in Clerk context
-    const SafeSignedIn = ({ children }) => {
-      try {
-        const user = useUser();
-        if (user.isSignedIn) {
-          return children;
-        }
-        return null;
-      } catch (error) {
-        console.warn('SignedIn context error:', error.message);
-        return null;
-      }
-    };
+    // Only show content if user is actually signed in
+    if (user && user.isSignedIn) {
+      return <>{children}</>;
+    }
     
-    return <SafeSignedIn>{children}</SafeSignedIn>;
+    return null;
   } catch (error) {
-    console.warn('Clerk SignedIn component failed:', error.message);
+    console.warn('SignedIn component error:', error.message);
     return null;
   }
 };
 
-// Safe SignedOut component that checks context properly
+// Completely safe SignedOut component that never crashes
 export const SignedOut = ({ children }) => {
-  if (!CLERK_PUBLISHABLE_KEY) {
-    return <>{children}</>;
-  }
-  
   try {
-    const { useUser } = require('@clerk/clerk-react');
+    const user = useUser();
     
-    // Wrapper component that checks if we're in Clerk context
-    const SafeSignedOut = ({ children }) => {
-      try {
-        const user = useUser();
-        if (!user.isSignedIn) {
-          return children;
-        }
-        return null;
-      } catch (error) {
-        console.warn('SignedOut context error:', error.message);
-        return <>{children}</>;
-      }
-    };
+    // Show content if user is not signed in or if we can't determine status
+    if (!user || !user.isSignedIn) {
+      return <>{children}</>;
+    }
     
-    return <SafeSignedOut>{children}</SafeSignedOut>;
+    return null;
   } catch (error) {
-    console.warn('Clerk SignedOut component failed:', error.message);
+    console.warn('SignedOut component error:', error.message);
+    // Default to showing content if there's an error
     return <>{children}</>;
   }
 };
