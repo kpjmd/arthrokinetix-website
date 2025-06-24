@@ -16,14 +16,30 @@ load_dotenv('/app/backend/.env')
 
 app = FastAPI(title="Arthrokinetix API")
 
-# CORS middleware
+# Get CORS origins from environment variable
+cors_origins_env = os.getenv("CORS_ORIGINS", "http://localhost:3000")
+cors_origins = [origin.strip() for origin in cors_origins_env.split(",")]
+
+# Add some debug logging
+print(f"🔧 CORS Origins configured: {cors_origins}")
+
+# CORS middleware with environment-based origins
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "https://904d118b-2810-48a9-8104-ca77055c206f.preview.emergentagent.com"],
+    allow_origins=cors_origins,
     allow_credentials=True,
-    allow_methods=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allow_headers=["*"],
 )
+
+# Add this after your app definition for debugging
+@app.get("/debug/cors")
+async def debug_cors():
+    return {
+        "cors_origins": cors_origins,
+        "cors_origins_env": cors_origins_env,
+        "admin_password_set": bool(os.getenv("ADMIN_PASSWORD"))
+    }
 
 # Database connection with consistent naming
 mongodb_uri = os.environ.get('MONGODB_URI')
