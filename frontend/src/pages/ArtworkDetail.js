@@ -87,19 +87,7 @@ const ArtworkDetail = () => {
     }
   };
 
-  const generateArtworkSVG = (artwork) => {
-    if (!artwork) return null;
-
-    const { dominant_emotion, algorithm_parameters, subspecialty } = artwork;
-    const complexity = algorithm_parameters?.tree_complexity || 0.7;
-    const emotionalIntensity = algorithm_parameters?.emotional_intensity || 0.8;
-    const colorPalette = algorithm_parameters?.color_palette || [{ color: getEmotionColor(artwork.dominant_emotion || 'confidence') }];
-
-    return (
-      <svg 
-        className="w-full h-full" 
-        viewBox="0 0 400 400"
-        style={{ background: getArtworkBackground(dominant_emotion) }}
+  import RealArthrokinetixArtwork from '../components/RealArthrokinetixArtwork';
       >
         {/* Andry Tree Base Structure */}
         <g transform="translate(200, 380)">
@@ -313,8 +301,12 @@ const ArtworkDetail = () => {
               transition={{ duration: 0.8 }}
               className="bg-white rounded-xl p-8 shadow-lg"
             >
-              <div className="aspect-square bg-gradient-to-br from-gray-100 to-gray-200 rounded-lg overflow-hidden mb-6">
-                {generateArtworkSVG(artwork)}
+              <div className="aspect-square bg-gradient-to-br from-gray-100 to-gray-200 rounded-lg overflow-hidden mb-6 p-4">
+                <RealArthrokinetixArtwork 
+                  artwork={artwork} 
+                  width={400} 
+                  height={400}
+                />
               </div>
               
               <div className="text-center">
@@ -528,85 +520,6 @@ const ArtworkDetail = () => {
 };
 
 // Helper functions
-const getEmotionColor = (emotion) => {
-  const colors = {
-    hope: '#27ae60',
-    tension: '#e74c3c',
-    confidence: '#3498db',
-    uncertainty: '#95a5a6',
-    breakthrough: '#f39c12',
-    healing: '#16a085'
-  };
-  return colors[emotion] || '#3498db';
-};
-
-const getEmotionSymbol = (emotion) => {
-  const symbols = {
-    hope: '○',
-    confidence: '■',
-    breakthrough: '★',
-    healing: '⬢',
-    tension: '▲',
-    uncertainty: '◆'
-  };
-  return symbols[emotion] || '○';
-};
-
-const getArtworkBackground = (emotion) => {
-  const gradients = {
-    hope: 'linear-gradient(45deg, #d5f5d0, #a8e6a1)',
-    confidence: 'linear-gradient(45deg, #dae8fc, #b3d9ff)',
-    breakthrough: 'linear-gradient(45deg, #fff3d0, #ffe0a3)',
-    healing: 'linear-gradient(45deg, #d0f5f0, #a3e6d7)',
-    tension: 'linear-gradient(45deg, #fdd5d5, #ffb3b3)',
-    uncertainty: 'linear-gradient(45deg, #f0f0f0, #e0e0e0)'
-  };
-  return gradients[emotion] || gradients.confidence;
-};
-
-const generateBranches = (artwork) => {
-  const complexity = (artwork.algorithm_parameters?.tree_complexity || 0.5) * 6 + 3;
-  const branches = [];
-  
-  for (let i = 0; i < Math.floor(complexity); i++) {
-    const side = i % 2 === 0 ? -1 : 1;
-    const angle = (25 + Math.random() * 40) * side;
-    const length = 40 + Math.random() * 30;
-    
-    branches.push({
-      startY: -20 - (i * 18),
-      endX: Math.sin(angle * Math.PI / 180) * length,
-      endY: -20 - (i * 18) - Math.cos(angle * Math.PI / 180) * length,
-      thickness: 4 - (i * 0.4),
-      secondaryX: Math.sin((angle + 25) * Math.PI / 180) * (length * 0.7),
-      secondaryY: -Math.cos((angle + 25) * Math.PI / 180) * (length * 0.7)
-    });
-  }
-  
-  return branches;
-};
-
-const generateEmotionalParticles = (artwork) => {
-  const intensity = artwork.algorithm_parameters?.emotional_intensity || 0.5;
-  const count = Math.floor(intensity * 20) + 8;
-  const particles = [];
-  const color = getEmotionColor(artwork.dominant_emotion || 'confidence');
-  
-  for (let i = 0; i < count; i++) {
-    const angle = (i / count) * 360;
-    const radius = 50 + Math.random() * 40;
-    
-    particles.push({
-      x: Math.cos(angle * Math.PI / 180) * radius,
-      y: Math.sin(angle * Math.PI / 180) * radius - 60,
-      radius: 2 + Math.random() * 4,
-      color: color,
-      opacity: 0.4 + Math.random() * 0.4
-    });
-  }
-  
-  return particles;
-};
 
 const formatDate = (dateString) => {
   if (!dateString) return 'Unknown';
