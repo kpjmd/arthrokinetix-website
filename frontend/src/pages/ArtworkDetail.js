@@ -430,4 +430,16 @@ const getSampleArticle = (artworkId) => ({
   subspecialty: 'sportsMedicine'
 });
 
+const getEmotionColorLocal = (emotion) => {
+  const colors = {
+    hope: '#27ae60',
+    tension: '#e74c3c',
+    confidence: '#3498db',
+    uncertainty: '#95a5a6',
+    breakthrough: '#f39c12',
+    healing: '#16a085'
+  };
+  return colors[emotion] || '#3498db';
+};
+
 export default ArtworkDetail;
