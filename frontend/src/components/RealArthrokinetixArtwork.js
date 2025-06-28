@@ -39,9 +39,6 @@ const RealArthrokinetixArtwork = ({ artwork, width = 400, height = 400 }) => {
     // 7. Subspecialty Symbol
     const subspecialtySymbol = generateSubspecialtySymbol(params.subspecialty, params.dominant_emotion);
     
-    // 8. Signature Elements
-    const signatureElements = generateSignatureElements(metadata.signature_id);
-
     const svg = (
       <svg 
         width={width} 
