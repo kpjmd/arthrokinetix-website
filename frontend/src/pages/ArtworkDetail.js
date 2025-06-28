@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 import { ArrowLeft, Share2, Eye, Palette, Award, Calendar, Tag, X, Zap } from 'lucide-react';
 import ShareButtons from '../components/ShareButtons';
 import NFTMintButton, { NFTInfoPanel } from '../components/NFTMintButton';
+import RealArthrokinetixArtwork from '../components/RealArthrokinetixArtwork';
 
 const API_BASE = process.env.REACT_APP_BACKEND_URL || 'http://localhost:8001';
 
@@ -85,141 +86,6 @@ const ArtworkDetail = () => {
       navigator.clipboard.writeText(window.location.href);
       alert('Artwork link copied to clipboard!');
     }
-  };
-
-  import RealArthrokinetixArtwork from '../components/RealArthrokinetixArtwork';
-      >
-        {/* Andry Tree Base Structure */}
-        <g transform="translate(200, 380)">
-          {/* Tree trunk */}
-          <rect 
-            x="-6" 
-            y="-120" 
-            width="12" 
-            height="120" 
-            fill="#8b4513" 
-            opacity="0.9"
-          />
-          
-          {/* Main branches based on emotional data */}
-          {generateBranches(artwork).map((branch, i) => (
-            <g key={i}>
-              <motion.line 
-                x1="0" 
-                y1={branch.startY}
-                x2={branch.endX} 
-                y2={branch.endY}
-                stroke="#8b4513" 
-                strokeWidth={branch.thickness}
-                opacity="0.8"
-                initial={{ pathLength: 0 }}
-                animate={{ pathLength: 1 }}
-                transition={{ duration: 2, delay: i * 0.2 }}
-              />
-              
-              {/* Secondary branches */}
-              <motion.line 
-                x1={branch.endX} 
-                y1={branch.endY}
-                x2={branch.endX + branch.secondaryX} 
-                y2={branch.endY + branch.secondaryY}
-                stroke="#8b4513" 
-                strokeWidth={Math.max(1, branch.thickness - 1)}
-                opacity="0.7"
-                initial={{ pathLength: 0 }}
-                animate={{ pathLength: 1 }}
-                transition={{ duration: 1.5, delay: i * 0.2 + 0.5 }}
-              />
-            </g>
-          ))}
-          
-          {/* Emotional particles */}
-          {generateEmotionalParticles(artwork).map((particle, i) => (
-            <motion.circle
-              key={i}
-              cx={particle.x}
-              cy={particle.y}
-              r={particle.radius}
-              fill={particle.color}
-              opacity={particle.opacity}
-              animate={{
-                scale: [1, 1.3, 1],
-                opacity: [particle.opacity, particle.opacity * 1.5, particle.opacity]
-              }}
-              transition={{
-                duration: 3 + Math.random() * 2,
-                repeat: Infinity,
-                delay: Math.random() * 3
-              }}
-            />
-          ))}
-          
-          {/* Healing aura rings */}
-          {Array.from({ length: 3 }).map((_, i) => (
-            <motion.circle
-              key={`aura-${i}`}
-              cx="0"
-              cy="-60"
-              r={40 + (i * 15)}
-              fill="none"
-              stroke={colorPalette[0]?.color || getEmotionColor(dominant_emotion)}
-              strokeWidth="1"
-              opacity={0.3 - (i * 0.1)}
-              animate={{
-                r: [40 + (i * 15), 45 + (i * 15), 40 + (i * 15)],
-                opacity: [0.3 - (i * 0.1), 0.5 - (i * 0.1), 0.3 - (i * 0.1)]
-              }}
-              transition={{
-                duration: 4 + i,
-                repeat: Infinity,
-                ease: "easeInOut",
-                delay: i * 0.5
-              }}
-            />
-          ))}
-
-          {/* Subspecialty-specific elements */}
-          {subspecialty === 'sportsMedicine' && (
-            <motion.path
-              d="M -30,-80 Q 0,-100 30,-80"
-              stroke={colorPalette[0]?.color || getEmotionColor(dominant_emotion)}
-              strokeWidth="2"
-              fill="none"
-              opacity="0.6"
-              animate={{
-                d: ["M -30,-80 Q 0,-100 30,-80", "M -30,-80 Q 0,-90 30,-80", "M -30,-80 Q 0,-100 30,-80"]
-              }}
-              transition={{
-                duration: 3,
-                repeat: Infinity,
-                ease: "easeInOut"
-              }}
-            />
-          )}
-        </g>
-
-        {/* Signature overlay */}
-        <g transform="translate(350, 50)">
-          <circle
-            cx="0"
-            cy="0"
-            r="25"
-            fill={colorPalette[0]?.color || getEmotionColor(dominant_emotion)}
-            opacity="0.2"
-          />
-          <text
-            x="0"
-            y="5"
-            textAnchor="middle"
-            fontSize="20"
-            fill={colorPalette[0]?.color || getEmotionColor(dominant_emotion)}
-            fontWeight="bold"
-          >
-            {getEmotionSymbol(dominant_emotion)}
-          </text>
-        </g>
-      </svg>
-    );
   };
 
   if (loading) {
