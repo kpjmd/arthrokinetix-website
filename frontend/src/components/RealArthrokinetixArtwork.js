@@ -1,10 +1,4 @@
-{/* Medical Term Clusters */}
-        <g className="medical-terms">
-          {medicalVisuals.map((cluster, i) => (
-            <motion.g 
-              key={`medical-${i}`}
-              transform={`translate(${cluster.x}, ${cluster.y})`}
-              initial// RealArthrokinetixArtwork.js - Uses the actual algorithm
+// RealArthrokinetixArtwork.js - Uses the actual algorithm
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 
@@ -215,7 +209,6 @@ const RealArthrokinetixArtwork = ({ artwork, width = 400, height = 400 }) => {
             </motion.g>
           ))}
         </g>
-
         {/* Medical Term Clusters */}
         <g className="medical-terms">
           {medicalVisuals.map((cluster, i) => (
