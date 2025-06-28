@@ -15,6 +15,22 @@ const RealArthrokinetixArtwork = ({ artwork, width = 400, height = 400 }) => {
     const params = artwork.algorithm_parameters;
     const metadata = artwork.metadata;
     
+    // Debug logging
+    console.log('🎨 Generating artwork for:', artwork.title);
+    console.log('📊 Algorithm parameters:', params);
+    console.log('🏷️ Metadata:', metadata);
+    
+    // Check if we have real data or need to use fallbacks
+    const hasMedicalTerms = params?.medical_terms && Object.keys(params.medical_terms).length > 0;
+    const hasStatisticalData = params?.statistical_data && params.statistical_data.length > 0;
+    const hasEmotionalMix = params?.emotional_mix && Object.keys(params.emotional_mix).length > 0;
+    
+    console.log('📋 Data availability:', {
+      medicalTerms: hasMedicalTerms,
+      statisticalData: hasStatisticalData,
+      emotionalMix: hasEmotionalMix
+    });
+    
     // Use REAL algorithm parameters, not simplified tree visualization
     const svgElements = [];
     
@@ -39,12 +55,16 @@ const RealArthrokinetixArtwork = ({ artwork, width = 400, height = 400 }) => {
     // 7. Subspecialty Symbol
     const subspecialtySymbol = generateSubspecialtySymbol(params.subspecialty, params.dominant_emotion);
     
+    // 8. Signature Elements
+    const signatureElements = generateSignatureElements(metadata.signature_id);
+
     const svg = (
       <svg 
-        width={width} 
-        height={height} 
+        width="100%" 
+        height="100%" 
         viewBox={`0 0 ${width} ${height}`}
-        className="arthrokinetix-real-artwork"
+        className="arthrokinetix-real-artwork w-full h-full"
+        preserveAspectRatio="xMidYMid meet"
       >
         {/* Background */}
         <defs>
@@ -89,7 +109,75 @@ const RealArthrokinetixArtwork = ({ artwork, width = 400, height = 400 }) => {
                   opacity={0.6}
                   animate={{
                     strokeDasharray: ["0 100", "100 0", "0 100"],
-                  }}
+                  {cluster.type === 'outcome_radial' && (
+              <g>
+                {Array.from({ length: cluster.rayCount }).map((_, rayIndex) => {
+                  const rayAngle = (rayIndex / cluster.rayCount) * 360;
+                  const rayEndX = Math.cos(rayAngle * Math.PI / 180) * cluster.rayLength;
+                  const rayEndY = Math.sin(rayAngle * Math.PI / 180) * cluster.rayLength;
+                  
+                  return (
+                    <motion.line
+                      key={rayIndex}
+                      x1="0"
+                      y1="0"
+                      x2={rayEndX}
+                      y2={rayEndY}
+                      stroke={cluster.color}
+                      strokeWidth="2"
+                      opacity={0.6}
+                      animate={{
+                        x2: [rayEndX, rayEndX * 1.3, rayEndX],
+                        y2: [rayEndY, rayEndY * 1.3, rayEndY]
+                      }}
+                      transition={{
+                        duration: 3,
+                        repeat: Infinity,
+                        delay: rayIndex * 0.1
+                      }}
+                    />
+                  );
+                })}
+              </g>
+            )}
+            
+            {cluster.type === 'simple_cluster' && (
+              <motion.circle
+                cx="0"
+                cy="0"
+                r={cluster.size}
+                fill={cluster.color}
+                opacity={0.4}
+                animate={{
+                  r: [cluster.size, cluster.size * 1.2, cluster.size],
+                  opacity: [0.4, 0.7, 0.4]
+                }}
+                transition={{
+                  duration: 4,
+                  repeat: Infinity
+                }}
+              />
+            )}
+            
+            {cluster.type === 'fallback_cluster' && (
+              <motion.rect
+                x={-cluster.size/2}
+                y={-cluster.size/2}
+                width={cluster.size}
+                height={cluster.size}
+                fill={cluster.color}
+                opacity={0.5}
+                animate={{
+                  width: [cluster.size, cluster.size * 1.1, cluster.size],
+                  height: [cluster.size, cluster.size * 1.1, cluster.size]
+                }}
+                transition={{
+                  duration: 2,
+                  repeat: Infinity,
+                  delay: i * 0.3
+                }}
+              />
+            )}}
                   transition={{
                     duration: 8,
                     repeat: Infinity,
@@ -369,41 +457,63 @@ const RealArthrokinetixArtwork = ({ artwork, width = 400, height = 400 }) => {
   const generateMedicalTermVisuals = (medicalTerms) => {
     const visuals = [];
     
+    if (!medicalTerms || Object.keys(medicalTerms).length === 0) {
+      console.log('⚠️ No medical terms found, generating fallback visuals');
+      // Generate some fallback visuals
+      for (let i = 0; i < 3; i++) {
+        visuals.push({
+          type: 'fallback_cluster',
+          x: 100 + (i * 120),
+          y: 150 + (i * 40),
+          size: 20 + (i * 10),
+          color: ['#3498db', '#27ae60', '#f39c12'][i]
+        });
+      }
+      return visuals;
+    }
+    
     Object.entries(medicalTerms).forEach(([category, terms], categoryIndex) => {
       const termCount = Object.keys(terms).length;
       if (termCount === 0) return;
       
-      const x = 50 + (categoryIndex * 80);
-      const y = 100 + (categoryIndex * 30);
+      console.log(`🏷️ Processing ${category} with ${termCount} terms`);
+      
+      const x = 80 + (categoryIndex * 100);
+      const y = 120 + (categoryIndex * 60);
       
       if (category === 'procedures') {
         // Procedures as geometric shapes
-        const points = generatePolygonPoints(x, y, termCount + 3, 15);
+        const sides = Math.min(termCount + 3, 8);
+        const radius = 15 + (termCount * 2);
+        const points = generatePolygonPoints(0, 0, sides, radius);
+        const animatedPoints = generatePolygonPoints(0, 0, sides, radius + 5);
+        
         visuals.push({
           type: 'procedure_cluster',
           x: x,
           y: y,
           points: points,
-          animatedPoints: generatePolygonPoints(x, y, termCount + 3, 20),
-          color: getCategoryColor(category)
+          animatedPoints: animatedPoints,
+          color: getCategoryColor(category),
+          termCount: termCount
         });
       } else if (category === 'anatomy') {
         // Anatomy as connected network
         const nodes = [];
         const connections = [];
         
-        for (let i = 0; i < termCount; i++) {
-          const nodeAngle = (i / termCount) * 360;
-          const nodeRadius = 20;
+        for (let i = 0; i < Math.min(termCount, 6); i++) {
+          const nodeAngle = (i / Math.min(termCount, 6)) * 360;
+          const nodeRadius = 25 + (termCount * 2);
           nodes.push({
             x: Math.cos(nodeAngle * Math.PI / 180) * nodeRadius,
             y: Math.sin(nodeAngle * Math.PI / 180) * nodeRadius,
-            radius: 3
+            radius: 3 + (termCount / 5)
           });
           
           // Connect to next node
-          if (i < termCount - 1) {
-            const nextAngle = ((i + 1) / termCount) * 360;
+          if (i < Math.min(termCount, 6) - 1) {
+            const nextAngle = ((i + 1) / Math.min(termCount, 6)) * 360;
             connections.push({
               x1: Math.cos(nodeAngle * Math.PI / 180) * nodeRadius,
               y1: Math.sin(nodeAngle * Math.PI / 180) * nodeRadius,
@@ -419,11 +529,34 @@ const RealArthrokinetixArtwork = ({ artwork, width = 400, height = 400 }) => {
           y: y,
           nodes: nodes,
           connections: connections,
-          color: getCategoryColor(category)
+          color: getCategoryColor(category),
+          termCount: termCount
+        });
+      } else if (category === 'outcomes') {
+        // Outcomes as radiating elements
+        visuals.push({
+          type: 'outcome_radial',
+          x: x,
+          y: y,
+          rayCount: Math.min(termCount, 8),
+          rayLength: 20 + (termCount * 3),
+          color: getCategoryColor(category),
+          termCount: termCount
+        });
+      } else {
+        // Default: simple cluster
+        visuals.push({
+          type: 'simple_cluster',
+          x: x,
+          y: y,
+          size: 15 + (termCount * 2),
+          color: getCategoryColor(category),
+          termCount: termCount
         });
       }
     });
     
+    console.log(`🎨 Generated ${visuals.length} medical term visuals`);
     return visuals;
   };
 
@@ -685,7 +818,7 @@ const RealArthrokinetixArtwork = ({ artwork, width = 400, height = 400 }) => {
   }
 
   return (
-    <div className="real-arthrokinetix-artwork">
+    <div className="real-arthrokinetix-artwork w-full h-full">
       {svgContent}
     </div>
   );
