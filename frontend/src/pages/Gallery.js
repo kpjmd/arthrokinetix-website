@@ -191,6 +191,8 @@ const Gallery = ({ algorithmState }) => {
           </div>
         ) : (
           <div className="artwork-grid">
+            import RealArthrokinetixArtwork from '../components/RealArthrokinetixArtwork';
+
             {filteredArtworks.map((artwork, index) => (
               <motion.div
                 key={artwork.id}
@@ -202,92 +204,12 @@ const Gallery = ({ algorithmState }) => {
               >
                 {/* Artwork Preview */}
                 <div className="artwork-preview relative overflow-hidden">
-                  {/* Generated SVG Art */}
-                  <svg 
-                    className="w-full h-full" 
-                    viewBox="0 0 300 300"
-                    style={{ background: getArtworkBackground(artwork.dominant_emotion) }}
-                  >
-                    {/* Andry Tree Base Structure */}
-                    <g transform="translate(150, 280)">
-                      {/* Tree trunk */}
-                      <rect 
-                        x="-4" 
-                        y="-80" 
-                        width="8" 
-                        height="80" 
-                        fill="#8b4513" 
-                        opacity="0.8"
-                      />
-                      
-                      {/* Main branches based on emotional data */}
-                      {generateBranches(artwork).map((branch, i) => (
-                        <g key={i}>
-                          <line 
-                            x1="0" 
-                            y1={branch.startY}
-                            x2={branch.endX} 
-                            y2={branch.endY}
-                            stroke="#8b4513" 
-                            strokeWidth={branch.thickness}
-                            opacity="0.7"
-                          />
-                          
-                          {/* Secondary branches */}
-                          <line 
-                            x1={branch.endX} 
-                            y1={branch.endY}
-                            x2={branch.endX + branch.secondaryX} 
-                            y2={branch.endY + branch.secondaryY}
-                            stroke="#8b4513" 
-                            strokeWidth={Math.max(1, branch.thickness - 1)}
-                            opacity="0.6"
-                          />
-                        </g>
-                      ))}
-                      
-                      {/* Emotional particles */}
-                      {generateEmotionalParticles(artwork).map((particle, i) => (
-                        <motion.circle
-                          key={i}
-                          cx={particle.x}
-                          cy={particle.y}
-                          r={particle.radius}
-                          fill={particle.color}
-                          opacity={particle.opacity}
-                          animate={{
-                            scale: [1, 1.2, 1],
-                            opacity: [particle.opacity, particle.opacity * 1.5, particle.opacity]
-                          }}
-                          transition={{
-                            duration: 2 + Math.random() * 2,
-                            repeat: Infinity,
-                            delay: Math.random() * 2
-                          }}
-                        />
-                      ))}
-                      
-                      {/* Healing aura */}
-                      <motion.circle
-                        cx="0"
-                        cy="-40"
-                        r="50"
-                        fill="none"
-                        stroke={getEmotionColor(artwork.dominant_emotion)}
-                        strokeWidth="1"
-                        opacity="0.2"
-                        animate={{
-                          r: [45, 55, 45],
-                          opacity: [0.2, 0.4, 0.2]
-                        }}
-                        transition={{
-                          duration: 3,
-                          repeat: Infinity,
-                          ease: "easeInOut"
-                        }}
-                      />
-                    </g>
-                  </svg>
+                  {/* NEW: Use Real Algorithm Component */}
+                  <RealArthrokinetixArtwork 
+                    artwork={artwork} 
+                    width={300} 
+                    height={300}
+                  />
 
                   {/* Hover overlay with functional View Details link */}
                   <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
@@ -396,74 +318,6 @@ const Gallery = ({ algorithmState }) => {
 };
 
 // Helper functions
-const getEmotionColor = (emotion) => {
-  const colors = {
-    hope: '#27ae60',
-    tension: '#e74c3c',
-    confidence: '#3498db',
-    uncertainty: '#95a5a6',
-    breakthrough: '#f39c12',
-    healing: '#16a085'
-  };
-  return colors[emotion] || '#3498db';
-};
-
-const getArtworkBackground = (emotion) => {
-  const gradients = {
-    hope: 'linear-gradient(45deg, #d5f5d0, #a8e6a1)',
-    confidence: 'linear-gradient(45deg, #dae8fc, #b3d9ff)',
-    breakthrough: 'linear-gradient(45deg, #fff3d0, #ffe0a3)',
-    healing: 'linear-gradient(45deg, #d0f5f0, #a3e6d7)',
-    tension: 'linear-gradient(45deg, #fdd5d5, #ffb3b3)',
-    uncertainty: 'linear-gradient(45deg, #f0f0f0, #e0e0e0)'
-  };
-  return gradients[emotion] || gradients.confidence;
-};
-
-const generateBranches = (artwork) => {
-  const complexity = (artwork.algorithm_parameters?.tree_complexity || 0.5) * 5 + 2;
-  const branches = [];
-  
-  for (let i = 0; i < Math.floor(complexity); i++) {
-    const side = i % 2 === 0 ? -1 : 1;
-    const angle = (30 + Math.random() * 30) * side;
-    const length = 30 + Math.random() * 20;
-    
-    branches.push({
-      startY: -20 - (i * 15),
-      endX: Math.sin(angle * Math.PI / 180) * length,
-      endY: -20 - (i * 15) - Math.cos(angle * Math.PI / 180) * length,
-      thickness: 3 - (i * 0.3),
-      secondaryX: Math.sin((angle + 20) * Math.PI / 180) * (length * 0.6),
-      secondaryY: -Math.cos((angle + 20) * Math.PI / 180) * (length * 0.6)
-    });
-  }
-  
-  return branches;
-};
-
-const generateEmotionalParticles = (artwork) => {
-  const intensity = artwork.algorithm_parameters?.emotional_intensity || 0.5;
-  const count = Math.floor(intensity * 15) + 5;
-  const particles = [];
-  const color = getEmotionColor(artwork.dominant_emotion || 'confidence');
-  
-  for (let i = 0; i < count; i++) {
-    const angle = (i / count) * 360;
-    const radius = 40 + Math.random() * 30;
-    
-    particles.push({
-      x: Math.cos(angle * Math.PI / 180) * radius,
-      y: Math.sin(angle * Math.PI / 180) * radius - 40,
-      radius: 2 + Math.random() * 3,
-      color: color,
-      opacity: 0.4 + Math.random() * 0.4
-    });
-  }
-  
-  return particles;
-};
-
 const getRarityLabel = (score) => {
   if (!score) return 'Common';
   if (score < 0.3) return 'Common';
