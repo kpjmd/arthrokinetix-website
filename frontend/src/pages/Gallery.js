@@ -5,6 +5,7 @@ import { Palette, Filter, Grid, Search, Star, Eye, Zap } from 'lucide-react';
 import ShareButtons from '../components/ShareButtons';
 import NFTMintButton from '../components/NFTMintButton';
 import { GalleryNewsletterForm } from '../components/NewsletterForms';
+import RealArthrokinetixArtwork from '../components/RealArthrokinetixArtwork';
 
 const API_BASE = process.env.REACT_APP_BACKEND_URL || 'http://localhost:8001';
 
@@ -191,8 +192,6 @@ const Gallery = ({ algorithmState }) => {
           </div>
         ) : (
           <div className="artwork-grid">
-            import RealArthrokinetixArtwork from '../components/RealArthrokinetixArtwork';
-
             {filteredArtworks.map((artwork, index) => (
               <motion.div
                 key={artwork.id}
@@ -340,10 +339,59 @@ const generateSampleArtworks = () => [
     dominant_emotion: 'confidence',
     created_date: '2024-03-01',
     algorithm_parameters: {
+      // Core parameters
+      evidence_strength: 0.8,
+      technical_density: 0.75,
       tree_complexity: 0.8,
-      emotional_intensity: 0.85
+      emotional_intensity: 0.85,
+      
+      // Emotional analysis
+      emotional_mix: {
+        hope: 0.7,
+        confidence: 0.85,
+        healing: 0.6,
+        breakthrough: 0.5,
+        tension: 0.2,
+        uncertainty: 0.3
+      },
+      
+      // Medical content analysis
+      medical_terms: {
+        procedures: {
+          "arthroscopy": { count: 8, significance: 8.0 },
+          "reconstruction": { count: 5, significance: 5.0 },
+          "repair": { count: 12, significance: 12.0 }
+        },
+        anatomy: {
+          "ligament": { count: 15, significance: 15.0 },
+          "joint": { count: 10, significance: 10.0 },
+          "tendon": { count: 7, significance: 7.0 }
+        },
+        outcomes: {
+          "success rate": { count: 6, significance: 6.0 },
+          "recovery": { count: 9, significance: 9.0 }
+        }
+      },
+      
+      // Statistical data
+      statistical_data: [
+        { type: "percentages", value: 92, significance: 0.92 },
+        { type: "satisfaction", value: 87, significance: 0.87 },
+        { type: "pValues", value: 0.03, significance: 0.97 }
+      ],
+      
+      // Research citations
+      research_citations: [
+        { importance: 0.8, impact: 0.9, type: "research_reference" },
+        { importance: 0.7, impact: 0.8, type: "research_reference" },
+        { importance: 0.9, impact: 0.95, type: "research_reference" }
+      ]
     },
-    metadata: { rarity_score: 0.75 },
+    metadata: { 
+      rarity_score: 0.75,
+      algorithm_version: '2.0',
+      signature_id: 'AKX-2024-0301-A1B2'
+    },
     nft_status: 'available'
   },
   {
@@ -353,36 +401,138 @@ const generateSampleArtworks = () => [
     dominant_emotion: 'breakthrough',
     created_date: '2024-02-28',
     algorithm_parameters: {
+      evidence_strength: 0.95,
+      technical_density: 0.88,
       tree_complexity: 0.95,
-      emotional_intensity: 0.92
+      emotional_intensity: 0.92,
+      
+      emotional_mix: {
+        hope: 0.8,
+        confidence: 0.9,
+        healing: 0.7,
+        breakthrough: 0.92,
+        tension: 0.1,
+        uncertainty: 0.2
+      },
+      
+      medical_terms: {
+        procedures: {
+          "tenodesis": { count: 10, significance: 10.0 },
+          "arthroscopy": { count: 12, significance: 12.0 }
+        },
+        anatomy: {
+          "biceps": { count: 18, significance: 18.0 },
+          "shoulder": { count: 14, significance: 14.0 }
+        }
+      },
+      
+      statistical_data: [
+        { type: "percentages", value: 96, significance: 0.96 },
+        { type: "followUp", value: 24, significance: 0.4 }
+      ],
+      
+      research_citations: [
+        { importance: 0.95, impact: 0.98, type: "research_reference" },
+        { importance: 0.88, impact: 0.92, type: "research_reference" }
+      ]
     },
-    metadata: { rarity_score: 0.95 },
+    metadata: { 
+      rarity_score: 0.95,
+      algorithm_version: '2.0' 
+    },
     nft_status: 'minted'
   },
   {
     id: '3',
     title: 'Algorithmic Synthesis #AKX-2024-0303-E5F6',
-    subspecialty: 'sportsMedicine', 
+    subspecialty: 'jointReplacement', 
     dominant_emotion: 'healing',
     created_date: '2024-02-25',
     algorithm_parameters: {
+      evidence_strength: 0.6,
+      technical_density: 0.65,
       tree_complexity: 0.6,
-      emotional_intensity: 0.78
+      emotional_intensity: 0.78,
+      
+      emotional_mix: {
+        hope: 0.8,
+        confidence: 0.7,
+        healing: 0.78,
+        breakthrough: 0.4,
+        tension: 0.3,
+        uncertainty: 0.4
+      },
+      
+      medical_terms: {
+        procedures: {
+          "arthroplasty": { count: 15, significance: 15.0 },
+          "replacement": { count: 20, significance: 20.0 }
+        },
+        anatomy: {
+          "hip": { count: 12, significance: 12.0 },
+          "joint": { count: 18, significance: 18.0 }
+        }
+      },
+      
+      statistical_data: [
+        { type: "percentages", value: 89, significance: 0.89 },
+        { type: "sampleSizes", value: 450, significance: 0.45 }
+      ],
+      
+      research_citations: [
+        { importance: 0.6, impact: 0.7, type: "research_reference" }
+      ]
     },
-    metadata: { rarity_score: 0.45 },
+    metadata: { 
+      rarity_score: 0.45,
+      algorithm_version: '2.0' 
+    },
     nft_status: 'available'
   },
   {
     id: '4',
     title: 'Algorithmic Synthesis #AKX-2024-0304-G7H8',
-    subspecialty: 'jointReplacement',
+    subspecialty: 'trauma',
     dominant_emotion: 'tension',
     created_date: '2024-02-20',
     algorithm_parameters: {
+      evidence_strength: 0.7,
+      technical_density: 0.8,
       tree_complexity: 0.7,
-      emotional_intensity: 0.68
+      emotional_intensity: 0.68,
+      
+      emotional_mix: {
+        hope: 0.5,
+        confidence: 0.6,
+        healing: 0.5,
+        breakthrough: 0.3,
+        tension: 0.68,
+        uncertainty: 0.5
+      },
+      
+      medical_terms: {
+        procedures: {
+          "fixation": { count: 8, significance: 8.0 },
+          "surgery": { count: 10, significance: 10.0 }
+        },
+        anatomy: {
+          "fracture": { count: 12, significance: 12.0 },
+          "bone": { count: 15, significance: 15.0 }
+        }
+      },
+      
+      statistical_data: [
+        { type: "percentages", value: 78, significance: 0.78 }
+      ],
+      
+      research_citations: [
+        { importance: 0.7, impact: 0.75, type: "research_reference" }
+      ]
     },
-    metadata: { rarity_score: 0.72 },
+    metadata: { 
+      rarity_score: 0.72,
+      algorithm_version: '2.0' 
+    },
     nft_status: 'available'
   },
   {
@@ -392,10 +542,42 @@ const generateSampleArtworks = () => [
     dominant_emotion: 'uncertainty',
     created_date: '2024-02-15',
     algorithm_parameters: {
+      evidence_strength: 0.4,
+      technical_density: 0.45,
       tree_complexity: 0.4,
-      emotional_intensity: 0.55
+      emotional_intensity: 0.55,
+      
+      emotional_mix: {
+        hope: 0.4,
+        confidence: 0.45,
+        healing: 0.4,
+        breakthrough: 0.2,
+        tension: 0.4,
+        uncertainty: 0.55
+      },
+      
+      medical_terms: {
+        procedures: {
+          "fusion": { count: 6, significance: 6.0 }
+        },
+        anatomy: {
+          "spine": { count: 8, significance: 8.0 },
+          "vertebra": { count: 5, significance: 5.0 }
+        }
+      },
+      
+      statistical_data: [
+        { type: "percentages", value: 65, significance: 0.65 }
+      ],
+      
+      research_citations: [
+        { importance: 0.4, impact: 0.5, type: "research_reference" }
+      ]
     },
-    metadata: { rarity_score: 0.35 },
+    metadata: { 
+      rarity_score: 0.35,
+      algorithm_version: '2.0' 
+    },
     nft_status: 'available'
   },
   {
@@ -405,10 +587,46 @@ const generateSampleArtworks = () => [
     dominant_emotion: 'hope',
     created_date: '2024-02-10',
     algorithm_parameters: {
+      evidence_strength: 0.85,
+      technical_density: 0.82,
       tree_complexity: 0.85,
-      emotional_intensity: 0.82
+      emotional_intensity: 0.82,
+      
+      emotional_mix: {
+        hope: 0.82,
+        confidence: 0.8,
+        healing: 0.75,
+        breakthrough: 0.6,
+        tension: 0.2,
+        uncertainty: 0.25
+      },
+      
+      medical_terms: {
+        procedures: {
+          "repair": { count: 10, significance: 10.0 },
+          "reconstruction": { count: 7, significance: 7.0 }
+        },
+        anatomy: {
+          "hand": { count: 12, significance: 12.0 },
+          "tendon": { count: 15, significance: 15.0 },
+          "finger": { count: 8, significance: 8.0 }
+        }
+      },
+      
+      statistical_data: [
+        { type: "percentages", value: 94, significance: 0.94 },
+        { type: "satisfaction", value: 91, significance: 0.91 }
+      ],
+      
+      research_citations: [
+        { importance: 0.85, impact: 0.9, type: "research_reference" },
+        { importance: 0.8, impact: 0.85, type: "research_reference" }
+      ]
     },
-    metadata: { rarity_score: 0.88 },
+    metadata: { 
+      rarity_score: 0.88,
+      algorithm_version: '2.0' 
+    },
     nft_status: 'minted'
   }
 ];
