@@ -10,6 +10,7 @@ from typing import List, Dict, Optional
 import anthropic
 import base64
 from pathlib import Path
+import re
 
 # Load environment variables
 load_dotenv('/app/backend/.env')
@@ -501,12 +502,21 @@ def calculate_rarity_score(emotional_data: dict) -> float:
     rarity = min(variance * 10, 1.0)
     return round(rarity, 3)
 
-async def generate_artwork_with_algorithm(article_id: str, article_content: str, emotional_data: dict, signature_data: dict):
+async def generate_artwork(article_id: str, emotional_data: dict, signature_data: dict):
     """Generate artwork using the actual Arthrokinetix algorithm parameters"""
     artwork_id = str(uuid.uuid4())
     
+    # Get the article content for full algorithm processing
+    article = articles_collection.find_one({"id": article_id})
+    if not article:
+        # Fallback processing
+        content = "Sample medical content for processing"
+    else:
+        # Use HTML content if available, otherwise use regular content
+        content = article.get('html_content') or article.get('content', '')
+    
     # Process article content with full algorithm analysis
-    algorithm_output = process_article_with_full_algorithm(article_content, emotional_data)
+    algorithm_output = process_article_with_full_algorithm(content, emotional_data)
     
     artwork = {
         "id": artwork_id,
@@ -516,9 +526,15 @@ async def generate_artwork_with_algorithm(article_id: str, article_content: str,
         "dominant_emotion": emotional_data.get("dominant_emotion"),
         "created_date": datetime.utcnow(),
         
-        # REAL ALGORITHM PARAMETERS
+        # REAL ALGORITHM PARAMETERS (not simplified tree)
         "algorithm_parameters": {
-            # Andry Tree Structure
+            # Core Analysis
+            "evidence_strength": emotional_data.get("evidence_strength", 0.5),
+            "technical_density": emotional_data.get("technical_density", 0.5),
+            "subspecialty": emotional_data.get("subspecialty", "sportsMedicine"),
+            "dominant_emotion": emotional_data.get("dominant_emotion", "confidence"),
+            
+            # Andry Tree Structure (abstract, not literal)
             "tree_complexity": emotional_data.get("evidence_strength", 0.5),
             "branch_pattern": emotional_data.get("subspecialty", "sportsMedicine"),
             "root_depth": algorithm_output.get("evidence_foundation", 0.7),
@@ -534,20 +550,21 @@ async def generate_artwork_with_algorithm(article_id: str, article_content: str,
                 "healing": emotional_data.get("healing", 0.5)
             },
             
-            # Medical Content Analysis
+            # Medical Content Analysis (REAL DATA FROM ARTICLE)
             "medical_terms": algorithm_output.get("medical_terms", {}),
             "statistical_data": algorithm_output.get("statistics", []),
             "research_citations": algorithm_output.get("citations", []),
-            "technical_density": emotional_data.get("technical_density", 0.5),
             
             # Visual Elements
             "color_palette": signature_data["color_gradients"],
             "visual_elements": algorithm_output.get("visual_elements", []),
             "subspecialty_elements": algorithm_output.get("subspecialty_visuals", {}),
             
-            # Rarity and Uniqueness
+            # Complexity and Uniqueness
+            "data_complexity": algorithm_output.get("complexity_score", 0.5),
             "uniqueness_factors": algorithm_output.get("uniqueness", {}),
-            "data_complexity": algorithm_output.get("complexity_score", 0.5)
+            "article_word_count": len(content.split()),
+            "processing_timestamp": datetime.utcnow().isoformat()
         },
         
         "metadata": {
@@ -555,9 +572,13 @@ async def generate_artwork_with_algorithm(article_id: str, article_content: str,
             "rarity_score": signature_data["rarity_score"],
             "generation_timestamp": datetime.utcnow().isoformat(),
             "algorithm_version": "2.0",
-            "article_word_count": len(article_content.split()),
-            "evidence_strength": emotional_data.get("evidence_strength", 0.5),
-            "medical_subspecialty": emotional_data.get("subspecialty", "sportsMedicine")
+            "content_source": article.get('content_type', 'text') if article else 'fallback',
+            "article_analysis": {
+                "medical_term_count": len(algorithm_output.get("medical_terms", {})),
+                "statistic_count": len(algorithm_output.get("statistics", [])),
+                "citation_count": len(algorithm_output.get("citations", [])),
+                "complexity_score": algorithm_output.get("complexity_score", 0.5)
+            }
         },
         
         "nft_status": "available",
@@ -567,17 +588,34 @@ async def generate_artwork_with_algorithm(article_id: str, article_content: str,
     artworks_collection.insert_one(artwork)
     artwork["_id"] = str(artwork["_id"])
     
+    print(f"🎨 Generated REAL algorithm artwork with {len(algorithm_output.get('medical_terms', {}))} medical term categories")
     return artwork
 
 def process_article_with_full_algorithm(content: str, emotional_data: dict):
     """Process article content using the full Arthrokinetix algorithm logic"""
     
-    # Medical term extraction (simplified from your algorithm)
+    # Medical term extraction with proper categorization
     medical_categories = {
-        "procedures": ["tenotomy", "tenodesis", "arthroscopy", "repair", "reconstruction", "arthroplasty"],
-        "anatomy": ["tendon", "ligament", "joint", "bone", "muscle", "cartilage", "meniscus"],
-        "outcomes": ["success rate", "complication", "recovery", "satisfaction", "function"],
-        "research": ["study", "trial", "meta-analysis", "evidence", "randomized", "cohort"]
+        "procedures": [
+            "tenotomy", "tenodesis", "arthroscopy", "repair", "reconstruction", 
+            "arthroplasty", "surgery", "surgical", "operation", "procedure",
+            "intervention", "treatment", "therapy", "management"
+        ],
+        "anatomy": [
+            "tendon", "ligament", "joint", "bone", "muscle", "cartilage", 
+            "meniscus", "labrum", "biceps", "rotator cuff", "shoulder",
+            "knee", "hip", "spine", "vertebra", "disc"
+        ],
+        "outcomes": [
+            "success rate", "complication", "recovery", "satisfaction", 
+            "function", "pain relief", "improvement", "healing",
+            "rehabilitation", "outcome", "result", "effectiveness"
+        ],
+        "research": [
+            "study", "trial", "meta-analysis", "evidence", "randomized",
+            "cohort", "systematic review", "clinical trial", "research",
+            "analysis", "investigation", "examination"
+        ]
     }
     
     extracted_terms = {}
@@ -586,49 +624,63 @@ def process_article_with_full_algorithm(content: str, emotional_data: dict):
     for category, terms in medical_categories.items():
         extracted_terms[category] = {}
         for term in terms:
-            count = len(re.findall(r'\b' + re.escape(term) + r'\b', content_lower))
+            # Use word boundaries for accurate matching
+            pattern = r'\b' + re.escape(term.lower()) + r'\b'
+            matches = re.findall(pattern, content_lower)
+            count = len(matches)
             if count > 0:
                 extracted_terms[category][term] = {
                     "count": count,
                     "weight": 1.0,
-                    "significance": count * 1.0
+                    "significance": count * 1.0,
+                    "context_weight": min(count / 10, 1.0)  # Normalize significance
                 }
     
-    # Statistical data extraction
+    # Enhanced statistical data extraction
     statistics = []
     patterns = {
         "percentages": r'(\d+(?:\.\d+)?)\s*%',
         "pValues": r'p\s*[<>=]\s*(\d+(?:\.\d+)?)',
         "sampleSizes": r'n\s*=\s*(\d+)',
-        "followUp": r'(\d+)\s*(?:months?|years?|weeks?)\s*follow-?up'
+        "followUp": r'(\d+)\s*(?:months?|years?|weeks?)\s*follow-?up',
+        "ages": r'(?:age|aged)\s*(\d+)',
+        "satisfaction": r'(\d+(?:\.\d+)?)\s*%\s*(?:satisfied|satisfaction)',
+        "success": r'(\d+(?:\.\d+)?)\s*%\s*(?:success|successful)'
     }
     
     for stat_type, pattern in patterns.items():
         matches = re.finditer(pattern, content, re.IGNORECASE)
         for match in matches:
+            value = float(match.group(1))
             statistics.append({
                 "type": stat_type,
-                "value": float(match.group(1)),
+                "value": value,
                 "context": content[max(0, match.start()-50):match.end()+50],
-                "significance": min(float(match.group(1)) / 100, 1.0) if stat_type == "percentages" else 0.5
+                "significance": calculate_stat_significance(stat_type, value),
+                "position": match.start() / len(content)  # Relative position in text
             })
     
-    # Research citations (simplified detection)
+    # Research citations with better detection
     citation_patterns = [
-        r'\b(?:et al\.?\s*\(?(?:19|20)\d{2}\)?)',
-        r'\b(?:study|trial|research|analysis)\b.*?(?:19|20)\d{2}',
-        r'\b(?:journal|publication|paper)\b'
+        r'\b(?:\w+\s+)?et al\.?\s*\(?(?:19|20)\d{2}\)?',
+        r'\b(?:study|trial|research|analysis|investigation)\b.*?(?:19|20)\d{2}',
+        r'\b(?:journal|publication|paper|article)\b.*?(?:medicine|surgery|orthopedic)',
+        r'\b(?:meta-analysis|systematic review|randomized|clinical trial)\b',
+        r'\([^)]*(?:19|20)\d{2}[^)]*\)'  # Years in parentheses
     ]
     
     citations = []
     for i, pattern in enumerate(citation_patterns):
         matches = re.finditer(pattern, content, re.IGNORECASE)
         for match in matches:
+            context = match.group()
             citations.append({
                 "type": "research_reference",
-                "context": match.group(),
-                "importance": 0.3 + (i * 0.2),
-                "impact": 0.5 + (len(match.group()) / 100)
+                "context": context,
+                "importance": 0.3 + (i * 0.15),
+                "impact": min(len(context) / 50, 1.0),
+                "pattern_type": i,
+                "position": match.start() / len(content)
             })
     
     # Visual elements based on content analysis
@@ -637,11 +689,14 @@ def process_article_with_full_algorithm(content: str, emotional_data: dict):
     # Add elements based on medical terms found
     for category, terms in extracted_terms.items():
         if terms:
+            total_significance = sum(term_data["significance"] for term_data in terms.values())
             visual_elements.append({
                 "type": f"{category}_visualization",
                 "count": len(terms),
-                "significance": sum(term_data["significance"] for term_data in terms.values()),
-                "color_mapping": get_category_color(category)
+                "significance": total_significance,
+                "color_mapping": get_category_color(category),
+                "terms": list(terms.keys())[:5],  # Top 5 terms for visualization
+                "density": total_significance / max(len(content.split()), 1)
             })
     
     # Subspecialty-specific visual elements
@@ -649,23 +704,22 @@ def process_article_with_full_algorithm(content: str, emotional_data: dict):
     subspecialty_visuals = {
         "shape_style": get_subspecialty_shape(subspecialty),
         "pattern_type": get_subspecialty_pattern(subspecialty),
-        "color_emphasis": get_subspecialty_colors(subspecialty)
+        "color_emphasis": get_subspecialty_colors(subspecialty),
+        "motion_characteristic": get_subspecialty_motion(subspecialty)
     }
     
-    # Uniqueness calculation
+    # Enhanced uniqueness calculation
     uniqueness = {
         "term_diversity": len(set(term for terms in extracted_terms.values() for term in terms.keys())),
         "statistical_complexity": len(statistics),
         "citation_density": len(citations),
-        "emotional_variance": calculate_emotional_variance(emotional_data)
+        "emotional_variance": calculate_emotional_variance(emotional_data),
+        "content_distribution": calculate_content_distribution(extracted_terms),
+        "research_depth": sum(cite.get("impact", 0) for cite in citations)
     }
     
-    complexity_score = min(
-        (uniqueness["term_diversity"] * 0.3 + 
-         uniqueness["statistical_complexity"] * 0.4 + 
-         uniqueness["citation_density"] * 0.2 + 
-         uniqueness["emotional_variance"] * 0.1), 1.0
-    )
+    # Comprehensive complexity score
+    complexity_score = calculate_comprehensive_complexity(uniqueness, emotional_data, content)
     
     return {
         "medical_terms": extracted_terms,
@@ -675,8 +729,68 @@ def process_article_with_full_algorithm(content: str, emotional_data: dict):
         "subspecialty_visuals": subspecialty_visuals,
         "uniqueness": uniqueness,
         "complexity_score": complexity_score,
-        "evidence_foundation": min(len(citations) / 10, 1.0)
+        "evidence_foundation": min(len(citations) / 10, 1.0),
+        "content_richness": calculate_content_richness(extracted_terms, statistics, citations)
     }
+
+def calculate_stat_significance(stat_type, value):
+    """Calculate significance score for different statistic types"""
+    significance_maps = {
+        "percentages": lambda x: min(x / 100, 1.0),
+        "pValues": lambda x: max(0, 1 - x),  # Lower p-values = higher significance
+        "sampleSizes": lambda x: min(x / 1000, 1.0),
+        "followUp": lambda x: min(x / 60, 1.0),  # Up to 60 months
+        "satisfaction": lambda x: min(x / 100, 1.0),
+        "success": lambda x: min(x / 100, 1.0)
+    }
+    
+    calculator = significance_maps.get(stat_type, lambda x: 0.5)
+    return calculator(value)
+
+def calculate_content_distribution(extracted_terms):
+    """Calculate how evenly distributed different types of medical content are"""
+    category_counts = [len(terms) for terms in extracted_terms.values()]
+    if not category_counts:
+        return 0.0
+    
+    max_count = max(category_counts)
+    min_count = min(category_counts)
+    
+    # Higher distribution score = more even distribution
+    return 1.0 - ((max_count - min_count) / max(max_count, 1))
+
+def calculate_comprehensive_complexity(uniqueness, emotional_data, content):
+    """Calculate a comprehensive complexity score"""
+    factors = {
+        "term_complexity": min(uniqueness["term_diversity"] / 20, 1.0) * 0.25,
+        "statistical_complexity": min(uniqueness["statistical_complexity"] / 15, 1.0) * 0.20,
+        "research_depth": min(uniqueness["research_depth"] / 5, 1.0) * 0.20,
+        "emotional_complexity": uniqueness["emotional_variance"] * 0.15,
+        "content_length": min(len(content.split()) / 2000, 1.0) * 0.10,
+        "distribution_evenness": uniqueness["content_distribution"] * 0.10
+    }
+    
+    return sum(factors.values())
+
+def calculate_content_richness(extracted_terms, statistics, citations):
+    """Calculate overall content richness for artwork generation"""
+    term_richness = sum(len(terms) for terms in extracted_terms.values()) / 20
+    stat_richness = len(statistics) / 10
+    citation_richness = len(citations) / 8
+    
+    return min((term_richness + stat_richness + citation_richness) / 3, 1.0)
+
+def get_subspecialty_motion(subspecialty):
+    """Define motion characteristics for subspecialties"""
+    motions = {
+        "sportsMedicine": "dynamic_flow",
+        "jointReplacement": "mechanical_precision",
+        "trauma": "stabilizing_force",
+        "spine": "undulating_rhythm",
+        "handUpperExtremity": "intricate_articulation",
+        "footAnkle": "grounded_stability"
+    }
+    return motions.get(subspecialty, "dynamic_flow")
 
 def get_category_color(category):
     """Map medical categories to colors"""
