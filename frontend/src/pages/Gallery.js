@@ -251,7 +251,7 @@ const Gallery = ({ algorithmState }) => {
                       <span className="text-sm text-gray-500">Emotion:</span>
                       <span 
                         className="text-sm font-medium capitalize"
-                        style={{ color: getEmotionColor(artwork.dominant_emotion) }}
+                        style={{ color: getEmotionColorLocal(artwork.dominant_emotion) }}
                       >
                         {artwork.dominant_emotion}
                       </span>
@@ -630,5 +630,17 @@ const generateSampleArtworks = () => [
     nft_status: 'minted'
   }
 ];
+
+const getEmotionColorLocal = (emotion) => {
+  const colors = {
+    hope: '#27ae60',
+    tension: '#e74c3c',
+    confidence: '#3498db',
+    uncertainty: '#95a5a6',
+    breakthrough: '#f39c12',
+    healing: '#16a085'
+  };
+  return colors[emotion] || '#3498db';
+};
 
 export default Gallery;
