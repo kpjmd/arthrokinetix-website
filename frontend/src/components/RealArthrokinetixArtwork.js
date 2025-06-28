@@ -1,4 +1,10 @@
-// RealArthrokinetixArtwork.js - Uses the actual algorithm
+{/* Medical Term Clusters */}
+        <g className="medical-terms">
+          {medicalVisuals.map((cluster, i) => (
+            <motion.g 
+              key={`medical-${i}`}
+              transform={`translate(${cluster.x}, ${cluster.y})`}
+              initial// RealArthrokinetixArtwork.js - Uses the actual algorithm
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 
