@@ -1,0 +1,468 @@
+// RealArthrokinetixArtwork.js - Uses the actual algorithm
+import React, { useState, useEffect } from 'react';
+import { motion } from 'framer-motion';
+
+const RealArthrokinetixArtwork = ({ artwork, width = 400, height = 400 }) => {
+  const [svgContent, setSvgContent] = useState(null);
+
+  useEffect(() => {
+    if (artwork && artwork.algorithm_parameters) {
+      generateRealArtwork();
+    }
+  }, [artwork]);
+
+  const generateRealArtwork = () => {
+    const params = artwork.algorithm_parameters;
+    const metadata = artwork.metadata;
+    
+    // Use REAL algorithm parameters, not simplified tree visualization
+    const svgElements = [];
+    
+    // 1. Background based on subspecialty
+    const background = generateSubspecialtyBackground(params.subspecialty || 'sportsMedicine');
+    
+    // 2. Andry Tree Structure (but abstract, not literal tree)
+    const andryElements = generateAndryTreeAbstraction(params);
+    
+    // 3. Medical Term Visualizations
+    const medicalVisuals = generateMedicalTermVisuals(params.medical_terms || {});
+    
+    // 4. Statistical Data Streams
+    const dataStreams = generateStatisticalStreams(params.statistical_data || []);
+    
+    // 5. Research Constellation
+    const researchStars = generateResearchConstellation(params.research_citations || []);
+    
+    // 6. Emotional Field Overlays
+    const emotionalFields = generateEmotionalFields(params.emotional_mix || {});
+    
+    // 7. Subspecialty Symbol
+    const subspecialtySymbol = generateSubspecialtySymbol(params.subspecialty, params.dominant_emotion);
+    
+    // 8. Signature Elements
+    const signatureElements = generateSignatureElements(metadata.signature_id);
+
+    const svg = (
+      <svg 
+        width={width} 
+        height={height} 
+        viewBox={`0 0 ${width} ${height}`}
+        className="arthrokinetix-real-artwork"
+      >
+        {/* Background */}
+        <defs>
+          <radialGradient id={`bg-${artwork.id}`} cx="50%" cy="50%">
+            <stop offset="0%" stopColor={background.center} stopOpacity="0.8"/>
+            <stop offset="100%" stopColor={background.edge} stopOpacity="0.4"/>
+          </radialGradient>
+          
+          {/* Medical Data Pattern */}
+          <pattern 
+            id={`data-pattern-${artwork.id}`} 
+            x="0" y="0" 
+            width="20" height="20" 
+            patternUnits="userSpaceOnUse"
+          >
+            <circle 
+              cx="10" cy="10" r="1" 
+              fill={getEmotionColor(params.dominant_emotion)} 
+              opacity="0.1"
+            />
+          </pattern>
+        </defs>
+        
+        <rect width="100%" height="100%" fill={`url(#bg-${artwork.id})`} />
+        <rect width="100%" height="100%" fill={`url(#data-pattern-${artwork.id})`} />
+
+        {/* Andry Tree Abstract Structure */}
+        <g transform={`translate(${width/2}, ${height * 0.8})`}>
+          {andryElements.map((element, i) => (
+            <motion.g 
+              key={`andry-${i}`}
+              initial={{ opacity: 0, scale: 0.5 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 2, delay: i * 0.2 }}
+            >
+              {element.type === 'root_foundation' && (
+                <motion.path
+                  d={element.path}
+                  stroke={element.color}
+                  strokeWidth={element.thickness}
+                  fill="none"
+                  opacity={0.6}
+                  animate={{
+                    strokeDasharray: ["0 100", "100 0", "0 100"],
+                  }}
+                  transition={{
+                    duration: 8,
+                    repeat: Infinity,
+                    ease: "easeInOut"
+                  }}
+                />
+              )}
+              
+              {element.type === 'knowledge_branch' && (
+                <motion.line
+                  x1={0}
+                  y1={element.startY}
+                  x2={element.endX}
+                  y2={element.endY}
+                  stroke={element.color}
+                  strokeWidth={element.thickness}
+                  opacity={element.opacity}
+                  animate={{
+                    x2: [element.endX, element.endX * 1.1, element.endX],
+                    y2: [element.endY, element.endY * 1.1, element.endY]
+                  }}
+                  transition={{
+                    duration: 4 + Math.random() * 2,
+                    repeat: Infinity,
+                    ease: "easeInOut"
+                  }}
+                />
+              )}
+            </motion.g>
+          ))}
+        </g>
+
+        {/* Medical Term Clusters */}
+        <g className="medical-terms">
+          {medicalVisuals.map((cluster, i) => (
+            <motion.g 
+              key={`medical-${i}`}
+              transform={`translate(${cluster.x}, ${cluster.y})`}
+              initial={{ scale: 0 }}
+              animate={{ scale: 1 }}
+              transition={{ duration: 1.5, delay: i * 0.3 }}
+            >
+              {cluster.type === 'procedure_cluster' && (
+                <motion.polygon
+                  points={cluster.points}
+                  fill={cluster.color}
+                  opacity={0.4}
+                  animate={{
+                    points: [cluster.points, cluster.animatedPoints, cluster.points]
+                  }}
+                  transition={{
+                    duration: 6,
+                    repeat: Infinity,
+                    ease: "easeInOut"
+                  }}
+                />
+              )}
+              
+              {cluster.type === 'anatomy_network' && (
+                <g>
+                  {cluster.nodes.map((node, nodeIndex) => (
+                    <motion.circle
+                      key={nodeIndex}
+                      cx={node.x}
+                      cy={node.y}
+                      r={node.radius}
+                      fill={cluster.color}
+                      opacity={0.6}
+                      animate={{
+                        r: [node.radius, node.radius * 1.3, node.radius],
+                        opacity: [0.6, 0.9, 0.6]
+                      }}
+                      transition={{
+                        duration: 3,
+                        repeat: Infinity,
+                        delay: nodeIndex * 0.2
+                      }}
+                    />
+                  ))}
+                  {cluster.connections.map((connection, connIndex) => (
+                    <motion.line
+                      key={connIndex}
+                      x1={connection.x1}
+                      y1={connection.y1}
+                      x2={connection.x2}
+                      y2={connection.y2}
+                      stroke={cluster.color}
+                      strokeWidth="1"
+                      opacity={0.3}
+                      animate={{
+                        opacity: [0.3, 0.7, 0.3]
+                      }}
+                      transition={{
+                        duration: 4,
+                        repeat: Infinity,
+                        delay: connIndex * 0.5
+                      }}
+                    />
+                  ))}
+                </g>
+              )}
+            </motion.g>
+          ))}
+        </g>
+
+        {/* Statistical Data Streams */}
+        <g className="data-streams">
+          {dataStreams.map((stream, i) => (
+            <motion.path
+              key={`stream-${i}`}
+              d={stream.path}
+              stroke={stream.color}
+              strokeWidth={stream.thickness}
+              fill="none"
+              opacity={0.5}
+              animate={{
+                strokeDasharray: ["0 20", "20 0", "0 20"],
+              }}
+              transition={{
+                duration: 5 + i,
+                repeat: Infinity,
+                ease: "linear"
+              }}
+            />
+          ))}
+        </g>
+
+        {/* Research Constellation */}
+        <g className="research-constellation" transform={`translate(${width * 0.8}, ${height * 0.2})`}>
+          {researchStars.map((star, i) => (
+            <motion.g key={`star-${i}`}>
+              <motion.circle
+                cx={star.x}
+                cy={star.y}
+                r={star.radius}
+                fill="#ffffff"
+                opacity={0.8}
+                animate={{
+                  opacity: [0.8, 1, 0.8],
+                  r: [star.radius, star.radius * 1.2, star.radius]
+                }}
+                transition={{
+                  duration: 3,
+                  repeat: Infinity,
+                  delay: i * 0.4
+                }}
+              />
+              {star.connections.map((conn, connIndex) => (
+                <motion.line
+                  key={connIndex}
+                  x1={star.x}
+                  y1={star.y}
+                  x2={conn.x}
+                  y2={conn.y}
+                  stroke="#ffffff"
+                  strokeWidth="0.5"
+                  opacity={0.3}
+                />
+              ))}
+            </motion.g>
+          ))}
+        </g>
+
+        {/* Emotional Field Overlays */}
+        <g className="emotional-fields">
+          {emotionalFields.map((field, i) => (
+            <motion.ellipse
+              key={`emotion-${i}`}
+              cx={field.x}
+              cy={field.y}
+              rx={field.radiusX}
+              ry={field.radiusY}
+              fill={field.color}
+              opacity={0.15}
+              animate={{
+                rx: [field.radiusX, field.radiusX * 1.2, field.radiusX],
+                ry: [field.radiusY, field.radiusY * 1.2, field.radiusY],
+                opacity: [0.15, 0.25, 0.15]
+              }}
+              transition={{
+                duration: 8,
+                repeat: Infinity,
+                delay: i * 1.5,
+                ease: "easeInOut"
+              }}
+            />
+          ))}
+        </g>
+
+        {/* Subspecialty Symbol */}
+        <g className="subspecialty-symbol" transform={`translate(${width * 0.9}, ${height * 0.1})`}>
+          {subspecialtySymbol}
+        </g>
+
+        {/* Signature Elements */}
+        <g className="signature-elements" transform={`translate(${width * 0.1}, ${height * 0.9})`}>
+          <text
+            x="0"
+            y="0"
+            fontSize="8"
+            fill={getEmotionColor(params.dominant_emotion)}
+            opacity={0.7}
+          >
+            {metadata.signature_id}
+          </text>
+        </g>
+
+        {/* Algorithm Version Watermark */}
+        <text
+          x={width - 5}
+          y={height - 5}
+          fontSize="6"
+          fill="#000000"
+          opacity={0.3}
+          textAnchor="end"
+        >
+          AKX v{metadata.algorithm_version || '2.0'}
+        </text>
+      </svg>
+    );
+
+    setSvgContent(svg);
+  };
+
+  // Helper function implementations would go here...
+  const generateSubspecialtyBackground = (subspecialty) => {
+    const backgrounds = {
+      sportsMedicine: { center: '#e8f5e8', edge: '#d4edda' },
+      jointReplacement: { center: '#f8f9fa', edge: '#e9ecef' },
+      trauma: { center: '#fff3cd', edge: '#ffeaa7' },
+      spine: { center: '#e7e3ff', edge: '#d1c7ff' },
+      handUpperExtremity: { center: '#e0f7fa', edge: '#b2ebf2' },
+      footAnkle: { center: '#f1f8e9', edge: '#dcedc8' }
+    };
+    return backgrounds[subspecialty] || backgrounds.sportsMedicine;
+  };
+
+  const generateAndryTreeAbstraction = (params) => {
+    // Generate abstract Andry Tree elements based on evidence strength and content
+    const elements = [];
+    const evidenceStrength = params.evidence_strength || 0.5;
+    const complexity = params.tree_complexity || 0.5;
+    
+    // Root foundation paths (representing research foundation)
+    for (let i = 0; i < Math.floor(evidenceStrength * 5) + 2; i++) {
+      const angle = (i / 5) * 180 + 180;
+      const radius = 30 + (evidenceStrength * 50);
+      
+      elements.push({
+        type: 'root_foundation',
+        path: `M 0,0 Q ${Math.cos(angle * Math.PI / 180) * radius/2},${Math.sin(angle * Math.PI / 180) * radius/2} ${Math.cos(angle * Math.PI / 180) * radius},${Math.sin(angle * Math.PI / 180) * radius}`,
+        color: getEmotionColor(params.dominant_emotion),
+        thickness: 2 + evidenceStrength * 2
+      });
+    }
+    
+    // Knowledge branches (representing different aspects of medical knowledge)
+    const medicalTerms = params.medical_terms || {};
+    Object.keys(medicalTerms).forEach((category, index) => {
+      const branchAngle = (index / Object.keys(medicalTerms).length) * 120 - 60;
+      const branchLength = 40 + (Object.keys(medicalTerms[category] || {}).length * 10);
+      
+      elements.push({
+        type: 'knowledge_branch',
+        startY: -20,
+        endX: Math.sin(branchAngle * Math.PI / 180) * branchLength,
+        endY: -20 - Math.cos(branchAngle * Math.PI / 180) * branchLength,
+        color: getCategoryColor(category),
+        thickness: 3,
+        opacity: 0.7
+      });
+    });
+    
+    return elements;
+  };
+
+  const generateMedicalTermVisuals = (medicalTerms) => {
+    const visuals = [];
+    
+    Object.entries(medicalTerms).forEach(([category, terms], categoryIndex) => {
+      const termCount = Object.keys(terms).length;
+      if (termCount === 0) return;
+      
+      const x = 50 + (categoryIndex * 80);
+      const y = 100 + (categoryIndex * 30);
+      
+      if (category === 'procedures') {
+        // Procedures as geometric shapes
+        const points = generatePolygonPoints(x, y, termCount + 3, 15);
+        visuals.push({
+          type: 'procedure_cluster',
+          x: x,
+          y: y,
+          points: points,
+          animatedPoints: generatePolygonPoints(x, y, termCount + 3, 20),
+          color: getCategoryColor(category)
+        });
+      } else if (category === 'anatomy') {
+        // Anatomy as connected network
+        const nodes = [];
+        const connections = [];
+        
+        for (let i = 0; i < termCount; i++) {
+          const nodeAngle = (i / termCount) * 360;
+          const nodeRadius = 20;
+          nodes.push({
+            x: Math.cos(nodeAngle * Math.PI / 180) * nodeRadius,
+            y: Math.sin(nodeAngle * Math.PI / 180) * nodeRadius,
+            radius: 3
+          });
+          
+          // Connect to next node
+          if (i < termCount - 1) {
+            const nextAngle = ((i + 1) / termCount) * 360;
+            connections.push({
+              x1: Math.cos(nodeAngle * Math.PI / 180) * nodeRadius,
+              y1: Math.sin(nodeAngle * Math.PI / 180) * nodeRadius,
+              x2: Math.cos(nextAngle * Math.PI / 180) * nodeRadius,
+              y2: Math.sin(nextAngle * Math.PI / 180) * nodeRadius
+            });
+          }
+        }
+        
+        visuals.push({
+          type: 'anatomy_network',
+          x: x,
+          y: y,
+          nodes: nodes,
+          connections: connections,
+          color: getCategoryColor(category)
+        });
+      }
+    });
+    
+    return visuals;
+  };
+
+  const generateStatisticalStreams = (statisticalData) => {
+    return statisticalData.map((stat, index) => {
+      const startX = 50 + (index * 40);
+      const startY = height * 0.3;
+      const endX = width - 50;
+      const endY = height * 0.7 + (index * 20);
+      const midX = (startX + endX) / 2;
+      const midY = startY + (Math.sin(index) * 50);
+      
+      return {
+        path: `M ${startX},${startY} Q ${midX},${midY} ${endX},${endY}`,
+        color: getStatisticTypeColor(stat.type),
+        thickness: Math.max(1, stat.significance * 3)
+      };
+    });
+  };
+
+  const generateResearchConstellation = (citations) => {
+    const stars = [];
+    const starCount = Math.min(citations.length, 8);
+    
+    for (let i = 0; i < starCount; i++) {
+      const angle = (i / starCount) * 360;
+      const radius = 30 + Math.random() * 40;
+      const x = Math.cos(angle * Math.PI / 180) * radius;
+      const y = Math.sin(angle * Math.PI / 180) * radius;
+      
+      const connections = [];
+      // Connect to 1-2 nearby stars
+      for (let j = 0; j < starCount; j++) {
+        if (j !== i && Math.abs(i - j) <= 2) {
+          const connectAngle = (j / starCount) * 360;
+          const connectRadius = 30 + Math.random() * 40;
+          connections.push({
+            x: Math.cos(connectAngle * Math.PI / 180) * connectRadius,
+            y: Math.sin(connectAngle * Math.PI /
