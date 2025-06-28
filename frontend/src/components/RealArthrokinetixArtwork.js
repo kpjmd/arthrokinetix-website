@@ -465,4 +465,233 @@ const RealArthrokinetixArtwork = ({ artwork, width = 400, height = 400 }) => {
           const connectRadius = 30 + Math.random() * 40;
           connections.push({
             x: Math.cos(connectAngle * Math.PI / 180) * connectRadius,
-            y: Math.sin(connectAngle * Math.PI /
+            y: Math.sin(connectAngle * Math.PI / 180) * connectRadius
+          });
+        }
+      }
+      
+      stars.push({
+        x: x,
+        y: y,
+        radius: 2 + (citations[i]?.importance || 0.5) * 3,
+        connections: connections
+      });
+    }
+    
+    return stars;
+  };
+
+  const generateEmotionalFields = (emotionalMix) => {
+    const fields = [];
+    
+    Object.entries(emotionalMix).forEach(([emotion, intensity], index) => {
+      if (intensity < 0.1) return; // Skip very low intensity emotions
+      
+      const x = (width / 6) + (index * (width / 6));
+      const y = height * 0.4 + (Math.sin(index * 2) * 50);
+      const radiusX = 30 + (intensity * 50);
+      const radiusY = 20 + (intensity * 30);
+      
+      fields.push({
+        x: x,
+        y: y,
+        radiusX: radiusX,
+        radiusY: radiusY,
+        color: getEmotionColor(emotion),
+        emotion: emotion
+      });
+    });
+    
+    return fields;
+  };
+
+  const generateSubspecialtySymbol = (subspecialty, dominantEmotion) => {
+    const symbolSize = 20;
+    const color = getEmotionColor(dominantEmotion);
+    
+    const symbols = {
+      sportsMedicine: (
+        <motion.g
+          animate={{ rotate: [0, 360] }}
+          transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
+        >
+          <path
+            d={`M -${symbolSize/2},-${symbolSize/2} Q 0,-${symbolSize} ${symbolSize/2},-${symbolSize/2} Q ${symbolSize},0 ${symbolSize/2},${symbolSize/2} Q 0,${symbolSize} -${symbolSize/2},${symbolSize/2} Q -${symbolSize},0 -${symbolSize/2},-${symbolSize/2}`}
+            stroke={color}
+            strokeWidth="2"
+            fill="none"
+            opacity="0.8"
+          />
+        </motion.g>
+      ),
+      jointReplacement: (
+        <motion.rect
+          x={-symbolSize/2}
+          y={-symbolSize/2}
+          width={symbolSize}
+          height={symbolSize}
+          stroke={color}
+          strokeWidth="2"
+          fill="none"
+          opacity="0.8"
+          animate={{ rotate: [0, 90, 180, 270, 360] }}
+          transition={{ duration: 8, repeat: Infinity }}
+        />
+      ),
+      trauma: (
+        <motion.polygon
+          points={`0,-${symbolSize/2} ${symbolSize/3},${symbolSize/2} -${symbolSize/3},${symbolSize/2}`}
+          stroke={color}
+          strokeWidth="2"
+          fill="none"
+          opacity="0.8"
+          animate={{ scale: [1, 1.2, 1] }}
+          transition={{ duration: 2, repeat: Infinity }}
+        />
+      ),
+      spine: (
+        <motion.g>
+          {Array.from({ length: 4 }).map((_, i) => (
+            <motion.ellipse
+              key={i}
+              cx="0"
+              cy={-symbolSize/2 + (i * symbolSize/3)}
+              rx="3"
+              ry="6"
+              fill={color}
+              opacity="0.8"
+              animate={{ 
+                rx: [3, 5, 3],
+                opacity: [0.8, 1, 0.8] 
+              }}
+              transition={{ 
+                duration: 2, 
+                repeat: Infinity, 
+                delay: i * 0.2 
+              }}
+            />
+          ))}
+        </motion.g>
+      ),
+      handUpperExtremity: (
+        <motion.g>
+          {Array.from({ length: 5 }).map((_, i) => (
+            <motion.line
+              key={i}
+              x1="0"
+              y1="0"
+              x2={Math.cos((i * 72) * Math.PI / 180) * symbolSize/2}
+              y2={Math.sin((i * 72) * Math.PI / 180) * symbolSize/2}
+              stroke={color}
+              strokeWidth="1.5"
+              opacity="0.8"
+              animate={{ 
+                x2: [
+                  Math.cos((i * 72) * Math.PI / 180) * symbolSize/2,
+                  Math.cos((i * 72) * Math.PI / 180) * symbolSize/3,
+                  Math.cos((i * 72) * Math.PI / 180) * symbolSize/2
+                ],
+                y2: [
+                  Math.sin((i * 72) * Math.PI / 180) * symbolSize/2,
+                  Math.sin((i * 72) * Math.PI / 180) * symbolSize/3,
+                  Math.sin((i * 72) * Math.PI / 180) * symbolSize/2
+                ]
+              }}
+              transition={{ 
+                duration: 3, 
+                repeat: Infinity, 
+                delay: i * 0.1 
+              }}
+            />
+          ))}
+        </motion.g>
+      ),
+      footAnkle: (
+        <motion.g>
+          <motion.path
+            d={`M -${symbolSize/2},0 Q 0,-${symbolSize/3} ${symbolSize/2},0 Q 0,${symbolSize/3} -${symbolSize/2},0`}
+            stroke={color}
+            strokeWidth="2"
+            fill="none"
+            opacity="0.8"
+            animate={{ d: [
+              `M -${symbolSize/2},0 Q 0,-${symbolSize/3} ${symbolSize/2},0 Q 0,${symbolSize/3} -${symbolSize/2},0`,
+              `M -${symbolSize/2},0 Q 0,-${symbolSize/2} ${symbolSize/2},0 Q 0,${symbolSize/2} -${symbolSize/2},0`,
+              `M -${symbolSize/2},0 Q 0,-${symbolSize/3} ${symbolSize/2},0 Q 0,${symbolSize/3} -${symbolSize/2},0`
+            ]}}
+            transition={{ duration: 4, repeat: Infinity }}
+          />
+        </motion.g>
+      )
+    };
+    
+    return symbols[subspecialty] || symbols.sportsMedicine;
+  };
+
+  // Helper functions
+  const getEmotionColor = (emotion) => {
+    const colors = {
+      hope: '#27ae60',
+      tension: '#e74c3c',
+      confidence: '#3498db',
+      uncertainty: '#95a5a6',
+      breakthrough: '#f39c12',
+      healing: '#16a085'
+    };
+    return colors[emotion] || '#3498db';
+  };
+
+  const getCategoryColor = (category) => {
+    const colors = {
+      procedures: '#e74c3c',
+      anatomy: '#3498db',
+      outcomes: '#27ae60',
+      research: '#f39c12'
+    };
+    return colors[category] || '#95a5a6';
+  };
+
+  const getStatisticTypeColor = (statType) => {
+    const colors = {
+      percentages: '#e74c3c',
+      pValues: '#f39c12',
+      sampleSizes: '#27ae60',
+      followUp: '#3498db'
+    };
+    return colors[statType] || '#95a5a6';
+  };
+
+  const generatePolygonPoints = (centerX, centerY, sides, radius) => {
+    const points = [];
+    for (let i = 0; i < sides; i++) {
+      const angle = (i / sides) * 360;
+      const x = centerX + Math.cos(angle * Math.PI / 180) * radius;
+      const y = centerY + Math.sin(angle * Math.PI / 180) * radius;
+      points.push(`${x},${y}`);
+    }
+    return points.join(' ');
+  };
+
+  if (!svgContent) {
+    return (
+      <div 
+        className="flex items-center justify-center bg-gray-100 rounded-lg"
+        style={{ width, height }}
+      >
+        <motion.div
+          animate={{ rotate: 360 }}
+          transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+          className="w-8 h-8 border-4 border-secondary border-t-transparent rounded-full"
+        />
+      </div>
+    );
+  }
+
+  return (
+    <div className="real-arthrokinetix-artwork">
+      {svgContent}
+    </div>
+  );
+};
+
+export default RealArthrokinetixArtwork;
