@@ -208,7 +208,7 @@ const ArtworkDetail = () => {
                   <div className="flex items-center">
                     <span 
                       className="w-3 h-3 rounded-full mr-2"
-                      style={{ backgroundColor: getEmotionColor(artwork.dominant_emotion) }}
+                      style={{ backgroundColor: getEmotionColorLocal(artwork.dominant_emotion) }}
                     />
                     <span className="font-medium capitalize">{artwork.dominant_emotion}</span>
                   </div>
@@ -371,7 +371,11 @@ const ArtworkDetail = () => {
           onClick={() => setFullscreen(false)}
         >
           <div className="max-w-4xl w-full aspect-square bg-white rounded-lg overflow-hidden">
-            {generateArtworkSVG(artwork)}
+            <RealArthrokinetixArtwork 
+            artwork={artwork} 
+            width={600} 
+            height={600}
+          />
           </div>
           <button
             onClick={() => setFullscreen(false)}
