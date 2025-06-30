@@ -176,14 +176,18 @@ async def get_algorithm_state():
 async def create_article(
     title: str = Form(...),
     subspecialty: str = Form("sportsMedicine"),
-    content_type: str = Form("text"),  # 'text', 'html', 'pdf'
+    content_type: str = Form("text"),
     content: Optional[str] = Form(None),
     file: Optional[UploadFile] = File(None),
     evidence_strength: float = Form(0.5),
     meta_description: Optional[str] = Form(None)
 ):
-    """Create new article with support for text input or file upload"""
+    """Enhanced article creation with detailed debugging"""
     try:
+        print(f"\n🆕 Creating new article: {title}")
+        print(f"📁 Content type: {content_type}")
+        print(f"🏥 Input subspecialty: {subspecialty}")
+        
         # Generate unique ID
         article_id = str(uuid.uuid4())
         
@@ -194,10 +198,12 @@ async def create_article(
         
         if content_type == "text" and content:
             processed_content = content
+            print(f"📝 Text content length: {len(processed_content)} characters")
             
         elif content_type in ["html", "pdf"] and file:
             # Read and store file content
             file_content = await file.read()
+            print(f"📂 File uploaded: {file.filename} ({len(file_content)} bytes)")
             
             if content_type == "html":
                 # For HTML files, extract content for analysis but keep full HTML for display
@@ -205,6 +211,7 @@ async def create_article(
                 # Extract text content for emotional analysis (strip HTML tags roughly)
                 import re
                 processed_content = re.sub('<[^<]+?>', '', html_content)
+                print(f"🔤 Extracted text length: {len(processed_content)} characters")
                 
                 # Store file data
                 file_data = {
@@ -223,14 +230,30 @@ async def create_article(
                     "content": base64.b64encode(file_content).decode('utf-8')
                 }
                 processed_content = f"PDF content from {file.filename}"
+                print(f"📄 PDF stored for future processing")
                 
         else:
             raise HTTPException(status_code=400, detail="Invalid content type or missing content/file")
         
-        # Process article with Arthrokinetix algorithm
+        # Show content preview for debugging
+        content_preview = processed_content[:500] + "..." if len(processed_content) > 500 else processed_content
+        print(f"📖 Content preview:\n{content_preview}")
+        
+        # Process article with enhanced Arthrokinetix algorithm
+        print("\n🧠 Starting emotional analysis...")
         emotional_data = await process_article_emotions(processed_content)
+        
+        print(f"\n💭 Emotional analysis results:")
+        for key, value in emotional_data.items():
+            if isinstance(value, (int, float)):
+                print(f"   {key}: {value:.3f}")
+            else:
+                print(f"   {key}: {value}")
+        
+        print("\n🔮 Generating emotional signature...")
         signature_data = generate_emotional_signature(emotional_data)
         
+        # Create article record
         article = {
             "id": article_id,
             "title": title,
@@ -239,7 +262,7 @@ async def create_article(
             "content": processed_content,
             "html_content": html_content if content_type == "html" else None,
             "file_data": file_data,
-            "subspecialty": subspecialty,
+            "subspecialty": emotional_data.get("subspecialty", subspecialty),  # Use detected subspecialty
             "published_date": datetime.utcnow(),
             "emotional_data": emotional_data,
             "signature_data": signature_data,
@@ -248,19 +271,31 @@ async def create_article(
             "read_time": calculate_read_time(processed_content)
         }
         
+        print(f"\n💾 Saving article to database...")
         articles_collection.insert_one(article)
         
-        # Generate corresponding artwork
+        # Generate corresponding artwork with enhanced algorithm
+        print(f"\n🎨 Generating artwork...")
         artwork = await generate_artwork(article_id, emotional_data, signature_data)
         
         # Update algorithm state
+        print(f"\n🔄 Updating algorithm state...")
         await update_algorithm_state(emotional_data)
         
         article["_id"] = str(article["_id"])
+        
+        print(f"\n✅ Article creation complete!")
+        print(f"   Article ID: {article_id}")
+        print(f"   Final subspecialty: {article['subspecialty']}")
+        print(f"   Dominant emotion: {emotional_data.get('dominant_emotion')}")
+        print(f"   Evidence strength: {emotional_data.get('evidence_strength', 0):.3f}")
+        
         return {"article": article, "artwork": artwork}
         
     except Exception as e:
-        print(f"Error creating article: {e}")
+        print(f"❌ Error creating article: {e}")
+        import traceback
+        traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/api/articles")
@@ -329,83 +364,240 @@ async def get_artwork(artwork_id: str):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+def detect_subspecialty_from_content(content: str) -> str:
+    """Enhanced subspecialty detection with better keyword matching"""
+    content_lower = content.lower()
+    
+    # Enhanced keyword sets with more specific terms
+    subspecialty_keywords = {
+        "jointReplacement": {
+            "primary": ["arthroplasty", "replacement", "prosthesis", "implant", "total knee", "total hip", "tha", "tka"],
+            "secondary": ["bearing", "polyethylene", "ceramic", "metal", "revision", "loosening", "wear"],
+            "weight": 1.0
+        },
+        "sportsMedicine": {
+            "primary": ["sports", "athlete", "acl", "mcl", "pcl", "meniscus", "rotator cuff", "labrum"],
+            "secondary": ["return to play", "athletic", "performance", "season", "competition"],
+            "weight": 1.0
+        },
+        "trauma": {
+            "primary": ["fracture", "trauma", "fixation", "plating", "nailing", "external fixator"],
+            "secondary": ["nonunion", "malunion", "polytrauma", "emergency", "acute"],
+            "weight": 1.0
+        },
+        "spine": {
+            "primary": ["spine", "spinal", "vertebra", "disc", "fusion", "laminectomy", "discectomy"],
+            "secondary": ["cervical", "lumbar", "thoracic", "stenosis", "spondylosis", "kyphosis"],
+            "weight": 1.0
+        },
+        "handUpperExtremity": {
+            "primary": ["hand", "wrist", "finger", "carpal", "metacarpal", "phalanx", "elbow"],
+            "secondary": ["dupuytren", "trigger finger", "carpal tunnel", "cubital tunnel"],
+            "weight": 1.0
+        },
+        "footAnkle": {
+            "primary": ["foot", "ankle", "heel", "plantar", "achilles", "bunion", "hallux"],
+            "secondary": ["calcaneus", "metatarsal", "tarsal", "flatfoot", "arch"],
+            "weight": 1.0
+        }
+    }
+    
+    subspecialty_scores = {}
+    
+    for subspecialty, keyword_data in subspecialty_keywords.items():
+        score = 0
+        
+        # Count primary keywords (higher weight)
+        for keyword in keyword_data["primary"]:
+            count = len(re.findall(r'\b' + re.escape(keyword) + r'\b', content_lower))
+            score += count * 3  # Primary keywords worth 3 points
+            if count > 0:
+                print(f"🔍 Found '{keyword}' {count} times in {subspecialty}")
+        
+        # Count secondary keywords (lower weight)
+        for keyword in keyword_data["secondary"]:
+            count = len(re.findall(r'\b' + re.escape(keyword) + r'\b', content_lower))
+            score += count * 1  # Secondary keywords worth 1 point
+            if count > 0:
+                print(f"🔍 Found '{keyword}' {count} times in {subspecialty}")
+        
+        subspecialty_scores[subspecialty] = score
+        print(f"📊 {subspecialty} total score: {score}")
+    
+    # Find the subspecialty with the highest score
+    detected_subspecialty = max(subspecialty_scores, key=subspecialty_scores.get)
+    max_score = subspecialty_scores[detected_subspecialty]
+    
+    print(f"🎯 Detected subspecialty: {detected_subspecialty} (score: {max_score})")
+    
+    # If no clear winner (all scores are 0), default to sportsMedicine
+    if max_score == 0:
+        print("⚠️ No subspecialty keywords found, defaulting to sportsMedicine")
+        return "sportsMedicine"
+    
+    return detected_subspecialty
+
 # Helper functions
 async def process_article_emotions(content: str) -> dict:
-    """Process article content for emotional analysis using Claude as supplement"""
+    """Enhanced emotional analysis with better subspecialty detection"""
     try:
+        # First detect subspecialty from content
+        detected_subspecialty = detect_subspecialty_from_content(content)
+        print(f"🏥 Subspecialty detected from content: {detected_subspecialty}")
+        
         if not anthropic_client:
             print("Claude API not available, using fallback analysis")
-            return get_fallback_emotional_data()
+            fallback_data = get_fallback_emotional_data()
+            fallback_data["subspecialty"] = detected_subspecialty
+            return fallback_data
             
-        # Use Claude for sophisticated emotional analysis
+        # Enhanced Claude prompt with subspecialty context
         message = anthropic_client.messages.create(
             model="claude-3-sonnet-20240229",
             max_tokens=1000,
             messages=[{
                 "role": "user",
-                "content": f"""Analyze this medical content text for emotional undertones and return a JSON response:
+                "content": f"""You are analyzing medical content for emotional undertones. Each article should have DIFFERENT emotional profiles based on its actual content.
+                
+CONTENT TO ANALYZE (from {detected_subspecialty} subspecialty):
+{content[:3000]}
 
-{content[:2000]}  # Limit content length
+CRITICAL: Analyze the ACTUAL content above and provide varied emotional scores. Don't use generic values.
 
-Please analyze for these emotions and return scores 0-1 as numbers (not strings):
-- hope (recovery potential, positive outcomes)
-- tension (complications, risks, challenges)
-- confidence (evidence strength, certainty)
-- uncertainty (ambiguous results, need for more research)
-- breakthrough (innovation, novel approaches)
-- healing (therapeutic potential, restoration)
+SCORING GUIDELINES with EXAMPLES:
 
-Also assess:
-- evidence_strength (0-1 as number)
-- technical_density (0-1 as number)
-- subspecialty (one of: sportsMedicine, jointReplacement, trauma, spine, handUpperExtremity, footAnkle, shoulderElbow, pediatrics, oncology)
+**Hope (0-1)**: Recovery potential and positive outcomes
+- 0.2-0.4: Guarded prognosis, limited recovery options
+- 0.5-0.7: Moderate recovery potential, standard outcomes  
+- 0.8-0.9: Excellent recovery potential, high success rates
 
-Return only valid JSON with numeric values."""
-            }]
-        )
+**Tension (0-1)**: Complications, risks, controversy
+- 0.1-0.3: Well-established, low-risk procedures
+- 0.4-0.6: Some risks or debate in the literature
+- 0.7-0.9: High-risk, controversial, or complicated procedures
+
+**Confidence (0-1)**: Evidence strength and certainty
+- 0.2-0.4: Limited evidence, case reports only
+- 0.5-0.7: Some studies, mixed results
+- 0.8-0.9: Strong evidence, multiple high-quality studies
+
+**Uncertainty (0-1)**: Ambiguous results, need for research
+- 0.1-0.3: Clear consensus, well-established
+- 0.4-0.6: Some areas need clarification
+- 0.7-0.9: Many unknowns, conflicting data
+
+**Breakthrough (0-1)**: Innovation and novel approaches  
+- 0.1-0.3: Standard, traditional approaches
+- 0.4-0.6: Some newer techniques mentioned
+- 0.7-0.9: Cutting-edge, revolutionary approaches
+
+**Healing (0-1)**: Therapeutic potential and restoration
+- 0.2-0.4: Palliative or limited healing potential
+- 0.5-0.7: Good healing and functional restoration
+- 0.8-0.9: Excellent healing with return to full function
+
+**Evidence Strength (0-1)**: Quality of research cited
+- 0.2-0.4: Case reports, expert opinion
+- 0.5-0.7: Some RCTs, systematic reviews
+- 0.8-0.9: Multiple high-quality RCTs, meta-analyses
+
+**Technical Density (0-1)**: Complexity of terminology
+- 0.2-0.4: Basic medical terminology
+- 0.5-0.7: Moderate complexity, some technical terms
+- 0.8-0.9: Highly technical, specialized terminology
+
+IMPORTANT: 
+- READ the actual content carefully
+- VARY the scores based on what you read
+- Don't default to middle values (0.5-0.7)
+- Make scores reflect the content's actual tone and evidence
+
+Return ONLY this JSON format:
+{{
+  "hope": <your_analysis_number>,
+  "tension": <your_analysis_number>,
+  "confidence": <your_analysis_number>, 
+  "uncertainty": <your_analysis_number>,
+  "breakthrough": <your_analysis_number>,
+  "healing": <your_analysis_number>,
+  "evidence_strength": <your_analysis_number>,
+  "technical_density": <your_analysis_number>,
+  "subspecialty": "{detected_subspecialty}"
+}}"""
+    }]
+)
         
-        response_text = message.content[0].text
+        response_text = message.content[0].text.strip()
+        print(f"🤖 Claude response: {response_text[:200]}...")
+        
+        # Clean the response to ensure it's valid JSON
+        if response_text.startswith('```json'):
+            response_text = response_text.replace('```json', '').replace('```', '').strip()
+        
         emotional_data = json.loads(response_text)
         
-        # Ensure we have all required fields with proper numeric values
+        # Validate and ensure numeric values
         emotions = ["hope", "tension", "confidence", "uncertainty", "breakthrough", "healing"]
         for emotion in emotions:
             if emotion not in emotional_data:
                 emotional_data[emotion] = 0.5
             else:
-                # Ensure it's a number
-                emotional_data[emotion] = float(emotional_data[emotion])
+                emotional_data[emotion] = max(0.0, min(1.0, float(emotional_data[emotion])))
                 
-        # Ensure numeric values for other fields
-        emotional_data["evidence_strength"] = float(emotional_data.get("evidence_strength", 0.5))
-        emotional_data["technical_density"] = float(emotional_data.get("technical_density", 0.5))
+        # Ensure other numeric fields
+        emotional_data["evidence_strength"] = max(0.0, min(1.0, float(emotional_data.get("evidence_strength", 0.5))))
+        emotional_data["technical_density"] = max(0.0, min(1.0, float(emotional_data.get("technical_density", 0.5))))
+        
+        # Ensure subspecialty is set
+        emotional_data["subspecialty"] = detected_subspecialty
         
         # Find dominant emotion
         emotion_scores = {k: v for k, v in emotional_data.items() if k in emotions}
         dominant_emotion = max(emotion_scores, key=emotion_scores.get)
         emotional_data["dominant_emotion"] = dominant_emotion
         
-        print(f"Emotional analysis complete. Dominant emotion: {dominant_emotion}")
+        print(f"✅ Emotional analysis complete:")
+        print(f"   Subspecialty: {emotional_data['subspecialty']}")
+        print(f"   Dominant emotion: {dominant_emotion} ({emotion_scores[dominant_emotion]:.2f})")
+        print(f"   Evidence strength: {emotional_data['evidence_strength']:.2f}")
+        print(f"   Technical density: {emotional_data['technical_density']:.2f}")
+        
         return emotional_data
         
+    except json.JSONDecodeError as e:
+        print(f"❌ JSON decode error: {e}")
+        print(f"Raw response: {response_text}")
+        fallback_data = get_fallback_emotional_data()
+        fallback_data["subspecialty"] = detect_subspecialty_from_content(content)
+        return fallback_data
     except Exception as e:
-        print(f"Error in emotional analysis: {e}")
-        # Fallback to basic analysis with guaranteed numeric values
-        return get_fallback_emotional_data()
+        print(f"❌ Error in emotional analysis: {e}")
+        fallback_data = get_fallback_emotional_data()
+        fallback_data["subspecialty"] = detect_subspecialty_from_content(content)
+        return fallback_data
 
 def get_fallback_emotional_data():
-    """Fallback emotional data when Claude API is unavailable"""
+    """Enhanced fallback with more variation"""
+    import random
+    
+    # Generate more varied fallback data
+    base_emotions = {
+        "hope": 0.3 + random.random() * 0.4,  # 0.3-0.7
+        "tension": 0.1 + random.random() * 0.3,  # 0.1-0.4
+        "confidence": 0.4 + random.random() * 0.4,  # 0.4-0.8
+        "uncertainty": 0.1 + random.random() * 0.3,  # 0.1-0.4
+        "breakthrough": 0.2 + random.random() * 0.4,  # 0.2-0.6
+        "healing": 0.4 + random.random() * 0.4,  # 0.4-0.8
+    }
+    
+    dominant_emotion = max(base_emotions, key=base_emotions.get)
+    
     return {
-        "hope": 0.5,
-        "tension": 0.3,
-        "confidence": 0.6,
-        "uncertainty": 0.2,
-        "breakthrough": 0.4,
-        "healing": 0.7,
-        "dominant_emotion": "healing",
-        "evidence_strength": 0.6,
-        "technical_density": 0.5,
-        "subspecialty": "sportsMedicine"
+        **base_emotions,
+        "dominant_emotion": dominant_emotion,
+        "evidence_strength": 0.3 + random.random() * 0.5,  # 0.3-0.8
+        "technical_density": 0.3 + random.random() * 0.5,  # 0.3-0.8
+        "subspecialty": "sportsMedicine"  # Will be overridden by caller
     }
 
 def generate_emotional_signature(emotional_data: dict) -> dict:
@@ -1194,65 +1386,6 @@ async def submit_feedback_enhanced(feedback_data: dict):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-
-async def update_algorithm_with_feedback(emotion: str, influence_weight: float, feedback_id: str) -> bool:
-    """Update algorithm state based on user feedback"""
-    try:
-        # Get current algorithm state
-        current_state = algorithm_states_collection.find_one({}, sort=[("timestamp", -1)])
-        if not current_state:
-            print("No current algorithm state found")
-            return False
-            
-        # Get current emotional mix
-        current_mix = current_state["emotional_state"]["emotional_mix"]
-        
-        # Calculate influence based on weight
-        influence_factor = min(influence_weight * 0.2, 0.3)  # Cap maximum influence at 30%
-        
-        # Update emotional mix
-        new_mix = current_mix.copy()
-        for emotion_key in new_mix:
-            if emotion_key == emotion:
-                # Increase the feedback emotion
-                new_mix[emotion_key] = min(1.0, new_mix[emotion_key] + influence_factor)
-            else:
-                # Slightly decrease other emotions to maintain balance
-                new_mix[emotion_key] = max(0.1, new_mix[emotion_key] - (influence_factor / 5))
-                
-        # Normalize values to ensure they sum to a reasonable range
-        total = sum(new_mix.values())
-        if total > 0:
-            factor = 2.5 / total  # We want the sum to be around 2.5
-            new_mix = {k: v * factor for k, v in new_mix.items()}
-        
-        # Find new dominant emotion
-        dominant_emotion = max(new_mix, key=new_mix.get)
-        
-        # Generate new visual representation
-        visual_rep = generate_visual_representation(dominant_emotion, new_mix[dominant_emotion])
-        
-        # Create new algorithm state
-        new_state = {
-            "emotional_state": {
-                "dominant_emotion": dominant_emotion,
-                "emotional_intensity": new_mix[dominant_emotion],
-                "emotional_mix": new_mix
-            },
-            "visual_representation": visual_rep,
-            "timestamp": datetime.utcnow(),
-            "articles_processed": current_state["articles_processed"],
-            "feedback_influences": current_state.get("feedback_influences", []) + [feedback_id]
-        }
-        
-        # Insert new state
-        algorithm_states_collection.insert_one(new_state)
-        print(f"Algorithm state updated based on feedback. New dominant emotion: {dominant_emotion}")
-        return True
-        
-    except Exception as e:
-        print(f"Error updating algorithm with feedback: {e}")
-        return False
 
 async def update_algorithm_with_feedback(emotion: str, influence_weight: float, feedback_id: str) -> bool:
     """Update algorithm state based on user feedback"""
