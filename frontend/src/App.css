@@ -487,3 +487,109 @@ body {
 ::-webkit-scrollbar-thumb:hover {
   background: rgba(52, 152, 219, 0.7);
 }
+
+// ADD CSS styles to your global CSS or component styles:
+const customStyles = `
+.algorithm-data-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1rem;
+}
+
+.metric-card {
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  border-radius: 12px;
+  padding: 1rem;
+  transition: all 0.3s ease;
+}
+
+.metric-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+}
+
+.emotion-bar {
+  height: 8px;
+  border-radius: 4px;
+  transition: all 0.5s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.emotion-bar::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+  animation: shimmer 2s infinite;
+}
+
+@keyframes shimmer {
+  0% { left: -100%; }
+  100% { left: 100%; }
+}
+
+.medical-term-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.25rem 0.5rem;
+  background: rgba(52, 152, 219, 0.1);
+  border: 1px solid rgba(52, 152, 219, 0.2);
+  border-radius: 6px;
+  font-size: 0.75rem;
+  margin: 0.125rem;
+  transition: all 0.3s ease;
+}
+
+.medical-term-badge:hover {
+  background: rgba(52, 152, 219, 0.2);
+  transform: scale(1.05);
+}
+
+.citation-card {
+  border-left: 4px solid #3498db;
+  background: linear-gradient(135deg, #f8f9ff 0%, #e6f2ff 100%);
+  transition: all 0.3s ease;
+}
+
+.citation-card:hover {
+  border-left-color: #2980b9;
+  transform: translateX(4px);
+}
+
+.processing-timeline {
+  position: relative;
+  padding-left: 2rem;
+}
+
+.processing-timeline::before {
+  content: '';
+  position: absolute;
+  left: 0.5rem;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: linear-gradient(to bottom, #3498db, #27ae60);
+}
+
+.timeline-item {
+  position: relative;
+  padding-bottom: 1rem;
+}
+
+.timeline-item::before {
+  content: '';
+  position: absolute;
+  left: -1.5rem;
+  top: 0.5rem;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #3498db;
+  border: 2px solid white;
+  box-shadow: 0 0 0 2px #3498db;
+}
+`;
