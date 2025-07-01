@@ -416,52 +416,66 @@ const RealArthrokinetixArtwork = ({ artwork, width = 400, height = 400 }) => {
     const evidenceStrength = params?.evidence_strength || 0.5;
     const complexity = params?.tree_complexity || 0.5;
     const subspecialty = params?.subspecialty || 'sportsMedicine';
-    
-    console.log('🌳 Generating Andry Tree with:', { evidenceStrength, complexity, subspecialty });
-    
+  
+    // NEW: Use emotional_journey data if available (matches backend update)
+    const emotionalJourney = params?.emotional_journey || {};
+    const solutionConfidence = emotionalJourney.solutionConfidence || evidenceStrength;
+    const innovationLevel = emotionalJourney.innovationLevel || 0.5;
+  
+    console.log('🌳 Generating Andry Tree with:', { 
+      evidenceStrength, 
+      complexity, 
+      subspecialty,
+      emotionalJourney: Object.keys(emotionalJourney).length > 0 ? 'Available' : 'Using fallback'
+    });
+  
     // Root foundation paths (representing research foundation)
-    const rootCount = Math.floor(evidenceStrength * 6) + 3;
+    const rootCount = Math.floor(solutionConfidence * 6) + 3; // Use solutionConfidence instead of evidenceStrength
     for (let i = 0; i < rootCount; i++) {
       const angle = (i / rootCount) * 180 + 180;
-      const radius = 40 + (evidenceStrength * 80);
+      const radius = 40 + (solutionConfidence * 80); // Use emotional journey data
       const startAngle = angle - 15;
       const endAngle = angle + 15;
-      
+    
       elements.push({
         type: 'root_foundation',
         path: `M 0,0 Q ${Math.cos(startAngle * Math.PI / 180) * radius/2},${Math.sin(startAngle * Math.PI / 180) * radius/2} ${Math.cos(endAngle * Math.PI / 180) * radius},${Math.sin(endAngle * Math.PI / 180) * radius}`,
         color: getEmotionColor(params?.dominant_emotion || 'confidence'),
-        thickness: 2 + evidenceStrength * 4
+        thickness: 2 + solutionConfidence * 4 // Use emotional journey data
       });
     }
-    
+  
     // Knowledge branches representing medical content
     const medicalTerms = params?.medical_terms || {};
     const termCategories = Object.keys(medicalTerms);
-    
+  
     console.log('📚 Medical term categories found:', termCategories);
-    
+  
     termCategories.forEach((category, index) => {
       const categoryTerms = medicalTerms[category] || {};
       const termCount = Object.keys(categoryTerms).length;
-      
+    
       if (termCount > 0) {
         const branchAngle = (index / termCategories.length) * 140 - 70;
         const branchLength = 50 + (termCount * 8);
-        
+      
+        // NEW: Use innovation level for branch characteristics
+        const branchThickness = 2 + Math.min(termCount / 3, 6) + (innovationLevel * 2);
+        const branchOpacity = 0.7 + (termCount / 20) + (innovationLevel * 0.2);
+      
         elements.push({
           type: 'knowledge_branch',
           startY: -30,
           endX: Math.sin(branchAngle * Math.PI / 180) * branchLength,
           endY: -30 - Math.cos(branchAngle * Math.PI / 180) * branchLength,
           color: getCategoryColor(category),
-          thickness: 2 + Math.min(termCount / 3, 6),
-          opacity: 0.7 + (termCount / 20)
+          thickness: branchThickness,
+          opacity: Math.min(branchOpacity, 1.0)
         });
       }
     });
-    
-    console.log(`🌿 Generated ${elements.length} tree elements`);
+  
+    console.log(`🌿 Generated ${elements.length} tree elements (with emotional journey data)`);
     return elements;
   };
 
