@@ -11,6 +11,7 @@ import anthropic
 import base64
 from pathlib import Path
 import re
+import math
 
 # Load environment variables
 load_dotenv('/app/backend/.env')
@@ -784,60 +785,61 @@ async def generate_artwork(article_id: str, emotional_data: dict, signature_data
     return artwork
 
 def process_article_with_full_algorithm(content: str, emotional_data: dict):
-    """Process article content using the full Arthrokinetix algorithm logic"""
-    
-    # Medical term extraction with proper categorization
+    """
+    Updated to match ArthrokinetixArtGenerator logic exactly
+    This ensures identical artworks between website and manual generation
+    """
+    # Medical term extraction - SAME categories as ArthrokinetixArtGenerator
     medical_categories = {
-        "procedures": [
-            "tenotomy", "tenodesis", "arthroscopy", "repair", "reconstruction", 
-            "arthroplasty", "surgery", "surgical", "operation", "procedure",
-            "intervention", "treatment", "therapy", "management"
-        ],
-        "anatomy": [
-            "tendon", "ligament", "joint", "bone", "muscle", "cartilage", 
-            "meniscus", "labrum", "biceps", "rotator cuff", "shoulder",
-            "knee", "hip", "spine", "vertebra", "disc"
-        ],
-        "outcomes": [
-            "success rate", "complication", "recovery", "satisfaction", 
-            "function", "pain relief", "improvement", "healing",
-            "rehabilitation", "outcome", "result", "effectiveness"
-        ],
-        "research": [
-            "study", "trial", "meta-analysis", "evidence", "randomized",
-            "cohort", "systematic review", "clinical trial", "research",
-            "analysis", "investigation", "examination"
-        ]
+        "procedures": {
+            "terms": ['tenotomy', 'tenodesis', 'arthroscopy', 'repair', 'reconstruction', 
+                     'arthroplasty', 'osteosynthesis', 'reduction', 'fixation'],
+            "weight": 1.0
+        },
+        "anatomy": {
+            "terms": ['tendon', 'ligament', 'joint', 'bone', 'muscle', 'cartilage', 
+                     'meniscus', 'clavicle', 'midshaft', 'fracture', 'hardware', 'implant'],
+            "weight": 0.8
+        },
+        "outcomes": {
+            "terms": ['success rate', 'complication', 'recovery', 'satisfaction', 'function',
+                     'union rate', 'complications', 'infection', 'healing'],
+            "weight": 1.2
+        },
+        "research": {
+            "terms": ['study', 'trial', 'meta-analysis', 'evidence', 'randomized', 'cohort',
+                     'systematic review', 'clinical trial', 'research'],
+            "weight": 0.9
+        }
     }
     
     extracted_terms = {}
     content_lower = content.lower()
     
-    for category, terms in medical_categories.items():
+    for category, data in medical_categories.items():
         extracted_terms[category] = {}
-        for term in terms:
-            # Use word boundaries for accurate matching
-            pattern = r'\b' + re.escape(term.lower()) + r'\b'
-            matches = re.findall(pattern, content_lower)
-            count = len(matches)
-            if count > 0:
+        
+        for term in data["terms"]:
+            regex = re.compile(r'\b' + re.escape(term) + r'\b', re.IGNORECASE)
+            matches = regex.findall(content)
+            
+            if matches:
                 extracted_terms[category][term] = {
-                    "count": count,
-                    "weight": 1.0,
-                    "significance": count * 1.0,
-                    "context_weight": min(count / 10, 1.0)  # Normalize significance
+                    "count": len(matches),
+                    "weight": data["weight"],
+                    "significance": len(matches) * data["weight"]
                 }
     
-    # Enhanced statistical data extraction
+    # ===== STEP 2: STATISTICAL DATA EXTRACTION (matching ArthrokinetixArtGenerator) =====
+    
     statistics = []
     patterns = {
         "percentages": r'(\d+(?:\.\d+)?)\s*%',
+        "outcomes": r'(\d+(?:\.\d+)?)\s*(?:out of|\/)\s*(\d+)',
         "pValues": r'p\s*[<>=]\s*(\d+(?:\.\d+)?)',
-        "sampleSizes": r'n\s*=\s*(\d+)',
+        "confidenceIntervals": r'(\d+(?:\.\d+)?)\s*%?\s*ci',
         "followUp": r'(\d+)\s*(?:months?|years?|weeks?)\s*follow-?up',
-        "ages": r'(?:age|aged)\s*(\d+)',
-        "satisfaction": r'(\d+(?:\.\d+)?)\s*%\s*(?:satisfied|satisfaction)',
-        "success": r'(\d+(?:\.\d+)?)\s*%\s*(?:success|successful)'
+        "sampleSizes": r'n\s*=\s*(\d+)'
     }
     
     for stat_type, pattern in patterns.items():
@@ -847,60 +849,111 @@ def process_article_with_full_algorithm(content: str, emotional_data: dict):
             statistics.append({
                 "type": stat_type,
                 "value": value,
-                "context": content[max(0, match.start()-50):match.end()+50],
-                "significance": calculate_stat_significance(stat_type, value),
-                "position": match.start() / len(content)  # Relative position in text
+                "rawText": match.group(0),
+                "context": get_statistic_context(content, match.start()),
+                "significance": assess_statistic_significance(stat_type, value)
             })
     
-    # Research citations with better detection
-    citation_patterns = [
-        r'\b(?:\w+\s+)?et al\.?\s*\(?(?:19|20)\d{2}\)?',
-        r'\b(?:study|trial|research|analysis|investigation)\b.*?(?:19|20)\d{2}',
-        r'\b(?:journal|publication|paper|article)\b.*?(?:medicine|surgery|orthopedic)',
-        r'\b(?:meta-analysis|systematic review|randomized|clinical trial)\b',
-        r'\([^)]*(?:19|20)\d{2}[^)]*\)'  # Years in parentheses
-    ]
+    # ===== STEP 3: RESEARCH CITATIONS (matching ArthrokinetixArtGenerator) =====
     
     citations = []
-    for i, pattern in enumerate(citation_patterns):
+    citation_patterns = [
+        r'\b(?:\w+\s+)?et al\.?\s*\(?(?:19|20)\d{2}\)?',
+        r'\b(?:meta-analysis|systematic review|randomized|clinical trial)\b'
+    ]
+    
+    for pattern in citation_patterns:
         matches = re.finditer(pattern, content, re.IGNORECASE)
         for match in matches:
-            context = match.group()
             citations.append({
                 "type": "research_reference",
-                "context": context,
-                "importance": 0.3 + (i * 0.15),
-                "impact": min(len(context) / 50, 1.0),
-                "pattern_type": i,
-                "position": match.start() / len(content)
+                "impact": 0.9 if "meta-analysis" in match.group().lower() else 0.7,
+                "importance": 0.95 if "randomized" in match.group().lower() else 0.8
             })
     
-    # Visual elements based on content analysis
-    visual_elements = []
+    # ===== STEP 4: EMOTIONAL JOURNEY ANALYSIS (matching ArthrokinetixArtGenerator) =====
     
-    # Add elements based on medical terms found
-    for category, terms in extracted_terms.items():
-        if terms:
-            total_significance = sum(term_data["significance"] for term_data in terms.values())
-            visual_elements.append({
-                "type": f"{category}_visualization",
-                "count": len(terms),
-                "significance": total_significance,
-                "color_mapping": get_category_color(category),
-                "terms": list(terms.keys())[:5],  # Top 5 terms for visualization
-                "density": total_significance / max(len(content.split()), 1)
-            })
-    
-    # Subspecialty-specific visual elements
-    subspecialty = emotional_data.get("subspecialty", "sportsMedicine")
-    subspecialty_visuals = {
-        "shape_style": get_subspecialty_shape(subspecialty),
-        "pattern_type": get_subspecialty_pattern(subspecialty),
-        "color_emphasis": get_subspecialty_colors(subspecialty),
-        "motion_characteristic": get_subspecialty_motion(subspecialty)
+    # Use the SAME emotional analysis logic as ArthrokinetixArtGenerator
+    emotional_journey = {
+        # Problem identification (tension)
+        "problemIntensity": detect_emotional_markers(content, [
+            'complication', 'failure', 'risk', 'challenge', 'difficult', 'controversy'
+        ]) / len(content) * 1000,
+        
+        # Solution confidence
+        "solutionConfidence": detect_emotional_markers(content, [
+            'effective', 'successful', 'proven', 'reliable', 'consistent', 'evidence'
+        ]) / len(content) * 1000,
+        
+        # Innovation excitement
+        "innovationLevel": detect_emotional_markers(content, [
+            'novel', 'innovative', 'breakthrough', 'advanced', 'cutting-edge', 'revolutionary'
+        ]) / len(content) * 1000,
+        
+        # Healing potential
+        "healingPotential": detect_emotional_markers(content, [
+            'recovery', 'healing', 'improvement', 'restoration', 'rehabilitation', 'outcome'
+        ]) / len(content) * 1000,
+        
+        # Research uncertainty
+        "uncertaintyLevel": detect_emotional_markers(content, [
+            'may', 'might', 'possibly', 'unclear', 'variable', 'depends', 'further research'
+        ]) / len(content) * 1000
     }
     
-    # Enhanced uniqueness calculation
+    # Find dominant emotional theme
+    emotional_journey["dominantEmotion"] = max(emotional_journey, key=emotional_journey.get)
+    
+    # ===== STEP 5: VISUAL ELEMENTS GENERATION (matching ArthrokinetixArtGenerator) =====
+    
+    visual_elements = []
+    
+    # Generate Andry Tree elements
+    evidence_strength = emotional_data.get("evidence_strength", 0.5)
+    root_complexity = max(3, math.floor(evidence_strength * 8))
+    
+    for i in range(root_complexity):
+        angle = (i / root_complexity) * 180 + 180
+        length = 50 + (evidence_strength * 100)
+        thickness = 1 + (evidence_strength * 3)
+        
+        visual_elements.append({
+            "type": "andryRoot",
+            "angle": angle,
+            "length": length,
+            "thickness": thickness,
+            "color": get_emotional_color('confidence', 0.3)
+        })
+    
+    # Generate branches for each medical category
+    for category, terms in extracted_terms.items():
+        if terms:
+            branch_complexity = len(terms)
+            visual_elements.append({
+                "type": "medicalBranch",
+                "category": category,
+                "complexity": branch_complexity,
+                "color": get_category_color(category),
+                "thickness": min(branch_complexity / 2, 8)
+            })
+    
+    # Generate data flow streams
+    for stat in statistics:
+        visual_elements.append({
+            "type": "dataFlow",
+            "statType": stat["type"],
+            "significance": stat["significance"],
+            "color": get_statistic_color(stat["type"]),
+            "thickness": 1 + stat["significance"] * 2
+        })
+    
+    # ===== STEP 6: SUBSPECIALTY VISUAL CHARACTERISTICS =====
+    
+    subspecialty = emotional_data.get("subspecialty", "sportsMedicine")
+    subspecialty_visuals = get_subspecialty_visuals(subspecialty)
+    
+    # ===== STEP 7: COMPREHENSIVE COMPLEXITY CALCULATION =====
+    
     uniqueness = {
         "term_diversity": len(set(term for terms in extracted_terms.values() for term in terms.keys())),
         "statistical_complexity": len(statistics),
@@ -910,8 +963,9 @@ def process_article_with_full_algorithm(content: str, emotional_data: dict):
         "research_depth": sum(cite.get("impact", 0) for cite in citations)
     }
     
-    # Comprehensive complexity score
     complexity_score = calculate_comprehensive_complexity(uniqueness, emotional_data, content)
+    
+    # ===== RETURN SAME STRUCTURE AS ArthrokinetixArtGenerator =====
     
     return {
         "medical_terms": extracted_terms,
@@ -922,8 +976,99 @@ def process_article_with_full_algorithm(content: str, emotional_data: dict):
         "uniqueness": uniqueness,
         "complexity_score": complexity_score,
         "evidence_foundation": min(len(citations) / 10, 1.0),
-        "content_richness": calculate_content_richness(extracted_terms, statistics, citations)
+        "content_richness": calculate_content_richness(extracted_terms, statistics, citations),
+        "emotional_journey": emotional_journey  # ADD this to match ArthrokinetixArtGenerator
     }
+
+# ===== HELPER FUNCTIONS (add these to match ArthrokinetixArtGenerator) =====
+
+def detect_emotional_markers(text: str, keywords: list) -> int:
+    """Count emotional markers in text"""
+    count = 0
+    for keyword in keywords:
+        count += len(re.findall(r'\b' + re.escape(keyword) + r'\b', text, re.IGNORECASE))
+    return count
+
+def get_statistic_context(text: str, position: int) -> str:
+    """Get context around a statistic"""
+    start = max(0, position - 50)
+    end = min(len(text), position + 50)
+    return text[start:end]
+
+def assess_statistic_significance(stat_type: str, value: float) -> float:
+    """Calculate significance score for statistics"""
+    significance_maps = {
+        "percentages": lambda x: min(x / 100, 1.0),
+        "pValues": lambda x: max(0, 1 - x),
+        "sampleSizes": lambda x: min(x / 1000, 1.0),
+        "followUp": lambda x: min(x / 60, 1.0)
+    }
+    
+    calculator = significance_maps.get(stat_type, lambda x: 0.5)
+    return calculator(value)
+
+def get_emotional_color(emotion: str, intensity: float = 1.0) -> str:
+    """Get color for emotion with intensity"""
+    emotional_palettes = {
+        "hope": ["#27ae60", "#2ecc71", "#58d68d", "#85e085"],
+        "tension": ["#e74c3c", "#c0392b", "#a93226", "#8b0000"],
+        "confidence": ["#3498db", "#2980b9", "#1f4e79", "#1a5490"],
+        "uncertainty": ["#95a5a6", "#7f8c8d", "#5d6d7e", "#484c52"],
+        "breakthrough": ["#f39c12", "#e67e22", "#d35400", "#cc6600"],
+        "healing": ["#16a085", "#1abc9c", "#48c9b0", "#76d7c4"]
+    }
+    
+    palette = emotional_palettes.get(emotion, emotional_palettes["confidence"])
+    color_index = min(math.floor(intensity * len(palette)), len(palette) - 1)
+    return palette[color_index]
+
+def get_category_color(category: str) -> str:
+    """Get color for medical category"""
+    colors = {
+        "procedures": "#e74c3c",
+        "anatomy": "#3498db",
+        "outcomes": "#27ae60", 
+        "research": "#f39c12"
+    }
+    return colors.get(category, "#95a5a6")
+
+def get_statistic_color(stat_type: str) -> str:
+    """Get color for statistic type"""
+    colors = {
+        "percentages": "#e74c3c",
+        "pValues": "#f39c12",
+        "sampleSizes": "#27ae60",
+        "followUp": "#3498db"
+    }
+    return colors.get(stat_type, "#95a5a6")
+
+def get_subspecialty_visuals(subspecialty: str) -> dict:
+    """Get visual characteristics for subspecialty"""
+    subspecialty_styles = {
+        "sportsMedicine": {
+            "shape_style": "dynamic_flow",
+            "pattern_type": "flowing_motion", 
+            "color_emphasis": ["#27ae60", "#3498db", "#e74c3c"],
+            "motion_characteristic": "athletic"
+        },
+        "trauma": {
+            "shape_style": "angular_reinforcement",
+            "pattern_type": "fracture_lines",
+            "color_emphasis": ["#e74c3c", "#f1c40f", "#95a5a6"],
+            "motion_characteristic": "stabilizing"
+        }
+        # Add other subspecialties...
+    }
+    
+    return subspecialty_styles.get(subspecialty, subspecialty_styles["sportsMedicine"])
+
+def calculate_content_richness(extracted_terms: dict, statistics: list, citations: list) -> float:
+    """Calculate overall content richness"""
+    term_richness = sum(len(terms) for terms in extracted_terms.values()) / 20
+    stat_richness = len(statistics) / 10
+    citation_richness = len(citations) / 8
+    
+    return min((term_richness + stat_richness + citation_richness) / 3, 1.0)
 
 def calculate_stat_significance(stat_type, value):
     """Calculate significance score for different statistic types"""
