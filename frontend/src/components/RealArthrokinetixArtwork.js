@@ -113,7 +113,8 @@ const generateRealArtwork = () => {
         <radialGradient id={`bg-${artwork.id}`} cx="50%" cy="50%">
           <stop offset="0%" stopColor={background.center} stopOpacity="0.8"/>
           <stop offset="100%" stopColor={background.edge} stopOpacity="0.4"/>
-        </defs>
+        </radialGradient>
+      </defs>
         
         <rect width="100%" height="100%" fill={`url(#bg-${artwork.id})`} />
 
