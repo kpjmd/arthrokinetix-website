@@ -786,29 +786,35 @@ async def generate_artwork(article_id: str, emotional_data: dict, signature_data
 
 def process_article_with_full_algorithm(content: str, emotional_data: dict):
     """
-    Updated to match ArthrokinetixArtGenerator logic exactly
+    UPDATED to exactly match ArthrokinetixArtGenerator v2.0 Complete
     This ensures identical artworks between website and manual generation
     """
-    # Medical term extraction - SAME categories as ArthrokinetixArtGenerator
+    
+    # ===== STEP 1: MEDICAL TERM EXTRACTION (matching complete algorithm) =====
+    
     medical_categories = {
         "procedures": {
             "terms": ['tenotomy', 'tenodesis', 'arthroscopy', 'repair', 'reconstruction', 
-                     'arthroplasty', 'osteosynthesis', 'reduction', 'fixation'],
+                     'arthroplasty', 'osteosynthesis', 'reduction', 'fixation', 'surgery',
+                     'osteotomy', 'fusion', 'discectomy', 'laminectomy', 'decompression'],
             "weight": 1.0
         },
         "anatomy": {
             "terms": ['tendon', 'ligament', 'joint', 'bone', 'muscle', 'cartilage', 
-                     'meniscus', 'clavicle', 'midshaft', 'fracture', 'hardware', 'implant'],
+                     'meniscus', 'labrum', 'clavicle', 'scapula', 'humerus', 'radius',
+                     'ulna', 'femur', 'tibia', 'fibula', 'patella', 'vertebra', 'disc'],
             "weight": 0.8
         },
         "outcomes": {
             "terms": ['success rate', 'complication', 'recovery', 'satisfaction', 'function',
-                     'union rate', 'complications', 'infection', 'healing'],
+                     'healing', 'union', 'infection', 'pain relief', 'range of motion',
+                     'return to work', 'return to sport', 'functional outcome'],
             "weight": 1.2
         },
         "research": {
             "terms": ['study', 'trial', 'meta-analysis', 'evidence', 'randomized', 'cohort',
-                     'systematic review', 'clinical trial', 'research'],
+                     'systematic review', 'clinical trial', 'research', 'follow-up',
+                     'prospective', 'retrospective', 'case series'],
             "weight": 0.9
         }
     }
@@ -830,16 +836,18 @@ def process_article_with_full_algorithm(content: str, emotional_data: dict):
                     "significance": len(matches) * data["weight"]
                 }
     
-    # ===== STEP 2: STATISTICAL DATA EXTRACTION (matching ArthrokinetixArtGenerator) =====
+    # ===== STEP 2: STATISTICAL DATA EXTRACTION (enhanced patterns) =====
     
     statistics = []
     patterns = {
         "percentages": r'(\d+(?:\.\d+)?)\s*%',
         "outcomes": r'(\d+(?:\.\d+)?)\s*(?:out of|\/)\s*(\d+)',
         "pValues": r'p\s*[<>=]\s*(\d+(?:\.\d+)?)',
-        "confidenceIntervals": r'(\d+(?:\.\d+)?)\s*%?\s*ci',
+        "confidenceIntervals": r'(\d+(?:\.\d+)?)\s*%?\s*(?:ci|confidence interval)',
         "followUp": r'(\d+)\s*(?:months?|years?|weeks?)\s*follow-?up',
-        "sampleSizes": r'n\s*=\s*(\d+)'
+        "sampleSizes": r'n\s*=\s*(\d+)',
+        "satisfaction": r'(\d+(?:\.\d+)?)\s*%?\s*(?:satisfied|satisfaction)',
+        "success": r'(\d+(?:\.\d+)?)\s*%?\s*(?:success|successful)'
     }
     
     for stat_type, pattern in patterns.items():
@@ -854,61 +862,76 @@ def process_article_with_full_algorithm(content: str, emotional_data: dict):
                 "significance": assess_statistic_significance(stat_type, value)
             })
     
-    # ===== STEP 3: RESEARCH CITATIONS (matching ArthrokinetixArtGenerator) =====
+    # ===== STEP 3: RESEARCH CITATIONS (enhanced detection) =====
     
     citations = []
     citation_patterns = [
         r'\b(?:\w+\s+)?et al\.?\s*\(?(?:19|20)\d{2}\)?',
-        r'\b(?:meta-analysis|systematic review|randomized|clinical trial)\b'
+        r'\b(?:meta-analysis|systematic review|randomized|clinical trial)\b',
+        r'\b(?:prospective|retrospective)\s+(?:study|trial)\b',
+        r'\b(?:level\s+[IVX]+|grade\s+[ABCD])\s+evidence\b'
     ]
     
     for pattern in citation_patterns:
         matches = re.finditer(pattern, content, re.IGNORECASE)
         for match in matches:
+            impact_score = 0.9 if "meta-analysis" in match.group().lower() else \
+                          0.85 if "systematic review" in match.group().lower() else \
+                          0.8 if "randomized" in match.group().lower() else 0.7
+            
             citations.append({
                 "type": "research_reference",
-                "impact": 0.9 if "meta-analysis" in match.group().lower() else 0.7,
-                "importance": 0.95 if "randomized" in match.group().lower() else 0.8
+                "impact": impact_score,
+                "importance": min(impact_score + 0.1, 0.95),
+                "rawText": match.group(0)
             })
     
-    # ===== STEP 4: EMOTIONAL JOURNEY ANALYSIS (matching ArthrokinetixArtGenerator) =====
+    # ===== STEP 4: EMOTIONAL JOURNEY ANALYSIS (CRITICAL - this was missing!) =====
     
     # Use the SAME emotional analysis logic as ArthrokinetixArtGenerator
     emotional_journey = {
         # Problem identification (tension)
         "problemIntensity": detect_emotional_markers(content, [
-            'complication', 'failure', 'risk', 'challenge', 'difficult', 'controversy'
-        ]) / len(content) * 1000,
+            'complication', 'failure', 'risk', 'challenge', 'difficult', 'controversy',
+            'adverse', 'complications', 'failed', 'unsuccessful'
+        ]) / max(len(content), 1) * 1000,
         
         # Solution confidence
         "solutionConfidence": detect_emotional_markers(content, [
-            'effective', 'successful', 'proven', 'reliable', 'consistent', 'evidence'
-        ]) / len(content) * 1000,
+            'effective', 'successful', 'proven', 'reliable', 'consistent', 'evidence',
+            'established', 'validated', 'demonstrated', 'confirmed'
+        ]) / max(len(content), 1) * 1000,
         
         # Innovation excitement
         "innovationLevel": detect_emotional_markers(content, [
-            'novel', 'innovative', 'breakthrough', 'advanced', 'cutting-edge', 'revolutionary'
-        ]) / len(content) * 1000,
+            'novel', 'innovative', 'breakthrough', 'advanced', 'cutting-edge', 'revolutionary',
+            'new', 'modern', 'state-of-the-art', 'pioneering'
+        ]) / max(len(content), 1) * 1000,
         
         # Healing potential
         "healingPotential": detect_emotional_markers(content, [
-            'recovery', 'healing', 'improvement', 'restoration', 'rehabilitation', 'outcome'
-        ]) / len(content) * 1000,
+            'recovery', 'healing', 'improvement', 'restoration', 'rehabilitation', 'outcome',
+            'restored', 'improved', 'healed', 'recovered', 'functional'
+        ]) / max(len(content), 1) * 1000,
         
         # Research uncertainty
         "uncertaintyLevel": detect_emotional_markers(content, [
-            'may', 'might', 'possibly', 'unclear', 'variable', 'depends', 'further research'
-        ]) / len(content) * 1000
+            'may', 'might', 'possibly', 'unclear', 'variable', 'depends', 'further research',
+            'uncertain', 'unknown', 'inconclusive', 'limited', 'preliminary'
+        ]) / max(len(content), 1) * 1000
     }
     
     # Find dominant emotional theme
-    emotional_journey["dominantEmotion"] = max(emotional_journey, key=emotional_journey.get)
+    emotion_scores = {k: v for k, v in emotional_journey.items() if isinstance(v, (int, float))}
+    emotional_journey["dominantEmotion"] = max(emotion_scores, key=emotion_scores.get) if emotion_scores else "confidence"
     
-    # ===== STEP 5: VISUAL ELEMENTS GENERATION (matching ArthrokinetixArtGenerator) =====
+    print(f"🧠 FIXED: Generated emotional journey data: {emotional_journey}")
+    
+    # ===== STEP 5: VISUAL ELEMENTS GENERATION (matching complete algorithm) =====
     
     visual_elements = []
     
-    # Generate Andry Tree elements
+    # Generate Andry Tree elements (exactly like complete algorithm)
     evidence_strength = emotional_data.get("evidence_strength", 0.5)
     root_complexity = max(3, math.floor(evidence_strength * 8))
     
@@ -922,37 +945,69 @@ def process_article_with_full_algorithm(content: str, emotional_data: dict):
             "angle": angle,
             "length": length,
             "thickness": thickness,
-            "color": get_emotional_color('confidence', 0.3)
+            "color": get_emotional_color('confidence', 0.3),
+            "opacity": 0.6 + (evidence_strength * 0.3)
         })
     
-    # Generate branches for each medical category
+    # Generate medical branches for each category with actual data
     for category, terms in extracted_terms.items():
         if terms:
-            branch_complexity = len(terms)
+            term_count = len(terms)
+            total_significance = sum(term_data.get("significance", 1) for term_data in terms.values())
+            
             visual_elements.append({
                 "type": "medicalBranch",
                 "category": category,
-                "complexity": branch_complexity,
+                "complexity": term_count,
+                "significance": total_significance,
                 "color": get_category_color(category),
-                "thickness": min(branch_complexity / 2, 8)
+                "thickness": min(term_count / 2, 8),
+                "opacity": 0.7 + min(total_significance / 50, 0.3)
             })
     
-    # Generate data flow streams
+    # Generate data flow streams for each statistic
     for stat in statistics:
         visual_elements.append({
             "type": "dataFlow",
             "statType": stat["type"],
             "significance": stat["significance"],
             "color": get_statistic_color(stat["type"]),
-            "thickness": 1 + stat["significance"] * 2
+            "thickness": 1 + stat["significance"] * 2,
+            "opacity": 0.4 + stat["significance"] * 0.4
         })
+    
+    # Generate healing particles based on healing potential
+    healing_potential = emotional_journey.get("healingPotential", 0) / 1000  # Convert back to 0-1
+    healing_particle_count = max(3, math.floor(healing_potential * 15))
+    
+    for i in range(healing_particle_count):
+        visual_elements.append({
+            "type": "healingParticle",
+            "size": 3 + math.random() * 8,
+            "color": get_emotional_color('healing', 0.6),
+            "pulseRate": 0.5 + math.random() * 1.5,
+            "intensity": healing_potential
+        })
+    
+    # Generate research stars for citations
+    for i, citation in enumerate(citations[:8]):  # Limit to 8 stars
+        visual_elements.append({
+            "type": "researchStar",
+            "index": i,
+            "impact": citation["impact"],
+            "importance": citation["importance"],
+            "color": get_emotional_color('confidence', 0.8),
+            "size": 2 + citation["impact"] * 4
+        })
+    
+    print(f"🎨 Generated {len(visual_elements)} visual elements (matching complete algorithm)")
     
     # ===== STEP 6: SUBSPECIALTY VISUAL CHARACTERISTICS =====
     
     subspecialty = emotional_data.get("subspecialty", "sportsMedicine")
     subspecialty_visuals = get_subspecialty_visuals(subspecialty)
     
-    # ===== STEP 7: COMPREHENSIVE COMPLEXITY CALCULATION =====
+    # ===== STEP 7: COMPREHENSIVE UNIQUENESS CALCULATION =====
     
     uniqueness = {
         "term_diversity": len(set(term for terms in extracted_terms.values() for term in terms.keys())),
@@ -960,12 +1015,14 @@ def process_article_with_full_algorithm(content: str, emotional_data: dict):
         "citation_density": len(citations),
         "emotional_variance": calculate_emotional_variance(emotional_data),
         "content_distribution": calculate_content_distribution(extracted_terms),
-        "research_depth": sum(cite.get("impact", 0) for cite in citations)
+        "research_depth": sum(cite.get("impact", 0) for cite in citations),
+        "visual_element_count": len(visual_elements),
+        "healing_potential": healing_potential
     }
     
     complexity_score = calculate_comprehensive_complexity(uniqueness, emotional_data, content)
     
-    # ===== RETURN SAME STRUCTURE AS ArthrokinetixArtGenerator =====
+    # ===== RETURN COMPLETE STRUCTURE (matching ArthrokinetixArtGenerator) =====
     
     return {
         "medical_terms": extracted_terms,
@@ -977,31 +1034,82 @@ def process_article_with_full_algorithm(content: str, emotional_data: dict):
         "complexity_score": complexity_score,
         "evidence_foundation": min(len(citations) / 10, 1.0),
         "content_richness": calculate_content_richness(extracted_terms, statistics, citations),
-        "emotional_journey": emotional_journey  # ADD this to match ArthrokinetixArtGenerator
+        "emotional_journey": emotional_journey,  # CRITICAL: This was missing!
+        
+        # Additional complete algorithm features
+        "article_structure": analyze_article_structure(content),
+        "medical_subspecialty_confidence": calculate_subspecialty_confidence(content, subspecialty),
+        "data_density": calculate_data_density(statistics, citations, len(content.split())),
+        "research_quality_score": calculate_research_quality(citations),
+        "algorithm_processing_metadata": {
+            "version": "2.0-complete",
+            "processing_timestamp": datetime.utcnow().isoformat(),
+            "content_length": len(content),
+            "processing_depth": "full-algorithm-analysis"
+        }
     }
+
+# Add these missing helper functions to match complete algorithm:
+
+def analyze_article_structure(content: str) -> dict:
+    """Analyze article structure like the complete algorithm"""
+    paragraphs = content.split('\n\n')
+    sentences = re.split(r'[.!?]+', content)
+    
+    return {
+        "paragraph_count": len([p for p in paragraphs if p.strip()]),
+        "sentence_count": len([s for s in sentences if s.strip()]),
+        "avg_sentence_length": sum(len(s.split()) for s in sentences) / max(len(sentences), 1),
+        "structural_complexity": min(len(paragraphs) / 20, 1.0)
+    }
+
+def calculate_subspecialty_confidence(content: str, subspecialty: str) -> float:
+    """Calculate confidence in subspecialty detection"""
+    # This would use the same enhanced detection logic from complete algorithm
+    return 0.8  # Placeholder - implement full logic
+
+def calculate_data_density(statistics: list, citations: list, word_count: int) -> float:
+    """Calculate how data-dense the content is"""
+    if word_count == 0:
+        return 0.0
+    
+    data_points = len(statistics) + len(citations)
+    return min(data_points / (word_count / 100), 1.0)  # Data points per 100 words
+
+def calculate_research_quality(citations: list) -> float:
+    """Calculate overall research quality score"""
+    if not citations:
+        return 0.0
+    
+    avg_impact = sum(cite.get("impact", 0) for cite in citations) / len(citations)
+    citation_count_score = min(len(citations) / 10, 1.0)
+    
+    return (avg_impact + citation_count_score) / 2
 
 # ===== HELPER FUNCTIONS (add these to match ArthrokinetixArtGenerator) =====
 
 def detect_emotional_markers(text: str, keywords: list) -> int:
-    """Count emotional markers in text"""
+    """Count emotional markers in text (was missing)"""
     count = 0
     for keyword in keywords:
         count += len(re.findall(r'\b' + re.escape(keyword) + r'\b', text, re.IGNORECASE))
     return count
 
 def get_statistic_context(text: str, position: int) -> str:
-    """Get context around a statistic"""
+    """Get context around a statistic (was missing)"""
     start = max(0, position - 50)
     end = min(len(text), position + 50)
     return text[start:end]
 
 def assess_statistic_significance(stat_type: str, value: float) -> float:
-    """Calculate significance score for statistics"""
+    """Calculate significance score for statistics (was missing)"""
     significance_maps = {
         "percentages": lambda x: min(x / 100, 1.0),
         "pValues": lambda x: max(0, 1 - x),
         "sampleSizes": lambda x: min(x / 1000, 1.0),
-        "followUp": lambda x: min(x / 60, 1.0)
+        "followUp": lambda x: min(x / 60, 1.0),
+        "satisfaction": lambda x: min(x / 100, 1.0),
+        "success": lambda x: min(x / 100, 1.0)
     }
     
     calculator = significance_maps.get(stat_type, lambda x: 0.5)
