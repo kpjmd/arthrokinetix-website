@@ -12,6 +12,7 @@ import base64
 from pathlib import Path
 import re
 import math
+import random 
 
 # Load environment variables
 load_dotenv('/app/backend/.env')
@@ -979,13 +980,17 @@ def process_article_with_full_algorithm(content: str, emotional_data: dict):
     # Generate healing particles based on healing potential
     healing_potential = emotional_journey.get("healingPotential", 0) / 1000  # Convert back to 0-1
     healing_particle_count = max(3, math.floor(healing_potential * 15))
-    
+
     for i in range(healing_particle_count):
+        # Use deterministic values based on index and data for consistency
+        size_variation = (i % 3) * 0.3  # Creates variation: 0, 0.3, 0.6, 0, 0.3, 0.6...
+        pulse_variation = (i % 5) * 0.2  # Creates variation: 0, 0.2, 0.4, 0.6, 0.8, 0...
+    
         visual_elements.append({
             "type": "healingParticle",
-            "size": 3 + math.random() * 8,
+            "size": 3 + size_variation + (healing_potential * 5),  # Deterministic but varied
             "color": get_emotional_color('healing', 0.6),
-            "pulseRate": 0.5 + math.random() * 1.5,
+            "pulseRate": 0.5 + pulse_variation + (healing_potential * 1.0),  # Deterministic but varied
             "intensity": healing_potential
         })
     
