@@ -11,91 +11,113 @@ const RealArthrokinetixArtwork = ({ artwork, width = 400, height = 400 }) => {
     }
   }, [artwork]);
 
-  const generateRealArtwork = () => {
-    const params = artwork.algorithm_parameters;
-    const metadata = artwork.metadata;
-    
-    // Debug logging for new data structure
-    console.log('🎨 Generating artwork for:', artwork.title);
-    console.log('📊 Algorithm parameters:', params);
-    console.log('🧠 Emotional journey data:', params?.emotional_journey);
-    console.log('🏥 Medical terms structure:', params?.medical_terms);
-    console.log('📈 Statistical data:', params?.statistics);
-    console.log('🔗 Research citations:', params?.citations);
-    
-    // Check what data we have from the NEW backend structure
-    const hasEmotionalJourney = params?.emotional_journey && Object.keys(params.emotional_journey).length > 0;
-    const hasMedicalTerms = params?.medical_terms && Object.keys(params.medical_terms).length > 0;
-    const hasStatistics = params?.statistics && params.statistics.length > 0;
-    const hasCitations = params?.citations && params.citations.length > 0;
-    const hasVisualElements = params?.visual_elements && params.visual_elements.length > 0;
-    
-    console.log('📋 NEW Data availability:', {
-      emotionalJourney: hasEmotionalJourney,
-      medicalTerms: hasMedicalTerms,
-      statistics: hasStatistics,
-      citations: hasCitations,
-      visualElements: hasVisualElements
-    });
+  // FIXED: Update the generateRealArtwork function in RealArthrokinetixArtwork.js
+// Replace the existing generateRealArtwork function with this corrected version
 
-    // 1. Generate Subspecialty Background
-    const background = generateSubspecialtyBackground(params?.subspecialty || 'sportsMedicine');
-    
-    // 2. Generate Andry Tree Structure using NEW emotional_journey data
-    const andryElements = generateAndryTreeWithEmotionalJourney(params);
-    
-    // 3. Generate Medical Term Visualizations using NEW structure
-    const medicalVisuals = generateEnhancedMedicalTermVisuals(params?.medical_terms || {});
-    
-    // 4. Generate Statistical Data Streams using NEW statistics array
-    const dataStreams = generateEnhancedStatisticalStreams(params?.statistics || []);
-    
-    // 5. Generate Research Constellation using NEW citations structure
-    const researchStars = generateEnhancedResearchConstellation(params?.citations || []);
-    
-    // 6. Generate Emotional Field Overlays using NEW emotional_journey
-    const emotionalFields = generateEmotionalFieldsFromJourney(params?.emotional_journey || {});
-    
-    // 7. Generate Visual Elements from backend
-    const backendVisualElements = renderBackendVisualElements(params?.visual_elements || []);
-    
-    // 8. Generate Subspecialty Symbol
-    const subspecialtySymbol = generateSubspecialtySymbol(params?.subspecialty, params?.dominant_emotion);
+const generateRealArtwork = () => {
+  const params = artwork.algorithm_parameters;
+  const metadata = artwork.metadata;
+  
+  // Debug logging for ACTUAL data structure
+  console.log('🎨 Generating artwork for:', artwork.title);
+  console.log('📊 Raw algorithm parameters:', params);
+  
+  // FIX: Read from ACTUAL field names the backend uses
+  const emotionalJourney = params?.emotional_journey || 
+                           params?.emotional_data?.emotional_journey || 
+                           params?.emotional_data || 
+                           {};
+                           
+  const statistics = params?.statistics || 
+                     params?.statistical_data || 
+                     [];
+                     
+  const citations = params?.citations || 
+                    params?.research_citations || 
+                    [];
+                    
+  const medicalTerms = params?.medical_terms || {};
+  const visualElements = params?.visual_elements || [];
+  
+  // Debug the ACTUAL data found
+  console.log('🧠 Emotional journey data (FIXED):', emotionalJourney);
+  console.log('🏥 Medical terms structure (FOUND):', medicalTerms);
+  console.log('📈 Statistical data (FIXED):', statistics);
+  console.log('🔗 Research citations (FIXED):', citations);
+  console.log('🎯 Visual elements (FOUND):', visualElements);
+  
+  // Check what data we actually have
+  const hasEmotionalJourney = emotionalJourney && Object.keys(emotionalJourney).length > 0;
+  const hasMedicalTerms = medicalTerms && Object.keys(medicalTerms).length > 0;
+  const hasStatistics = statistics && statistics.length > 0;
+  const hasCitations = citations && citations.length > 0;
+  const hasVisualElements = visualElements && visualElements.length > 0;
+  
+  // Try to get emotional data from multiple possible locations
+  const emotionalMix = emotionalJourney?.emotional_mix || 
+                       params?.emotional_mix || 
+                       params?.emotional_data?.emotional_mix ||
+                       {
+                         hope: params?.hope || 0.5,
+                         confidence: params?.confidence || 0.5,
+                         healing: params?.healing || 0.5,
+                         breakthrough: params?.breakthrough || 0.5,
+                         tension: params?.tension || 0.3,
+                         uncertainty: params?.uncertainty || 0.3
+                       };
+  
+  console.log('📋 CORRECTED Data availability:', {
+    emotionalJourney: hasEmotionalJourney,
+    emotionalMix: Object.keys(emotionalMix).length > 0,
+    medicalTerms: hasMedicalTerms,
+    statistics: hasStatistics,
+    citations: hasCitations,
+    visualElements: hasVisualElements
+  });
 
-    const svg = (
-      <svg 
-        width="100%" 
-        height="100%" 
-        viewBox={`0 0 ${width} ${height}`}
-        className="arthrokinetix-real-artwork w-full h-full"
-        preserveAspectRatio="xMidYMid meet"
-      >
-        {/* Background */}
-        <defs>
-          <radialGradient id={`bg-${artwork.id}`} cx="50%" cy="50%">
-            <stop offset="0%" stopColor={background.center} stopOpacity="0.8"/>
-            <stop offset="100%" stopColor={background.edge} stopOpacity="0.4"/>
-          </radialGradient>
-          
-          {/* Enhanced patterns based on NEW emotional_journey data */}
-          <pattern 
-            id={`data-pattern-${artwork.id}`} 
-            x="0" y="0" 
-            width="20" height="20" 
-            patternUnits="userSpaceOnUse"
-          >
-            <circle 
-              cx="10" cy="10" r="1" 
-              fill={getEmotionColor(params?.dominant_emotion)} 
-              opacity={hasEmotionalJourney ? 0.3 : 0.1}
-            />
-          </pattern>
+  // 1. Generate Subspecialty Background
+  const background = generateSubspecialtyBackground(params?.subspecialty || 'sportsMedicine');
+  
+  // 2. Generate Andry Tree Structure using CORRECTED emotional data
+  const andryElements = generateAndryTreeWithCorrectedData(params, emotionalJourney, emotionalMix);
+  
+  // 3. Generate Medical Term Visualizations using FOUND medical_terms
+  const medicalVisuals = generateEnhancedMedicalTermVisuals(medicalTerms);
+  
+  // 4. Generate Statistical Data Streams using CORRECTED statistics
+  const dataStreams = generateEnhancedStatisticalStreams(statistics);
+  
+  // 5. Generate Research Constellation using CORRECTED citations
+  const researchStars = generateEnhancedResearchConstellation(citations);
+  
+  // 6. Generate Emotional Field Overlays using CORRECTED emotional data
+  const emotionalFields = generateEmotionalFieldsFromCorrectedData(emotionalJourney, emotionalMix);
+  
+  // 7. Generate Visual Elements from backend
+  const backendVisualElements = renderBackendVisualElements(visualElements);
+  
+  // 8. Generate Subspecialty Symbol
+  const subspecialtySymbol = generateSubspecialtySymbol(params?.subspecialty, params?.dominant_emotion);
+
+  // Rest of SVG generation code stays the same...
+  const svg = (
+    <svg 
+      width="100%" 
+      height="100%" 
+      viewBox={`0 0 ${width} ${height}`}
+      className="arthrokinetix-real-artwork w-full h-full"
+      preserveAspectRatio="xMidYMid meet"
+    >
+      {/* Background */}
+      <defs>
+        <radialGradient id={`bg-${artwork.id}`} cx="50%" cy="50%">
+          <stop offset="0%" stopColor={background.center} stopOpacity="0.8"/>
+          <stop offset="100%" stopColor={background.edge} stopOpacity="0.4"/>
         </defs>
         
         <rect width="100%" height="100%" fill={`url(#bg-${artwork.id})`} />
-        <rect width="100%" height="100%" fill={`url(#data-pattern-${artwork.id})`} />
 
-        {/* Enhanced Andry Tree using emotional_journey data */}
+        {/* Enhanced Andry Tree using CORRECTED data */}
         <g transform={`translate(${width/2}, ${height * 0.8})`}>
           {andryElements.map((element, i) => (
             <motion.g 
@@ -146,7 +168,7 @@ const RealArthrokinetixArtwork = ({ artwork, width = 400, height = 400 }) => {
           ))}
         </g>
 
-        {/* Enhanced Medical Term Clusters using NEW backend structure */}
+        {/* Enhanced Medical Term Clusters */}
         <g className="medical-terms">
           {medicalVisuals.map((cluster, i) => (
             <motion.g 
@@ -251,7 +273,7 @@ const RealArthrokinetixArtwork = ({ artwork, width = 400, height = 400 }) => {
           ))}
         </g>
 
-        {/* Enhanced Statistical Data Streams using NEW statistics structure */}
+        {/* Enhanced Statistical Data Streams */}
         <g className="data-streams">
           {dataStreams.map((stream, i) => (
             <motion.path
@@ -273,7 +295,7 @@ const RealArthrokinetixArtwork = ({ artwork, width = 400, height = 400 }) => {
           ))}
         </g>
 
-        {/* Enhanced Research Constellation using NEW citations structure */}
+        {/* Enhanced Research Constellation */}
         <g className="research-constellation" transform={`translate(${width * 0.8}, ${height * 0.2})`}>
           {researchStars.map((star, i) => (
             <motion.g key={`star-${i}`}>
@@ -293,23 +315,11 @@ const RealArthrokinetixArtwork = ({ artwork, width = 400, height = 400 }) => {
                   delay: i * 0.4
                 }}
               />
-              {star.connections && star.connections.map((conn, connIndex) => (
-                <motion.line
-                  key={connIndex}
-                  x1={star.x}
-                  y1={star.y}
-                  x2={conn.x}
-                  y2={conn.y}
-                  stroke="#ffffff"
-                  strokeWidth="0.5"
-                  opacity={0.3}
-                />
-              ))}
             </motion.g>
           ))}
         </g>
 
-        {/* Enhanced Emotional Field Overlays using emotional_journey */}
+        {/* Enhanced Emotional Field Overlays */}
         <g className="emotional-fields">
           {emotionalFields.map((field, i) => (
             <motion.ellipse
@@ -340,11 +350,6 @@ const RealArthrokinetixArtwork = ({ artwork, width = 400, height = 400 }) => {
           {backendVisualElements}
         </g>
 
-        {/* Subspecialty Symbol */}
-        <g className="subspecialty-symbol" transform={`translate(${width * 0.9}, ${height * 0.1})`}>
-          {subspecialtySymbol}
-        </g>
-
         {/* Enhanced Signature Elements */}
         <g className="signature-elements" transform={`translate(${width * 0.1}, ${height * 0.9})`}>
           <text
@@ -354,7 +359,7 @@ const RealArthrokinetixArtwork = ({ artwork, width = 400, height = 400 }) => {
             fill={getEmotionColor(params?.dominant_emotion)}
             opacity={0.7}
           >
-            {metadata?.signature_id || 'AKX-ENHANCED'}
+            {metadata?.signature_id || 'AKX-FIXED'}
           </text>
           {hasEmotionalJourney && (
             <text
@@ -364,92 +369,141 @@ const RealArthrokinetixArtwork = ({ artwork, width = 400, height = 400 }) => {
               fill="#666666"
               opacity={0.5}
             >
-              EJ-Enhanced
+              Data-Fixed
             </text>
           )}
         </g>
-
-        {/* Algorithm Version Watermark */}
-        <text
-          x={width - 5}
-          y={height - 5}
-          fontSize="6"
-          fill="#000000"
-          opacity={0.3}
-          textAnchor="end"
-        >
-          AKX v{metadata?.algorithm_version || '2.0'}-Enhanced
-        </text>
       </svg>
     );
 
     setSvgContent(svg);
   };
 
-  // NEW: Enhanced Andry Tree generation using emotional_journey data
-  const generateAndryTreeWithEmotionalJourney = (params) => {
-    const elements = [];
-    const emotionalJourney = params?.emotional_journey || {};
-    const subspecialty = params?.subspecialty || 'sportsMedicine';
+// NEW: Corrected Andry Tree generation
+const generateAndryTreeWithCorrectedData = (params, emotionalJourney, emotionalMix) => {
+  const elements = [];
+  const subspecialty = params?.subspecialty || 'sportsMedicine';
+  
+  // Use available emotional data with fallbacks
+  const confidence = emotionalMix?.confidence || params?.confidence || 0.5;
+  const healing = emotionalMix?.healing || params?.healing || 0.5;
+  const innovation = emotionalMix?.breakthrough || params?.breakthrough || 0.5;
+  
+  console.log('🌳 Generating Corrected Andry Tree with:', {
+    confidence,
+    healing,
+    innovation,
+    subspecialty,
+    dataSource: emotionalJourney ? 'emotionalJourney' : 'emotionalMix'
+  });
+  
+  // Emotional roots using corrected confidence data
+  const rootCount = Math.floor(confidence * 6) + 3;
+  for (let i = 0; i < rootCount; i++) {
+    const angle = (i / rootCount) * 180 + 180;
+    const radius = 40 + (confidence * 80);
+    const startAngle = angle - 15;
+    const endAngle = angle + 15;
     
-    // Use emotional journey data for tree characteristics
-    const solutionConfidence = emotionalJourney.solutionConfidence || 0.5;
-    const healingPotential = emotionalJourney.healingPotential || 0.5;
-    const innovationLevel = emotionalJourney.innovationLevel || 0.5;
-    
-    console.log('🌳 Generating Enhanced Andry Tree with emotional journey:', {
-      solutionConfidence,
-      healingPotential,
-      innovationLevel,
-      subspecialty
+    elements.push({
+      type: 'emotional_root',
+      path: `M 0,0 Q ${Math.cos(startAngle * Math.PI / 180) * radius/2},${Math.sin(startAngle * Math.PI / 180) * radius/2} ${Math.cos(endAngle * Math.PI / 180) * radius},${Math.sin(endAngle * Math.PI / 180) * radius}`,
+      color: getEmotionColor(params?.dominant_emotion || 'confidence'),
+      thickness: 2 + (confidence * 4),
+      opacity: 0.6 + (confidence * 0.3)
     });
+  }
+  
+  // Medical branches using FOUND medical_terms structure
+  const medicalTerms = params?.medical_terms || {};
+  const termCategories = Object.keys(medicalTerms);
+  
+  console.log('📚 Processing corrected medical terms:', termCategories);
+  
+  termCategories.forEach((category, index) => {
+    const categoryTerms = medicalTerms[category] || {};
+    const termCount = Object.keys(categoryTerms).length;
     
-    // Emotional roots (representing confidence foundation)
-    const rootCount = Math.floor(solutionConfidence / 100 * 6) + 3;
-    for (let i = 0; i < rootCount; i++) {
-      const angle = (i / rootCount) * 180 + 180;
-      const radius = 40 + (solutionConfidence / 100 * 80);
-      const startAngle = angle - 15;
-      const endAngle = angle + 15;
+    if (termCount > 0) {
+      const branchAngle = (index / termCategories.length) * 140 - 70;
+      const branchLength = 50 + (termCount * 8) + (innovation * 20);
       
       elements.push({
-        type: 'emotional_root',
-        path: `M 0,0 Q ${Math.cos(startAngle * Math.PI / 180) * radius/2},${Math.sin(startAngle * Math.PI / 180) * radius/2} ${Math.cos(endAngle * Math.PI / 180) * radius},${Math.sin(endAngle * Math.PI / 180) * radius}`,
-        color: getEmotionColor(emotionalJourney.dominantEmotion || 'confidence'),
-        thickness: 2 + (solutionConfidence / 100 * 4),
-        opacity: 0.6 + (solutionConfidence / 100 * 0.3)
+        type: 'medical_branch',
+        startY: -30,
+        endX: Math.sin(branchAngle * Math.PI / 180) * branchLength,
+        endY: -30 - Math.cos(branchAngle * Math.PI / 180) * branchLength,
+        color: getCategoryColor(category),
+        thickness: 2 + Math.min(termCount / 3, 6) + (innovation * 2),
+        opacity: 0.7 + (termCount / 20) + (healing * 0.2)
       });
     }
+  });
+  
+  console.log(`🌿 Generated ${elements.length} corrected tree elements`);
+  return elements;
+};
+
+// NEW: Corrected emotional fields
+const generateEmotionalFieldsFromCorrectedData = (emotionalJourney, emotionalMix) => {
+  const fields = [];
+  
+  // Use emotionalMix if emotionalJourney is not available
+  const emotionData = Object.keys(emotionalJourney).length > 0 ? emotionalJourney : emotionalMix;
+  
+  if (Object.keys(emotionalJourney).length > 0) {
+    // Use emotional_journey data if available
+    const emotionMapping = {
+      problemIntensity: 'tension',
+      solutionConfidence: 'confidence', 
+      innovationLevel: 'breakthrough',
+      healingPotential: 'healing',
+      uncertaintyLevel: 'uncertainty'
+    };
     
-    // Medical branches representing NEW medical_terms structure
-    const medicalTerms = params?.medical_terms || {};
-    const termCategories = Object.keys(medicalTerms);
-    
-    console.log('📚 Processing enhanced medical terms:', termCategories);
-    
-    termCategories.forEach((category, index) => {
-      const categoryTerms = medicalTerms[category] || {};
-      const termCount = Object.keys(categoryTerms).length;
+    Object.entries(emotionMapping).forEach(([journeyKey, emotion], index) => {
+      const intensity = (emotionalJourney[journeyKey] || 0) / 1000; // Convert from 0-1000 to 0-1
+      if (intensity < 0.1) return;
       
-      if (termCount > 0) {
-        const branchAngle = (index / termCategories.length) * 140 - 70;
-        const branchLength = 50 + (termCount * 8) + (innovationLevel / 100 * 20);
-        
-        elements.push({
-          type: 'medical_branch',
-          startY: -30,
-          endX: Math.sin(branchAngle * Math.PI / 180) * branchLength,
-          endY: -30 - Math.cos(branchAngle * Math.PI / 180) * branchLength,
-          color: getCategoryColor(category),
-          thickness: 2 + Math.min(termCount / 3, 6) + (innovationLevel / 100 * 2),
-          opacity: 0.7 + (termCount / 20) + (healingPotential / 100 * 0.2)
-        });
-      }
+      const x = (width / 6) + (index * (width / 6));
+      const y = height * 0.4 + (Math.sin(index * 2) * 50);
+      const radiusX = 30 + (intensity * 50);
+      const radiusY = 20 + (intensity * 30);
+      
+      fields.push({
+        x: x,
+        y: y,
+        radiusX: radiusX,
+        radiusY: radiusY,
+        color: getEmotionColor(emotion),
+        emotion: emotion,
+        intensity: intensity
+      });
     });
-    
-    console.log(`🌿 Generated ${elements.length} enhanced tree elements`);
-    return elements;
-  };
+  } else {
+    // Fallback to emotional_mix
+    Object.entries(emotionalMix).forEach(([emotion, intensity], index) => {
+      if (intensity < 0.1) return;
+      
+      const x = (width / 6) + (index * (width / 6));
+      const y = height * 0.4 + (Math.sin(index * 2) * 50);
+      const radiusX = 30 + (intensity * 50);
+      const radiusY = 20 + (intensity * 30);
+      
+      fields.push({
+        x: x,
+        y: y,
+        radiusX: radiusX,
+        radiusY: radiusY,
+        color: getEmotionColor(emotion),
+        emotion: emotion,
+        intensity: intensity
+      });
+    });
+  }
+  
+  return fields;
+};
 
   // NEW: Enhanced medical terms processing
   const generateEnhancedMedicalTermVisuals = (medicalTerms) => {
@@ -627,41 +681,6 @@ const RealArthrokinetixArtwork = ({ artwork, width = 400, height = 400 }) => {
     return stars;
   };
 
-  // NEW: Emotional fields from emotional_journey
-  const generateEmotionalFieldsFromJourney = (emotionalJourney) => {
-    const fields = [];
-    
-    // Use emotional_journey instead of emotional_mix
-    const emotionMapping = {
-      problemIntensity: 'tension',
-      solutionConfidence: 'confidence', 
-      innovationLevel: 'breakthrough',
-      healingPotential: 'healing',
-      uncertaintyLevel: 'uncertainty'
-    };
-    
-    Object.entries(emotionMapping).forEach(([journeyKey, emotion], index) => {
-      const intensity = (emotionalJourney[journeyKey] || 0) / 1000; // Convert from 0-1000 to 0-1
-      if (intensity < 0.1) return;
-      
-      const x = (width / 6) + (index * (width / 6));
-      const y = height * 0.4 + (Math.sin(index * 2) * 50);
-      const radiusX = 30 + (intensity * 50);
-      const radiusY = 20 + (intensity * 30);
-      
-      fields.push({
-        x: x,
-        y: y,
-        radiusX: radiusX,
-        radiusY: radiusY,
-        color: getEmotionColor(emotion),
-        emotion: emotion,
-        intensity: intensity
-      });
-    });
-    
-    return fields;
-  };
 
   // NEW: Render backend visual elements
   const renderBackendVisualElements = (visualElements) => {
