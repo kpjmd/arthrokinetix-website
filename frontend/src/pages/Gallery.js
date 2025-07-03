@@ -735,22 +735,3 @@ const generateSampleArtworks = () => [
 ];
 
 export default Gallery;
-            })}
-          </div>
-        )}
-
-        {!loading && filteredArtworks.length === 0 && (
-          <div className="text-center py-20">
-            <Palette className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-xl font-semibold text-gray-600 mb-2">No artworks found</h3>
-            <p className="text-gray-500">Try adjusting your search terms or filters.</p>
-          </div>
-        )}
-      </section>
-
-      {/* Newsletter Signup Section */}
-      <section className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pb-16">
-        <GalleryNewsletterForm />
-      </section>
-    </div>
-  );
