@@ -1,10 +1,11 @@
-// Updated RealArthrokinetixArtwork.js - Complete integration with manual algorithm backend
+// Fixed RealArthrokinetixArtwork.js - Exact Manual Algorithm Integration
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 
 const RealArthrokinetixArtwork = ({ artwork, width = 400, height = 400 }) => {
   const [svgContent, setSvgContent] = useState(null);
   const [debugInfo, setDebugInfo] = useState(null);
+  const [algorithmState, setAlgorithmState] = useState(null);
 
   useEffect(() => {
     if (artwork && artwork.algorithm_parameters) {
@@ -19,7 +20,7 @@ const RealArthrokinetixArtwork = ({ artwork, width = 400, height = 400 }) => {
     console.log('🎨 MANUAL ALGORITHM - Generating artwork for:', artwork.title);
     console.log('📊 Complete algorithm parameters:', params);
     
-    // Extract data from manual algorithm output structure
+    // Extract data from manual algorithm output structure (EXACT match to backend)
     const emotionalJourney = params.emotional_journey || {};
     const emotionalMix = params.emotional_mix || {};
     const medicalTerms = params.medical_terms || {};
@@ -27,13 +28,48 @@ const RealArthrokinetixArtwork = ({ artwork, width = 400, height = 400 }) => {
     const researchCitations = params.research_citations || [];
     const visualElements = params.visual_elements || [];
     
-    // Core algorithm values
+    // Core algorithm values (EXACT match to Python backend)
     const evidenceStrength = params.evidence_strength || 0.5;
     const technicalDensity = params.technical_density || 0.5;
     const subspecialty = params.subspecialty || 'sportsMedicine';
     const dominantEmotion = params.dominant_emotion || 'confidence';
+    const uniquenessFactors = params.uniqueness_factors || {};
+    const dataComplexity = params.data_complexity || 0.5;
     
-    // Debug information
+    // Create algorithm state object (matching JavaScript manual algorithm)
+    const state = {
+      canvasWidth: width,
+      canvasHeight: height,
+      subspecialty: subspecialty,
+      articleData: {
+        evidence_strength: evidenceStrength,
+        technical_density: technicalDensity,
+        medical_terms: medicalTerms,
+        statistical_data: statisticalData,
+        research_citations: researchCitations,
+        word_count: params.article_word_count || 0
+      },
+      emotionalJourney: emotionalJourney,
+      visualElements: visualElements,
+      brandColors: {
+        primary: "#2c3e50",
+        secondary: "#3498db", 
+        accent: "#e74c3c",
+        light: "#ecf0f1"
+      },
+      emotionalPalettes: {
+        hope: ["#27ae60", "#2ecc71", "#58d68d", "#85e085"],
+        tension: ["#e74c3c", "#c0392b", "#a93226", "#8b0000"],
+        confidence: ["#3498db", "#2980b9", "#1f4e79", "#1a5490"],
+        uncertainty: ["#95a5a6", "#7f8c8d", "#5d6d7e", "#484c52"],
+        breakthrough: ["#f39c12", "#e67e22", "#d35400", "#cc6600"],
+        healing: ["#16a085", "#1abc9c", "#48c9b0", "#76d7c4"]
+      }
+    };
+    
+    setAlgorithmState(state);
+    
+    // Debug information (EXACT match to manual algorithm logging)
     const debug = {
       dataAvailability: {
         emotionalJourney: Object.keys(emotionalJourney).length > 0,
@@ -47,7 +83,8 @@ const RealArthrokinetixArtwork = ({ artwork, width = 400, height = 400 }) => {
         evidenceStrength,
         technicalDensity,
         subspecialty,
-        dominantEmotion
+        dominantEmotion,
+        dataComplexity
       },
       dataStructure: {
         emotionalJourneyKeys: Object.keys(emotionalJourney),
@@ -56,20 +93,33 @@ const RealArthrokinetixArtwork = ({ artwork, width = 400, height = 400 }) => {
         statisticsCount: statisticalData.length,
         citationsCount: researchCitations.length,
         visualElementsCount: visualElements.length
-      }
+      },
+      uniquenessFactors: uniquenessFactors
     };
     
     setDebugInfo(debug);
     console.log('🔬 Manual Algorithm Debug Info:', debug);
     
-    // Generate visual components using ACTUAL manual algorithm data
-    const backgroundGradient = generateSubspecialtyBackground(subspecialty, dominantEmotion);
-    const andryTreeElements = generateManualAndryTree(params, emotionalJourney, evidenceStrength);
-    const medicalTermVisuals = generateEnhancedMedicalTermVisuals(medicalTerms, subspecialty);
-    const statisticalStreams = generateStatisticalDataStreams(statisticalData, width, height);
-    const researchConstellation = generateResearchConstellation(researchCitations, width, height);
-    const emotionalFields = generateEmotionalFields(emotionalJourney, emotionalMix, width, height);
-    const backendVisualElements = renderBackendGeneratedElements(visualElements, width, height);
+    // Generate visual components using EXACT manual algorithm methods
+    const backgroundGradient = generateBackgroundGradient(state);
+    const andryTreeElements = generateAndryTreeRoots(state);
+    const trunkAndBranches = generateTreeStructure(state);
+    const healingElements = generateHealingElements(state);
+    const dataFlows = generateDataFlows(state);
+    const emotionalFields = generateEmotionalFields(state);
+    const researchConstellation = generateResearchConstellation(state);
+    const atmosphericElements = generateAtmosphericElements(state);
+    
+    // Combine all visual elements (EXACT manual algorithm layering)
+    const allVisualElements = [
+      ...atmosphericElements,
+      ...emotionalFields,
+      ...andryTreeElements,
+      ...trunkAndBranches,
+      ...dataFlows,
+      ...healingElements,
+      ...researchConstellation
+    ];
     
     const svg = (
       <svg 
@@ -80,342 +130,55 @@ const RealArthrokinetixArtwork = ({ artwork, width = 400, height = 400 }) => {
         preserveAspectRatio="xMidYMid meet"
       >
         <defs>
-          {/* Background gradients */}
+          {/* Background gradients (EXACT manual algorithm) */}
           <radialGradient id={`bg-manual-${artwork.id}`} cx="50%" cy="50%">
             <stop offset="0%" stopColor={backgroundGradient.center} stopOpacity="0.8"/>
             <stop offset="100%" stopColor={backgroundGradient.edge} stopOpacity="0.4"/>
           </radialGradient>
           
+          {/* Healing gradient (EXACT manual algorithm) */}
+          <radialGradient id={`healingGradient-${artwork.id}`} cx="50%" cy="50%">
+            <stop offset="0%" stopColor={getEmotionalColor(state, 'healing', 0.8)} stopOpacity="0.8"/>
+            <stop offset="100%" stopColor={getEmotionalColor(state, 'healing', 0.4)} stopOpacity="0"/>
+          </radialGradient>
+          
           {/* Emotional gradients */}
           <linearGradient id={`emotion-${artwork.id}`} x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stopColor={getEmotionColor(dominantEmotion)} stopOpacity="0.3"/>
-            <stop offset="100%" stopColor={getEmotionColor(dominantEmotion)} stopOpacity="0.1"/>
+            <stop offset="0%" stopColor={getEmotionalColor(state, dominantEmotion)} stopOpacity="0.3"/>
+            <stop offset="100%" stopColor={getEmotionalColor(state, dominantEmotion)} stopOpacity="0.1"/>
           </linearGradient>
           
-          {/* Data flow gradients */}
-          <linearGradient id={`data-flow-${artwork.id}`} x1="0%" y1="0%" x2="100%" y2="0%">
-            <stop offset="0%" stopColor="#3498db" stopOpacity="0"/>
-            <stop offset="50%" stopColor="#3498db" stopOpacity="0.8"/>
-            <stop offset="100%" stopColor="#3498db" stopOpacity="0"/>
-          </linearGradient>
-          
-          {/* Blur filter for atmospheric effects */}
+          {/* Blur filter (EXACT manual algorithm) */}
           <filter id={`blur-${artwork.id}`}>
-            <feGaussianBlur stdDeviation="3"/>
+            <feGaussianBlur stdDeviation="5"/>
           </filter>
         </defs>
 
-        {/* Background */}
-        <rect width="100%" height="100%" fill={`url(#bg-manual-${artwork.id})`} />
-        
-        {/* Subspecialty pattern overlay */}
+        {/* Background (EXACT manual algorithm) */}
+        <rect width="100%" height="100%" fill={state.brandColors.light} />
         <rect 
           width="100%" 
           height="100%" 
-          fill={`url(#emotion-${artwork.id})`}
-          opacity="0.3"
+          fill={`url(#bg-manual-${artwork.id})`}
+          opacity="0.5"
         />
 
-        {/* Andry Tree Structure - Core Algorithm Visualization */}
-        <g className="andry-tree-manual" transform={`translate(${width/2}, ${height * 0.8})`}>
-          {andryTreeElements.map((element, i) => (
-            <motion.g 
-              key={`andry-manual-${i}`}
-              initial={{ opacity: 0, scale: 0.5 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 2, delay: i * 0.1 }}
-            >
-              {element.type === 'evidence_root' && (
-                <motion.path
-                  d={element.path}
-                  stroke={element.color}
-                  strokeWidth={element.thickness}
-                  fill="none"
-                  opacity={element.opacity}
-                  strokeLinecap="round"
-                  animate={{
-                    strokeDasharray: ["0,20", "20,0", "0,20"],
-                  }}
-                  transition={{
-                    duration: 6,
-                    repeat: Infinity,
-                    ease: "easeInOut"
-                  }}
-                />
-              )}
-              
-              {element.type === 'emotional_branch' && (
-                <motion.line
-                  x1={0}
-                  y1={element.startY}
-                  x2={element.endX}
-                  y2={element.endY}
-                  stroke={element.color}
-                  strokeWidth={element.thickness}
-                  opacity={element.opacity}
-                  strokeLinecap="round"
-                  animate={{
-                    x2: [element.endX, element.endX * 1.1, element.endX],
-                    y2: [element.endY, element.endY * 1.05, element.endY]
-                  }}
-                  transition={{
-                    duration: 4 + Math.random() * 2,
-                    repeat: Infinity,
-                    ease: "easeInOut"
-                  }}
-                />
-              )}
-              
-              {element.type === 'trunk' && (
-                <motion.rect
-                  x={-element.thickness/2}
-                  y={-element.height}
-                  width={element.thickness}
-                  height={element.height}
-                  fill={element.color}
-                  opacity={element.opacity}
-                  rx={element.thickness/4}
-                  animate={{
-                    height: [element.height, element.height * 1.02, element.height]
-                  }}
-                  transition={{
-                    duration: 8,
-                    repeat: Infinity,
-                    ease: "easeInOut"
-                  }}
-                />
-              )}
-            </motion.g>
-          ))}
-        </g>
+        {/* Render all visual elements in correct layer order (EXACT manual algorithm) */}
+        {allVisualElements.map((element, index) => 
+          renderVisualElement(element, index, artwork.id, state)
+        )}
 
-        {/* Enhanced Medical Term Networks */}
-        <g className="medical-terms-manual">
-          {medicalTermVisuals.map((visual, i) => (
-            <motion.g 
-              key={`medical-manual-${i}`}
-              transform={`translate(${visual.x}, ${visual.y})`}
-              initial={{ scale: 0, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              transition={{ duration: 1.5, delay: i * 0.2 }}
-            >
-              {visual.type === 'procedure_network' && (
-                <g>
-                  {/* Central node */}
-                  <motion.circle
-                    cx="0"
-                    cy="0"
-                    r={visual.centralNode.radius}
-                    fill={visual.color}
-                    opacity="0.8"
-                    animate={{
-                      r: [visual.centralNode.radius, visual.centralNode.radius * 1.2, visual.centralNode.radius]
-                    }}
-                    transition={{
-                      duration: 3,
-                      repeat: Infinity,
-                      ease: "easeInOut"
-                    }}
-                  />
-                  
-                  {/* Connected nodes */}
-                  {visual.nodes.map((node, nodeIndex) => (
-                    <motion.circle
-                      key={nodeIndex}
-                      cx={node.x}
-                      cy={node.y}
-                      r={node.radius}
-                      fill={visual.color}
-                      opacity="0.6"
-                      animate={{
-                        r: [node.radius, node.radius * 1.1, node.radius],
-                        opacity: [0.6, 0.9, 0.6]
-                      }}
-                      transition={{
-                        duration: 2,
-                        repeat: Infinity,
-                        delay: nodeIndex * 0.1
-                      }}
-                    />
-                  ))}
-                  
-                  {/* Connection lines */}
-                  {visual.connections.map((connection, connIndex) => (
-                    <motion.line
-                      key={connIndex}
-                      x1={connection.x1}
-                      y1={connection.y1}
-                      x2={connection.x2}
-                      y2={connection.y2}
-                      stroke={visual.color}
-                      strokeWidth="1"
-                      opacity="0.4"
-                      animate={{
-                        opacity: [0.4, 0.8, 0.4]
-                      }}
-                      transition={{
-                        duration: 3,
-                        repeat: Infinity,
-                        delay: connIndex * 0.2
-                      }}
-                    />
-                  ))}
-                </g>
-              )}
-              
-              {visual.type === 'anatomy_cluster' && (
-                <motion.polygon
-                  points={visual.points}
-                  fill={visual.color}
-                  opacity="0.5"
-                  stroke={visual.color}
-                  strokeWidth="2"
-                  animate={{
-                    points: [visual.points, visual.animatedPoints, visual.points]
-                  }}
-                  transition={{
-                    duration: 5,
-                    repeat: Infinity,
-                    ease: "easeInOut"
-                  }}
-                />
-              )}
-            </motion.g>
-          ))}
-        </g>
-
-        {/* Statistical Data Streams */}
-        <g className="statistical-streams-manual">
-          {statisticalStreams.map((stream, i) => (
-            <motion.path
-              key={`stat-manual-${i}`}
-              d={stream.path}
-              stroke={stream.color}
-              strokeWidth={stream.thickness}
-              fill="none"
-              opacity={stream.opacity}
-              strokeLinecap="round"
-              animate={{
-                strokeDasharray: [`0,${stream.length}`, `${stream.length},0`, `0,${stream.length}`],
-              }}
-              transition={{
-                duration: 4 + i,
-                repeat: Infinity,
-                ease: "linear"
-              }}
-            />
-          ))}
-        </g>
-
-        {/* Research Citation Constellation */}
-        <g className="research-constellation-manual" transform={`translate(${width * 0.85}, ${height * 0.15})`}>
-          {researchConstellation.map((star, i) => (
-            <motion.g key={`research-manual-${i}`}>
-              {/* Main star */}
-              <motion.circle
-                cx={star.x}
-                cy={star.y}
-                r={star.radius}
-                fill="#ffffff"
-                opacity="0.9"
-                animate={{
-                  opacity: [0.9, 1, 0.9],
-                  r: [star.radius, star.radius * 1.3, star.radius]
-                }}
-                transition={{
-                  duration: 3,
-                  repeat: Infinity,
-                  delay: i * 0.3
-                }}
-              />
-              
-              {/* Star glow */}
-              <motion.circle
-                cx={star.x}
-                cy={star.y}
-                r={star.radius * 2}
-                fill="#ffffff"
-                opacity="0.2"
-                filter={`url(#blur-${artwork.id})`}
-                animate={{
-                  opacity: [0.2, 0.4, 0.2],
-                  r: [star.radius * 2, star.radius * 2.5, star.radius * 2]
-                }}
-                transition={{
-                  duration: 4,
-                  repeat: Infinity,
-                  delay: i * 0.3
-                }}
-              />
-              
-              {/* Connection lines */}
-              {star.connections.map((connection, connIndex) => (
-                <motion.line
-                  key={connIndex}
-                  x1={star.x}
-                  y1={star.y}
-                  x2={connection.x}
-                  y2={connection.y}
-                  stroke="#ffffff"
-                  strokeWidth="1"
-                  opacity="0.3"
-                  animate={{
-                    opacity: [0.3, 0.6, 0.3]
-                  }}
-                  transition={{
-                    duration: 5,
-                    repeat: Infinity,
-                    delay: connIndex * 0.5
-                  }}
-                />
-              ))}
-            </motion.g>
-          ))}
-        </g>
-
-        {/* Emotional Field Overlays */}
-        <g className="emotional-fields-manual">
-          {emotionalFields.map((field, i) => (
-            <motion.ellipse
-              key={`emotion-field-manual-${i}`}
-              cx={field.x}
-              cy={field.y}
-              rx={field.radiusX}
-              ry={field.radiusY}
-              fill={field.color}
-              opacity="0.1"
-              filter={`url(#blur-${artwork.id})`}
-              animate={{
-                rx: [field.radiusX, field.radiusX * 1.2, field.radiusX],
-                ry: [field.radiusY, field.radiusY * 1.2, field.radiusY],
-                opacity: [0.1, 0.2, 0.1]
-              }}
-              transition={{
-                duration: 8,
-                repeat: Infinity,
-                delay: i * 1.5,
-                ease: "easeInOut"
-              }}
-            />
-          ))}
-        </g>
-
-        {/* Backend Generated Visual Elements */}
-        <g className="backend-elements-manual">
-          {backendVisualElements}
-        </g>
-
-        {/* Algorithm Signature */}
+        {/* Algorithm Signature (EXACT manual algorithm) */}
         <g className="algorithm-signature" transform={`translate(${width * 0.05}, ${height * 0.95})`}>
           <text
             x="0"
             y="0"
             fontSize="10"
-            fill={getEmotionColor(dominantEmotion)}
+            fill={getEmotionalColor(state, dominantEmotion)}
             opacity="0.8"
             fontFamily="monospace"
           >
-            {metadata.signature_id || `AKX-MANUAL-${artwork.id?.slice(-4)}`}
+            {generateUniqueID(params)}
           </text>
           <text
             x="0"
@@ -454,455 +217,662 @@ const RealArthrokinetixArtwork = ({ artwork, width = 400, height = 400 }) => {
     setSvgContent(svg);
   };
 
-  // Enhanced Andry Tree generation using manual algorithm data
-  const generateManualAndryTree = (params, emotionalJourney, evidenceStrength) => {
+  // EXACT manual algorithm implementation - generateAndryTreeRoots
+  const generateAndryTreeRoots = (state) => {
     const elements = [];
-    const subspecialty = params.subspecialty || 'sportsMedicine';
+    const evidenceStrength = state.articleData.evidence_strength || 0.5;
+    const rootComplexity = Math.max(3, Math.floor(evidenceStrength * 8));
     
-    // Use actual emotional journey data or fallback to emotional mix
-    const confidence = emotionalJourney.solutionConfidence || params.emotional_mix?.confidence || 0.5;
-    const healing = emotionalJourney.healingPotential || params.emotional_mix?.healing || 0.5;
-    const innovation = emotionalJourney.innovationLevel || params.emotional_mix?.breakthrough || 0.5;
-    
-    console.log('🌳 Manual Andry Tree Data:', {
-      confidence: confidence,
-      healing: healing,
-      innovation: innovation,
-      evidenceStrength: evidenceStrength,
-      subspecialty: subspecialty
-    });
-    
-    // Generate evidence-based root system
-    const rootCount = Math.floor((evidenceStrength * 5) + 3);
-    for (let i = 0; i < rootCount; i++) {
-      const angle = (i / rootCount) * 180 + 180; // Spread below ground
-      const radius = 30 + (evidenceStrength * 80);
-      const startAngle = angle - 20;
-      const endAngle = angle + 20;
-      
-      const startX = Math.cos(startAngle * Math.PI / 180) * radius;
-      const startY = Math.sin(startAngle * Math.PI / 180) * radius;
-      const endX = Math.cos(endAngle * Math.PI / 180) * radius;
-      const endY = Math.sin(endAngle * Math.PI / 180) * radius;
-      const midX = Math.cos(angle * Math.PI / 180) * radius * 1.2;
-      const midY = Math.sin(angle * Math.PI / 180) * radius * 1.2;
+    for (let i = 0; i < rootComplexity; i++) {
+      const angle = (i / rootComplexity) * 180 + 180; // Spread roots below ground
+      const length = 50 + (evidenceStrength * 100);
+      const thickness = 1 + (evidenceStrength * 3);
       
       elements.push({
-        type: 'evidence_root',
-        path: `M 0,0 Q ${midX/2},${midY/2} ${midX},${midY} Q ${(midX + endX)/2},${(midY + endY)/2} ${endX},${endY}`,
-        color: getSubspecialtyColor(subspecialty),
-        thickness: 2 + (evidenceStrength * 3),
-        opacity: 0.6 + (evidenceStrength * 0.3)
+        type: 'andryRoot',
+        x: state.canvasWidth / 2,
+        y: state.canvasHeight * 0.85, // Ground level
+        angle: angle,
+        length: length,
+        thickness: thickness,
+        color: getEmotionalColor(state, 'confidence', 0.3),
+        branches: generateRootBranches(angle, length * 0.7, thickness * 0.8, 2)
       });
     }
     
-    // Generate emotional branches using actual emotional journey
-    const emotionalIntensities = [
-      { key: 'confidence', value: confidence, label: 'Solution Confidence' },
-      { key: 'healing', value: healing, label: 'Healing Potential' },
-      { key: 'innovation', value: innovation, label: 'Innovation Level' }
-    ];
-    
-    emotionalIntensities.forEach((emotion, index) => {
-      if (emotion.value > 0.1) { // Only show significant emotions
-        const branchAngle = (index / emotionalIntensities.length) * 120 - 60;
-        const branchLength = 40 + (emotion.value * 60);
-        
-        elements.push({
-          type: 'emotional_branch',
-          startY: -20,
-          endX: Math.sin(branchAngle * Math.PI / 180) * branchLength,
-          endY: -20 - Math.cos(branchAngle * Math.PI / 180) * branchLength,
-          color: getEmotionColor(emotion.key),
-          thickness: 2 + (emotion.value * 4),
-          opacity: 0.7 + (emotion.value * 0.2),
-          emotion: emotion.key,
-          intensity: emotion.value
-        });
-      }
-    });
-    
-    // Main trunk representing article strength
-    const trunkHeight = 60 + (evidenceStrength * 80);
-    elements.push({
-      type: 'trunk',
-      height: trunkHeight,
-      thickness: 8 + (evidenceStrength * 6),
-      color: '#2c3e50',
-      opacity: 0.8 + (evidenceStrength * 0.2)
-    });
-    
-    console.log(`🌿 Generated ${elements.length} manual tree elements`);
     return elements;
   };
 
-  // Enhanced medical term visualization using actual backend data
-  const generateEnhancedMedicalTermVisuals = (medicalTerms, subspecialty) => {
-    const visuals = [];
+  // EXACT manual algorithm implementation - generateRootBranches
+  const generateRootBranches = (parentAngle, maxLength, maxThickness, depth) => {
+    if (depth <= 0) return [];
     
-    if (!medicalTerms || Object.keys(medicalTerms).length === 0) {
-      console.log('⚠️ No manual medical terms data available');
-      return [];
+    const branches = [];
+    const numBranches = Math.floor(Math.random() * 3) + 1;
+    
+    for (let i = 0; i < numBranches; i++) {
+      const angleOffset = (Math.random() - 0.5) * 60;
+      branches.push({
+        angle: parentAngle + angleOffset,
+        length: maxLength * (0.5 + Math.random() * 0.5),
+        thickness: maxThickness * (0.5 + Math.random() * 0.5),
+        branches: generateRootBranches(parentAngle + angleOffset, maxLength * 0.5, maxThickness * 0.5, depth - 1)
+      });
     }
     
-    console.log('🏷️ Processing manual medical terms:', medicalTerms);
-    
-    Object.entries(medicalTerms).forEach(([category, terms], categoryIndex) => {
-      if (!terms || Object.keys(terms).length === 0) return;
-      
-      const termEntries = Object.entries(terms);
-      const totalSignificance = termEntries.reduce((sum, [_, termData]) => {
-        return sum + (termData.significance || termData.count || 1);
-      }, 0);
-      
-      console.log(`📊 Category ${category}: ${termEntries.length} terms, significance: ${totalSignificance}`);
-      
-      const x = 80 + (categoryIndex * 120);
-      const y = 100 + (categoryIndex * 50);
-      
-      if (category === 'procedures') {
-        // Create interconnected network for procedures
-        const nodeCount = Math.min(termEntries.length, 6);
-        const centralRadius = 15 + (totalSignificance * 0.3);
-        const nodes = [];
-        const connections = [];
-        
-        // Central node
-        const centralNode = { radius: centralRadius };
-        
-        // Surrounding nodes
-        for (let i = 0; i < nodeCount; i++) {
-          const angle = (i / nodeCount) * 360;
-          const distance = 25 + (totalSignificance * 0.2);
-          const nodeRadius = 5 + (totalSignificance * 0.1);
-          
-          const nodeX = Math.cos(angle * Math.PI / 180) * distance;
-          const nodeY = Math.sin(angle * Math.PI / 180) * distance;
-          
-          nodes.push({ x: nodeX, y: nodeY, radius: nodeRadius });
-          connections.push({ x1: 0, y1: 0, x2: nodeX, y2: nodeY });
-        }
-        
-        visuals.push({
-          type: 'procedure_network',
-          x: x,
-          y: y,
-          centralNode: centralNode,
-          nodes: nodes,
-          connections: connections,
-          color: getCategoryColor(category),
-          significance: totalSignificance
-        });
-        
-      } else if (category === 'anatomy') {
-        // Create clustered polygon for anatomy terms
-        const sides = Math.min(termEntries.length + 3, 8);
-        const radius = 12 + (totalSignificance * 0.3);
-        const points = generatePolygonPoints(0, 0, sides, radius);
-        const animatedPoints = generatePolygonPoints(0, 0, sides, radius + 3);
-        
-        visuals.push({
-          type: 'anatomy_cluster',
-          x: x,
-          y: y,
-          points: points,
-          animatedPoints: animatedPoints,
-          color: getCategoryColor(category),
-          significance: totalSignificance
-        });
-      }
-    });
-    
-    console.log(`🎨 Generated ${visuals.length} enhanced medical visuals`);
-    return visuals;
+    return branches;
   };
 
-  // Statistical data streams using actual backend statistics
-  const generateStatisticalDataStreams = (statisticalData, width, height) => {
-    if (!statisticalData || statisticalData.length === 0) {
-      console.log('⚠️ No manual statistical data available');
-      return [];
-    }
+  // EXACT manual algorithm implementation - generateTreeStructure
+  const generateTreeStructure = (state) => {
+    const elements = [];
+    const contentSections = state.articleData.content_sections || generateDefaultSections();
+    const trunkHeight = Math.min(300, contentSections.length * 40 + 100);
     
-    console.log('📈 Processing manual statistical data:', statisticalData);
-    
-    return statisticalData.map((stat, index) => {
-      const startX = 50 + (index * 60);
-      const startY = height * 0.25;
-      const endX = width - 100;
-      const endY = height * 0.75 + (index * 30);
-      const midX = (startX + endX) / 2;
-      const midY = startY + (Math.sin(index * 2) * 40);
-      
-      const significance = stat.significance || 0.5;
-      const thickness = Math.max(1, significance * 5);
-      const opacity = 0.3 + (significance * 0.5);
-      const pathLength = Math.sqrt(Math.pow(endX - startX, 2) + Math.pow(endY - startY, 2));
-      
-      return {
-        path: `M ${startX},${startY} Q ${midX},${midY} ${endX},${endY}`,
-        color: getStatisticTypeColor(stat.type),
-        thickness: thickness,
-        opacity: opacity,
-        significance: significance,
-        length: pathLength,
-        statType: stat.type,
-        value: stat.value
-      };
+    // Main trunk (article spine) - EXACT manual algorithm
+    elements.push({
+      type: 'andryTrunk',
+      x: state.canvasWidth / 2,
+      y: state.canvasHeight * 0.85,
+      height: trunkHeight,
+      thickness: 8 + (state.articleData.technical_density * 5),
+      color: state.brandColors.primary,
+      healing: 0.6 // treeParameters.healingRate
     });
+    
+    // Generate branches for each major content section - EXACT manual algorithm
+    contentSections.forEach((section, index) => {
+      const branchY = state.canvasHeight * 0.85 - (index + 1) * (trunkHeight / contentSections.length);
+      const branchSide = index % 2 === 0 ? -1 : 1; // Alternate sides
+      
+      elements.push({
+        type: 'andryBranch',
+        x: state.canvasWidth / 2,
+        y: branchY,
+        angle: branchSide * (30 + Math.random() * 30),
+        length: 60 + section.importance * 40,
+        thickness: 4 + section.complexity * 2,
+        color: getEmotionalColor(state, section.emotionalTone, 0.6),
+        emotionalTone: section.emotionalTone
+      });
+    });
+    
+    return elements;
   };
 
-  // Research constellation using actual citations
-  const generateResearchConstellation = (researchCitations, width, height) => {
-    if (!researchCitations || researchCitations.length === 0) {
-      console.log('⚠️ No manual research citations available');
-      return [];
+  // EXACT manual algorithm implementation - generateDefaultSections
+  const generateDefaultSections = () => {
+    return [
+      {
+        title: 'Introduction',
+        level: 2,
+        importance: 0.5,
+        complexity: 0.5,
+        emotionalTone: 'confidence'
+      },
+      {
+        title: 'Main Content',
+        level: 2,
+        importance: 0.8,
+        complexity: 0.7,
+        emotionalTone: 'healing'
+      },
+      {
+        title: 'Conclusion',
+        level: 2,
+        importance: 0.6,
+        complexity: 0.4,
+        emotionalTone: 'hope'
+      }
+    ];
+  };
+
+  // EXACT manual algorithm implementation - generateHealingElements
+  const generateHealingElements = (state) => {
+    const elements = [];
+    const healingPotential = state.emotionalJourney.healingPotential || 0.5;
+    const numElements = Math.floor(healingPotential * 15) + 5;
+    
+    for (let i = 0; i < numElements; i++) {
+      // Healing particles that emanate from the tree - EXACT manual algorithm
+      elements.push({
+        type: 'healingParticle',
+        x: state.canvasWidth / 2 + (Math.random() - 0.5) * 200,
+        y: state.canvasHeight * 0.3 + Math.random() * 200,
+        size: 3 + Math.random() * 8,
+        color: getEmotionalColor(state, 'healing', 0.6),
+        pulseRate: 0.5 + Math.random() * 1.5,
+        growthDirection: {
+          x: (Math.random() - 0.5) * 2,
+          y: -Math.random() * 2 // Generally upward
+        }
+      });
     }
     
-    console.log('🔗 Processing manual research citations:', researchCitations);
+    // Healing aura around the tree - EXACT manual algorithm
+    elements.push({
+      type: 'healingAura',
+      x: state.canvasWidth / 2,
+      y: state.canvasHeight * 0.6,
+      radius: 100 + healingPotential * 150,
+      color: getEmotionalColor(state, 'healing', 0.1),
+      pulseAmplitude: healingPotential * 50
+    });
     
-    const stars = [];
-    const starCount = Math.min(researchCitations.length, 8);
+    return elements;
+  };
+
+  // EXACT manual algorithm implementation - generateDataFlows
+  const generateDataFlows = (state) => {
+    const elements = [];
+    const statistics = state.articleData.statistical_data || [];
     
-    for (let i = 0; i < starCount; i++) {
-      const citation = researchCitations[i];
-      const angle = (i / starCount) * 360;
-      const radius = 25 + (citation.importance * 40);
-      const x = Math.cos(angle * Math.PI / 180) * radius;
-      const y = Math.sin(angle * Math.PI / 180) * radius;
+    statistics.forEach((stat, index) => {
+      const flowPath = generateFlowPath(stat, state);
       
-      const connections = [];
-      // Connect to nearby stars
-      for (let j = 0; j < starCount; j++) {
-        if (j !== i && Math.abs(i - j) <= 2) {
-          const connectAngle = (j / starCount) * 360;
-          const connectRadius = 25 + (researchCitations[j]?.importance || 0.5) * 40;
-          connections.push({
-            x: Math.cos(connectAngle * Math.PI / 180) * connectRadius,
-            y: Math.sin(connectAngle * Math.PI / 180) * connectRadius
-          });
-        }
+      elements.push({
+        type: 'dataFlow',
+        path: flowPath,
+        thickness: 1 + stat.significance * 2,
+        color: getStatisticColor(stat),
+        opacity: 0.4 + stat.significance * 0.4,
+        flowSpeed: 0.5 + stat.significance,
+        particleCount: Math.floor(stat.significance * 5) + 2
+      });
+    });
+    
+    return elements;
+  };
+
+  // EXACT manual algorithm implementation - generateFlowPath
+  const generateFlowPath = (stat, state) => {
+    const startX = Math.random() * state.canvasWidth;
+    const startY = Math.random() * state.canvasHeight;
+    const endX = state.canvasWidth / 2 + (Math.random() - 0.5) * 200;
+    const endY = state.canvasHeight * 0.5;
+    
+    return {
+      start: { x: startX, y: startY },
+      end: { x: endX, y: endY },
+      control1: { 
+        x: startX + (endX - startX) * 0.3, 
+        y: startY + (Math.random() - 0.5) * 100 
+      },
+      control2: { 
+        x: startX + (endX - startX) * 0.7, 
+        y: endY + (Math.random() - 0.5) * 100 
       }
+    };
+  };
+
+  // EXACT manual algorithm implementation - generateEmotionalFields
+  const generateEmotionalFields = (state) => {
+    const elements = [];
+    const emotions = Object.keys(state.emotionalJourney);
+    
+    emotions.forEach((emotion, index) => {
+      if (emotion === 'dominantEmotion') return;
       
-      stars.push({
+      const intensity = state.emotionalJourney[emotion] || 0;
+      if (intensity < 0.01) return; // Skip very low intensity emotions
+      
+      const fieldSize = 50 + intensity * 200;
+      const x = state.canvasWidth * (0.2 + index * 0.15);
+      const y = state.canvasHeight * (0.3 + Math.random() * 0.4);
+      
+      elements.push({
+        type: 'emotionalField',
+        emotion: emotion,
         x: x,
         y: y,
-        radius: 2 + (citation.importance * 4),
-        connections: connections,
-        importance: citation.importance,
-        impact: citation.impact
+        size: fieldSize,
+        intensity: intensity,
+        color: getEmotionalColor(state, emotion, intensity * 0.3),
+        morphSpeed: 0.2 + intensity * 0.8
       });
-    }
+    });
     
-    return stars;
+    return elements;
   };
 
-  // Emotional fields using actual emotional journey data
-  const generateEmotionalFields = (emotionalJourney, emotionalMix, width, height) => {
-    const fields = [];
+  // EXACT manual algorithm implementation - generateResearchConstellation
+  const generateResearchConstellation = (state) => {
+    const elements = [];
+    const citations = state.articleData.research_citations || [];
+    const constellationCenter = {
+      x: state.canvasWidth * 0.8,
+      y: state.canvasHeight * 0.2
+    };
     
-    // Prefer emotional journey data over emotional mix
-    const useJourney = Object.keys(emotionalJourney).length > 0;
-    console.log(`💭 Using ${useJourney ? 'emotional journey' : 'emotional mix'} data for fields`);
-    
-    if (useJourney) {
-      // Map emotional journey keys to standard emotions
-      const journeyMapping = [
-        { key: 'problemIntensity', emotion: 'tension', multiplier: 1/1000 },
-        { key: 'solutionConfidence', emotion: 'confidence', multiplier: 1/1000 },
-        { key: 'innovationLevel', emotion: 'breakthrough', multiplier: 1/1000 },
-        { key: 'healingPotential', emotion: 'healing', multiplier: 1/1000 },
-        { key: 'uncertaintyLevel', emotion: 'uncertainty', multiplier: 1/1000 }
-      ];
+    citations.forEach((citation, index) => {
+      const angle = (index / citations.length) * 360;
+      const distance = 30 + citation.importance * 80;
       
-      journeyMapping.forEach((mapping, index) => {
-        const rawValue = emotionalJourney[mapping.key] || 0;
-        const intensity = rawValue * mapping.multiplier;
-        
-        if (intensity > 0.1) {
-          const x = (width / 6) + (index * (width / 6));
-          const y = height * 0.4 + (Math.sin(index * 2) * 30);
-          const radiusX = 25 + (intensity * 60);
-          const radiusY = 15 + (intensity * 40);
-          
-          fields.push({
-            x: x,
-            y: y,
-            radiusX: radiusX,
-            radiusY: radiusY,
-            color: getEmotionColor(mapping.emotion),
-            emotion: mapping.emotion,
-            intensity: intensity
-          });
-        }
+      const x = constellationCenter.x + Math.cos(angle * Math.PI / 180) * distance;
+      const y = constellationCenter.y + Math.sin(angle * Math.PI / 180) * distance;
+      
+      elements.push({
+        type: 'researchStar',
+        x: x,
+        y: y,
+        size: 2 + citation.impact * 4,
+        color: getEmotionalColor(state, 'confidence', 0.8),
+        twinkleRate: 0.5 + citation.impact,
+        connections: generateStarConnections(x, y, citations, index)
       });
-    } else if (emotionalMix && Object.keys(emotionalMix).length > 0) {
-      // Use emotional mix as fallback
-      Object.entries(emotionalMix).forEach(([emotion, intensity], index) => {
-        if (intensity > 0.1) {
-          const x = (width / 6) + (index * (width / 6));
-          const y = height * 0.4 + (Math.sin(index * 2) * 30);
-          const radiusX = 25 + (intensity * 60);
-          const radiusY = 15 + (intensity * 40);
-          
-          fields.push({
-            x: x,
-            y: y,
-            radiusX: radiusX,
-            radiusY: radiusY,
-            color: getEmotionColor(emotion),
-            emotion: emotion,
-            intensity: intensity
-          });
-        }
-      });
-    }
+    });
     
-    console.log(`🌈 Generated ${fields.length} emotional fields`);
-    return fields;
+    return elements;
   };
 
-  // Render backend-generated visual elements
-  const renderBackendGeneratedElements = (visualElements, width, height) => {
-    if (!visualElements || visualElements.length === 0) {
-      console.log('⚠️ No backend visual elements available');
-      return [];
-    }
+  // EXACT manual algorithm implementation - generateStarConnections
+  const generateStarConnections = (x, y, allCitations, currentIndex) => {
+    const connections = [];
+    const maxConnections = 3;
     
-    console.log('🎭 Rendering backend visual elements:', visualElements.length);
-    
-    return visualElements.map((element, index) => {
-      const key = `backend-element-${index}`;
-      
-      if (element.type === 'andryRoot') {
-        // Backend root elements
-        const endX = Math.cos(element.angle * Math.PI / 180) * element.length;
-        const endY = Math.sin(element.angle * Math.PI / 180) * element.length;
-        
-        return (
-          <motion.line
-            key={key}
-            x1={width/2}
-            y1={height * 0.8}
-            x2={(width/2) + endX}
-            y2={(height * 0.8) + endY}
-            stroke={element.color || '#3498db'}
-            strokeWidth={element.thickness || 2}
-            opacity={0.5}
-            strokeLinecap="round"
-            animate={{
-              strokeDasharray: ["0,20", "20,0", "0,20"],
-            }}
-            transition={{
-              duration: 8,
-              repeat: Infinity,
-              delay: index * 0.3
-            }}
-          />
-        );
-      } else if (element.type === 'healingParticle') {
-        return (
-          <motion.circle
-            key={key}
-            cx={element.x}
-            cy={element.y}
-            r={element.size || 3}
-            fill={element.color || '#16a085'}
-            opacity={0.7}
-            animate={{
-              r: [(element.size || 3), (element.size || 3) * 1.5, (element.size || 3)],
-              opacity: [0.7, 1, 0.7]
-            }}
-            transition={{
-              duration: 3,
-              repeat: Infinity,
-              delay: index * 0.2
-            }}
-          />
-        );
-      } else if (element.type === 'dataFlow') {
-        return (
-          <motion.path
-            key={key}
-            d={`M ${element.startX || 0},${element.startY || 0} Q ${element.midX || 100},${element.midY || 100} ${element.endX || 200},${element.endY || 200}`}
-            stroke={element.color || '#3498db'}
-            strokeWidth={element.thickness || 2}
-            fill="none"
-            opacity={element.opacity || 0.5}
-            animate={{
-              strokeDasharray: ["0,50", "50,0", "0,50"],
-            }}
-            transition={{
-              duration: 6,
-              repeat: Infinity,
-              delay: index * 0.4
-            }}
-          />
-        );
+    for (let i = 0; i < Math.min(maxConnections, allCitations.length); i++) {
+      if (i !== currentIndex && Math.random() > 0.5) {
+        const targetIndex = (currentIndex + i + 1) % allCitations.length;
+        connections.push(targetIndex);
       }
-      
-      return null;
-    }).filter(Boolean);
+    }
+    
+    return connections;
   };
 
-  // Helper functions
-  const generateSubspecialtyBackground = (subspecialty, dominantEmotion) => {
-    const backgrounds = {
+  // EXACT manual algorithm implementation - generateAtmosphericElements
+  const generateAtmosphericElements = (state) => {
+    const elements = [];
+    // Atmospheric particles based on article complexity - EXACT manual algorithm
+    const complexity = state.articleData.technical_density || 0.5;
+    const particleCount = Math.floor(complexity * 100) + 20;
+    
+    for (let i = 0; i < particleCount; i++) {
+      elements.push({
+        type: 'atmosphericParticle',
+        x: Math.random() * state.canvasWidth,
+        y: Math.random() * state.canvasHeight,
+        size: 0.5 + Math.random() * 2,
+        color: state.brandColors.primary,
+        opacity: 0.1 + Math.random() * 0.2,
+        driftSpeed: 0.1 + Math.random() * 0.5,
+        driftDirection: Math.random() * 360
+      });
+    }
+    
+    // Subtle grid representing medical precision - EXACT manual algorithm
+    elements.push({
+      type: 'precisionGrid',
+      spacing: 30 + complexity * 20,
+      opacity: 0.05 + complexity * 0.1,
+      color: state.brandColors.secondary
+    });
+    
+    return elements;
+  };
+
+  // EXACT manual algorithm implementation - generateBackgroundGradient
+  const generateBackgroundGradient = (state) => {
+    const subspecialtyGradients = {
       sportsMedicine: { center: '#e8f5e8', edge: '#d4edda' },
+      shoulderElbow: { center: '#e3f2fd', edge: '#bbdefb' },
       jointReplacement: { center: '#f8f9fa', edge: '#e9ecef' },
       trauma: { center: '#fff3cd', edge: '#ffeaa7' },
       spine: { center: '#e7e3ff', edge: '#d1c7ff' },
       handUpperExtremity: { center: '#e0f7fa', edge: '#b2ebf2' },
-      footAnkle: { center: '#f1f8e9', edge: '#dcedc8' },
-      shoulderElbow: { center: '#e3f2fd', edge: '#bbdefb' }
+      footAnkle: { center: '#f1f8e9', edge: '#dcedc8' }
     };
     
-    const base = backgrounds[subspecialty] || backgrounds.sportsMedicine;
-    const emotionTint = getEmotionColor(dominantEmotion) + '10'; // Add transparency
+    return subspecialtyGradients[state.subspecialty] || subspecialtyGradients.sportsMedicine;
+  };
+
+  // EXACT manual algorithm implementation - renderVisualElement
+  const renderVisualElement = (element, index, artworkId, state) => {
+    const key = `element-${element.type}-${index}`;
     
-    return {
-      center: base.center,
-      edge: base.edge
-    };
+    switch(element.type) {
+      case 'precisionGrid':
+        return renderPrecisionGrid(element, key, state);
+      case 'atmosphericParticle':
+        return renderAtmosphericParticle(element, key);
+      case 'emotionalField':
+        return renderEmotionalField(element, key, artworkId);
+      case 'healingAura':
+        return renderHealingAura(element, key, artworkId);
+      case 'andryRoot':
+        return renderAndryRoot(element, key);
+      case 'andryTrunk':
+        return renderAndryTrunk(element, key);
+      case 'andryBranch':
+        return renderAndryBranch(element, key);
+      case 'dataFlow':
+        return renderDataFlow(element, key);
+      case 'healingParticle':
+        return renderHealingParticle(element, key);
+      case 'researchStar':
+        return renderResearchStar(element, key);
+      default:
+        return null;
+    }
   };
 
-  const getEmotionColor = (emotion) => {
-    const colors = {
-      hope: '#27ae60',
-      tension: '#e74c3c',
-      confidence: '#3498db',
-      uncertainty: '#95a5a6',
-      breakthrough: '#f39c12',
-      healing: '#16a085'
-    };
-    return colors[emotion] || '#3498db';
+  // EXACT manual algorithm rendering functions
+  const renderPrecisionGrid = (element, key, state) => {
+    const lines = [];
+    
+    // Vertical lines
+    for (let x = 0; x <= state.canvasWidth; x += element.spacing) {
+      lines.push(
+        <line
+          key={`${key}-v-${x}`}
+          x1={x}
+          y1={0}
+          x2={x}
+          y2={state.canvasHeight}
+          stroke={element.color}
+          strokeWidth="0.5"
+          opacity={element.opacity}
+        />
+      );
+    }
+    
+    // Horizontal lines
+    for (let y = 0; y <= state.canvasHeight; y += element.spacing) {
+      lines.push(
+        <line
+          key={`${key}-h-${y}`}
+          x1={0}
+          y1={y}
+          x2={state.canvasWidth}
+          y2={y}
+          stroke={element.color}
+          strokeWidth="0.5"
+          opacity={element.opacity}
+        />
+      );
+    }
+    
+    return <g key={key}>{lines}</g>;
   };
 
-  const getSubspecialtyColor = (subspecialty) => {
-    const colors = {
-      sportsMedicine: '#27ae60',
-      jointReplacement: '#3498db',
-      trauma: '#e74c3c',
-      spine: '#9b59b6',
-      handUpperExtremity: '#16a085',
-      footAnkle: '#f39c12',
-      shoulderElbow: '#2980b9'
-    };
-    return colors[subspecialty] || '#3498db';
+  const renderAtmosphericParticle = (element, key) => (
+    <motion.circle
+      key={key}
+      cx={element.x}
+      cy={element.y}
+      r={element.size}
+      fill={element.color}
+      opacity={element.opacity}
+      animate={{
+        x: [element.x, element.x + Math.cos(element.driftDirection * Math.PI / 180) * 20, element.x],
+        y: [element.y, element.y + Math.sin(element.driftDirection * Math.PI / 180) * 20, element.y]
+      }}
+      transition={{
+        duration: 10 + Math.random() * 10,
+        repeat: Infinity,
+        ease: "easeInOut"
+      }}
+    />
+  );
+
+  const renderEmotionalField = (element, key, artworkId) => (
+    <motion.ellipse
+      key={key}
+      cx={element.x}
+      cy={element.y}
+      rx={element.size}
+      ry={element.size * 0.8}
+      fill={element.color}
+      opacity={element.intensity * 0.3}
+      filter={`url(#blur-${artworkId})`}
+      animate={{
+        rx: [element.size, element.size * 1.2, element.size],
+        ry: [element.size * 0.8, element.size * 0.96, element.size * 0.8]
+      }}
+      transition={{
+        duration: 8,
+        repeat: Infinity,
+        delay: Math.random() * 2,
+        ease: "easeInOut"
+      }}
+    />
+  );
+
+  const renderHealingAura = (element, key, artworkId) => (
+    <motion.circle
+      key={key}
+      cx={element.x}
+      cy={element.y}
+      r={element.radius}
+      fill={`url(#healingGradient-${artworkId})`}
+      opacity="0.5"
+      animate={{
+        r: [element.radius, element.radius + element.pulseAmplitude, element.radius]
+      }}
+      transition={{
+        duration: 6,
+        repeat: Infinity,
+        ease: "easeInOut"
+      }}
+    />
+  );
+
+  const renderAndryRoot = (element, key) => {
+    const endX = element.x + Math.cos(element.angle * Math.PI / 180) * element.length;
+    const endY = element.y + Math.sin(element.angle * Math.PI / 180) * element.length;
+    const controlX = element.x + Math.cos(element.angle * Math.PI / 180) * element.length * 0.5;
+    const controlY = element.y + Math.sin((element.angle + 20) * Math.PI / 180) * element.length * 0.5;
+    
+    const path = `M ${element.x} ${element.y} Q ${controlX} ${controlY} ${endX} ${endY}`;
+    
+    return (
+      <motion.path
+        key={key}
+        d={path}
+        stroke={element.color}
+        strokeWidth={element.thickness}
+        fill="none"
+        strokeLinecap="round"
+        opacity={0.6}
+        animate={{
+          strokeDasharray: ["0,20", "20,0", "0,20"],
+        }}
+        transition={{
+          duration: 8,
+          repeat: Infinity,
+          ease: "easeInOut"
+        }}
+      />
+    );
   };
 
-  const getCategoryColor = (category) => {
-    const colors = {
-      procedures: '#e74c3c',
-      anatomy: '#3498db',
-      outcomes: '#27ae60',
-      research: '#f39c12'
-    };
-    return colors[category] || '#95a5a6';
+  const renderAndryTrunk = (element, key) => (
+    <motion.rect
+      key={key}
+      x={element.x - element.thickness / 2}
+      y={element.y - element.height}
+      width={element.thickness}
+      height={element.height}
+      fill={element.color}
+      rx={element.thickness / 4}
+      animate={{
+        height: [element.height, element.height * 1.02, element.height]
+      }}
+      transition={{
+        duration: 8,
+        repeat: Infinity,
+        ease: "easeInOut"
+      }}
+    />
+  );
+
+  const renderAndryBranch = (element, key) => {
+    const endX = element.x + Math.cos(element.angle * Math.PI / 180) * element.length;
+    const endY = element.y + Math.sin(element.angle * Math.PI / 180) * element.length;
+    
+    return (
+      <motion.line
+        key={key}
+        x1={element.x}
+        y1={element.y}
+        x2={endX}
+        y2={endY}
+        stroke={element.color}
+        strokeWidth={element.thickness}
+        strokeLinecap="round"
+        animate={{
+          x2: [endX, endX * 1.05, endX],
+          y2: [endY, endY * 1.05, endY]
+        }}
+        transition={{
+          duration: 6,
+          repeat: Infinity,
+          ease: "easeInOut"
+        }}
+      />
+    );
   };
 
-  const getStatisticTypeColor = (statType) => {
-    const colors = {
+  const renderDataFlow = (element, key) => {
+    const d = `M ${element.path.start.x} ${element.path.start.y} 
+               C ${element.path.control1.x} ${element.path.control1.y},
+                 ${element.path.control2.x} ${element.path.control2.y},
+                 ${element.path.end.x} ${element.path.end.y}`;
+    
+    return (
+      <motion.path
+        key={key}
+        d={d}
+        stroke={element.color}
+        strokeWidth={element.thickness}
+        fill="none"
+        opacity={element.opacity}
+        animate={{
+          strokeDasharray: ["0,100", "100,0", "0,100"],
+        }}
+        transition={{
+          duration: 4 + element.flowSpeed,
+          repeat: Infinity,
+          ease: "linear"
+        }}
+      />
+    );
+  };
+
+  const renderHealingParticle = (element, key) => (
+    <motion.g key={key}>
+      {/* Glow effect */}
+      <motion.circle
+        cx={element.x}
+        cy={element.y}
+        r={element.size * 2}
+        fill={element.color}
+        opacity="0.2"
+        filter={`url(#blur-${artwork.id})`}
+        animate={{
+          r: [element.size * 2, element.size * 3, element.size * 2],
+          opacity: [0.2, 0.4, 0.2]
+        }}
+        transition={{
+          duration: element.pulseRate * 2,
+          repeat: Infinity,
+          ease: "easeInOut"
+        }}
+      />
+      {/* Main particle */}
+      <motion.circle
+        cx={element.x}
+        cy={element.y}
+        r={element.size}
+        fill={element.color}
+        opacity="0.8"
+        animate={{
+          r: [element.size, element.size * 1.5, element.size],
+          x: [element.x, element.x + element.growthDirection.x * 10, element.x],
+          y: [element.y, element.y + element.growthDirection.y * 10, element.y]
+        }}
+        transition={{
+          duration: element.pulseRate,
+          repeat: Infinity,
+          ease: "easeInOut"
+        }}
+      />
+    </motion.g>
+  );
+
+  const renderResearchStar = (element, key) => {
+    const starPath = createStarPath(element.x, element.y, element.size, element.size * 0.5, 5);
+    
+    return (
+      <motion.g key={key}>
+        {/* Star glow */}
+        <motion.circle
+          cx={element.x}
+          cy={element.y}
+          r={element.size * 3}
+          fill={element.color}
+          opacity="0.2"
+          filter={`url(#blur-${artwork.id})`}
+          animate={{
+            r: [element.size * 3, element.size * 4, element.size * 3],
+            opacity: [0.2, 0.4, 0.2]
+          }}
+          transition={{
+            duration: 4,
+            repeat: Infinity,
+            delay: Math.random() * 2,
+            ease: "easeInOut"
+          }}
+        />
+        {/* Main star */}
+        <motion.path
+          d={starPath}
+          fill={element.color}
+          opacity="0.9"
+          animate={{
+            opacity: [0.9, 1, 0.9],
+            scale: [1, 1.2, 1]
+          }}
+          transition={{
+            duration: element.twinkleRate * 2,
+            repeat: Infinity,
+            ease: "easeInOut"
+          }}
+        />
+        {/* Connection lines */}
+        {element.connections.map((connectionIndex, connIndex) => (
+          <motion.line
+            key={`${key}-conn-${connIndex}`}
+            x1={element.x}
+            y1={element.y}
+            x2={element.x + Math.cos(connectionIndex * 60 * Math.PI / 180) * 30}
+            y2={element.y + Math.sin(connectionIndex * 60 * Math.PI / 180) * 30}
+            stroke={element.color}
+            strokeWidth="1"
+            opacity="0.3"
+            animate={{
+              opacity: [0.3, 0.6, 0.3]
+            }}
+            transition={{
+              duration: 5,
+              repeat: Infinity,
+              delay: connIndex * 0.5
+            }}
+          />
+        ))}
+      </motion.g>
+    );
+  };
+
+  // EXACT manual algorithm helper functions
+  const getEmotionalColor = (state, emotion, intensity = 1.0) => {
+    const palette = state.emotionalPalettes[emotion] || state.emotionalPalettes.confidence;
+    const colorIndex = Math.min(Math.floor(intensity * palette.length), palette.length - 1);
+    return palette[colorIndex];
+  };
+
+  const getStatisticColor = (stat) => {
+    const colorMap = {
       percentages: '#e74c3c',
       pValues: '#f39c12',
       sampleSizes: '#27ae60',
@@ -910,18 +880,29 @@ const RealArthrokinetixArtwork = ({ artwork, width = 400, height = 400 }) => {
       outcomes: '#9b59b6',
       confidenceIntervals: '#1abc9c'
     };
-    return colors[statType] || '#95a5a6';
+    return colorMap[stat.type] || '#95a5a6';
   };
 
-  const generatePolygonPoints = (centerX, centerY, sides, radius) => {
-    const points = [];
-    for (let i = 0; i < sides; i++) {
-      const angle = (i / sides) * 360;
-      const x = centerX + Math.cos(angle * Math.PI / 180) * radius;
-      const y = centerY + Math.sin(angle * Math.PI / 180) * radius;
-      points.push(`${x},${y}`);
+  const createStarPath = (cx, cy, outerRadius, innerRadius, points) => {
+    let path = '';
+    for (let i = 0; i < points * 2; i++) {
+      const radius = i % 2 === 0 ? outerRadius : innerRadius;
+      const angle = (i * Math.PI) / points;
+      const x = cx + Math.cos(angle) * radius;
+      const y = cy + Math.sin(angle) * radius;
+      path += (i === 0 ? 'M' : 'L') + x + ',' + y;
     }
-    return points.join(' ');
+    return path + 'Z';
+  };
+
+  const generateUniqueID = (params) => {
+    const timestamp = new Date();
+    const year = timestamp.getFullYear();
+    const month = String(timestamp.getMonth() + 1).padStart(2, '0');
+    const day = String(timestamp.getDate()).padStart(2, '0');
+    const random = Math.random().toString(36).substr(2, 4).toUpperCase();
+    
+    return `AKX-${year}-${month}${day}-${random}`;
   };
 
   // Loading state
@@ -964,6 +945,23 @@ const RealArthrokinetixArtwork = ({ artwork, width = 400, height = 400 }) => {
           <div>Evidence: {debugInfo.algorithmMetrics.evidenceStrength?.toFixed(2)}</div>
           <div>Emotion: {debugInfo.algorithmMetrics.dominantEmotion}</div>
           <div>Elements: {debugInfo.dataStructure.visualElementsCount}</div>
+          <div>Complexity: {debugInfo.algorithmMetrics.dataComplexity?.toFixed(2)}</div>
+          {debugInfo.uniquenessFactors && Object.keys(debugInfo.uniquenessFactors).length > 0 && (
+            <div>Uniqueness: {Object.keys(debugInfo.uniquenessFactors).length} factors</div>
+          )}
+        </div>
+      )}
+      
+      {/* Algorithm state display for debugging */}
+      {algorithmState && process.env.NODE_ENV === 'development' && (
+        <div className="absolute bottom-2 right-2 bg-blue-900/80 text-white text-xs p-2 rounded max-w-xs opacity-0 hover:opacity-100 transition-opacity">
+          <div className="font-bold mb-1">Algorithm State</div>
+          <div>Canvas: {algorithmState.canvasWidth}x{algorithmState.canvasHeight}</div>
+          <div>Subspecialty: {algorithmState.subspecialty}</div>
+          <div>Journey Keys: {Object.keys(algorithmState.emotionalJourney).length}</div>
+          <div>Visual Elements: {algorithmState.visualElements.length}</div>
+          <div>Evidence: {algorithmState.articleData.evidence_strength?.toFixed(2)}</div>
+          <div>Technical: {algorithmState.articleData.technical_density?.toFixed(2)}</div>
         </div>
       )}
     </div>
