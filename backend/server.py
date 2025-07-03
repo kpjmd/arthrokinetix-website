@@ -1,6 +1,7 @@
 from fastapi import FastAPI, HTTPException, File, UploadFile, Form
 from fastapi.middleware.cors import CORSMiddleware
 from pymongo import MongoClient
+from arthrokinetix_algorithm import process_article_with_manual_algorithm
 import os
 from dotenv import load_dotenv
 import json
@@ -697,82 +698,41 @@ def calculate_rarity_score(emotional_data: dict) -> float:
     return round(rarity, 3)
 
 async def generate_artwork(article_id: str, emotional_data: dict, signature_data: dict):
-    """Generate artwork using the actual Arthrokinetix algorithm parameters"""
+    """Generate artwork using the ACTUAL manual algorithm"""
     artwork_id = str(uuid.uuid4())
     
-    # Get the article content for full algorithm processing
+    # Get the article content
     article = articles_collection.find_one({"id": article_id})
     if not article:
-        # Fallback processing
         content = "Sample medical content for processing"
     else:
-        # Use HTML content if available, otherwise use regular content
         content = article.get('html_content') or article.get('content', '')
     
-    # Process article content with full algorithm analysis
-    algorithm_output = process_article_with_full_algorithm(content, emotional_data)
+    print(f"🎨 Processing with MANUAL algorithm: {len(content)} characters")
+    
+    # Use the ACTUAL manual algorithm
+    manual_algorithm_output = process_article_with_manual_algorithm(content)
+    
+    print(f"🔍 Manual algorithm output keys: {list(manual_algorithm_output.keys())}")
+    print(f"🧠 Manual emotional journey: {manual_algorithm_output.get('emotional_journey', {})}")
     
     artwork = {
         "id": artwork_id,
         "article_id": article_id,
         "title": f"Algorithmic Synthesis #{signature_data['id']}",
-        "subspecialty": emotional_data.get("subspecialty", "sportsMedicine"),
-        "dominant_emotion": emotional_data.get("dominant_emotion"),
+        "subspecialty": manual_algorithm_output.get("subspecialty", "sportsMedicine"),
+        "dominant_emotion": manual_algorithm_output.get("dominant_emotion", "confidence"),
         "created_date": datetime.utcnow(),
         
-        # REAL ALGORITHM PARAMETERS (not simplified tree)
-        "algorithm_parameters": {
-            # Core Analysis
-            "evidence_strength": emotional_data.get("evidence_strength", 0.5),
-            "technical_density": emotional_data.get("technical_density", 0.5),
-            "subspecialty": emotional_data.get("subspecialty", "sportsMedicine"),
-            "dominant_emotion": emotional_data.get("dominant_emotion", "confidence"),
-            
-            # Andry Tree Structure (abstract, not literal)
-            "tree_complexity": emotional_data.get("evidence_strength", 0.5),
-            "branch_pattern": emotional_data.get("subspecialty", "sportsMedicine"),
-            "root_depth": algorithm_output.get("evidence_foundation", 0.7),
-            
-            # Emotional Analysis
-            "emotional_intensity": emotional_data.get(emotional_data.get("dominant_emotion", "confidence"), 0.5),
-            "emotional_mix": {
-                "hope": emotional_data.get("hope", 0.4),
-                "tension": emotional_data.get("tension", 0.3),
-                "confidence": emotional_data.get("confidence", 0.6),
-                "uncertainty": emotional_data.get("uncertainty", 0.2),
-                "breakthrough": emotional_data.get("breakthrough", 0.4),
-                "healing": emotional_data.get("healing", 0.5)
-            },
-            
-            # Medical Content Analysis (REAL DATA FROM ARTICLE)
-            "medical_terms": algorithm_output.get("medical_terms", {}),
-            "statistical_data": algorithm_output.get("statistics", []),
-            "research_citations": algorithm_output.get("citations", []),
-            
-            # Visual Elements
-            "color_palette": signature_data["color_gradients"],
-            "visual_elements": algorithm_output.get("visual_elements", []),
-            "subspecialty_elements": algorithm_output.get("subspecialty_visuals", {}),
-            
-            # Complexity and Uniqueness
-            "data_complexity": algorithm_output.get("complexity_score", 0.5),
-            "uniqueness_factors": algorithm_output.get("uniqueness", {}),
-            "article_word_count": len(content.split()),
-            "processing_timestamp": datetime.utcnow().isoformat()
-        },
+        # USE DIRECT MANUAL ALGORITHM OUTPUT
+        "algorithm_parameters": manual_algorithm_output,
         
         "metadata": {
             "signature_id": signature_data["id"],
             "rarity_score": signature_data["rarity_score"],
             "generation_timestamp": datetime.utcnow().isoformat(),
-            "algorithm_version": "2.0",
-            "content_source": article.get('content_type', 'text') if article else 'fallback',
-            "article_analysis": {
-                "medical_term_count": len(algorithm_output.get("medical_terms", {})),
-                "statistic_count": len(algorithm_output.get("statistics", [])),
-                "citation_count": len(algorithm_output.get("citations", [])),
-                "complexity_score": algorithm_output.get("complexity_score", 0.5)
-            }
+            "algorithm_version": "2.0-manual-direct",
+            "content_source": article.get('content_type', 'text') if article else 'fallback'
         },
         
         "nft_status": "available",
@@ -782,7 +742,7 @@ async def generate_artwork(article_id: str, emotional_data: dict, signature_data
     artworks_collection.insert_one(artwork)
     artwork["_id"] = str(artwork["_id"])
     
-    print(f"🎨 Generated REAL algorithm artwork with {len(algorithm_output.get('medical_terms', {}))} medical term categories")
+    print(f"✅ Generated artwork using MANUAL algorithm")
     return artwork
 
 def process_article_with_full_algorithm(content: str, emotional_data: dict):
