@@ -432,18 +432,197 @@ class ArthrokinetixArtGenerator:
             "uncertainty": self.emotional_journey.get("uncertaintyLevel", 0) / max_val
         }
 
+    def generate_tree_structure(self):
+      """Generate tree structure - FIXED branch alternation and angles"""
+      self.visual_elements = []
+      
+      content_sections = self.article_data.get("content_sections", [])
+      if not content_sections:
+          content_sections = self.generate_default_sections()
+    
+      trunk_height = min(300, len(content_sections) * 40 + 100)
+    
+      # Main trunk (article spine)
+      self.visual_elements.append({
+          "type": "andryTrunk",
+          "x": self.canvas_width / 2,
+          "y": self.canvas_height * 0.85,
+          "height": trunk_height,
+          "thickness": 8 + (self.article_data.get("technical_density", 0.5) * 5),
+          "color": self.brand_colors["primary"],
+          "healing": self.tree_parameters["healing_rate"]
+      })
+    
+      # Generate branches for each major content section - FIXED alternation
+      for index, section in enumerate(content_sections):
+          branch_y = self.canvas_height * 0.85 - (index + 1) * (trunk_height / len(content_sections))
+          branch_side = -1 if index % 2 == 0 else 1  # Alternate sides
+        
+          # FIXED: Proper angle calculation for side alternation
+          base_angle = 150 if branch_side == -1 else 30  # Left: 120-180°, Right: 0-60°
+          angle_variation = random.random() * 30  # Add randomness
+          final_angle = base_angle + (branch_side * angle_variation)
+        
+          self.generate_branch(
+              self.canvas_width / 2,
+              branch_y,
+              final_angle,  # Use corrected angle
+              60 + section.get("importance", 0.5) * 40,  # Length
+              4 + section.get("complexity", 0.5) * 2,   # Thickness
+              section.get("emotionalTone", "confidence")
+          )
+
+    def generate_branch(self, x, y, angle, length, thickness, emotional_tone):
+        """Generate branch with optional sub-branches - ENHANCED"""
+        import math
+    
+        branch = {
+            "type": "andryBranch",
+            "x": x,
+            "y": y,
+            "angle": angle,
+            "length": length,
+            "thickness": thickness,
+            "color": self.get_emotional_color(emotional_tone, 0.6),
+            "emotionalTone": emotional_tone
+        }
+    
+        self.visual_elements.append(branch)
+    
+        # Optionally add sub-branches for more complex trees
+        if length > 80 and random.random() > 0.5:
+            # Add a smaller sub-branch
+            sub_angle = angle + (random.random() - 0.5) * 40
+            sub_length = length * 0.6
+            sub_thickness = thickness * 0.7
+        
+            # Position sub-branch partway along the main branch
+            midpoint = 0.6 + random.random() * 0.2
+            sub_x = x + math.cos(angle * math.pi / 180) * length * midpoint
+            sub_y = y + math.sin(angle * math.pi / 180) * length * midpoint
+        
+            self.visual_elements.append({
+                "type": "andryBranch",
+                "x": sub_x,
+                "y": sub_y,
+                "angle": sub_angle,
+                "length": sub_length,
+                "thickness": sub_thickness,
+                "color": self.get_emotional_color(emotional_tone, 0.4),
+                "emotionalTone": emotional_tone
+            })
+
+    def generate_default_sections(self):
+        """Generate default content sections when none are detected"""
+        return [
+            {
+                "title": "Introduction",
+                "level": 2,
+                "importance": 0.5,
+                "complexity": 0.5,
+                "emotionalTone": "confidence"
+            },
+            {
+                "title": "Main Content",
+                "level": 2,
+                "importance": 0.8,
+                "complexity": 0.7,
+                "emotionalTone": "healing"
+            },
+            {
+                "title": "Results",
+                "level": 2,
+                "importance": 0.9,
+                "complexity": 0.6,
+                "emotionalTone": "breakthrough"
+            },
+            {
+                "title": "Conclusion",
+                "level": 2,
+                "importance": 0.6,
+                "complexity": 0.4,
+                "emotionalTone": "hope"
+            }
+        ]
+
+    def get_emotional_color(self, emotion, intensity=1.0):
+        """Get emotional color from palette"""
+        palette = self.emotional_palettes.get(emotion, self.emotional_palettes["confidence"])
+        color_index = min(int(intensity * len(palette)), len(palette) - 1)
+        return palette[color_index]
+
+
+
+    # Also update the identify_content_sections method to be more robust
+    def identify_content_sections(self, element):
+        """Identify content sections - Enhanced for better section detection"""
+        text = element.text_content
+    
+        # Try to detect section markers
+        section_markers = [
+            "introduction", "background", "methods", "methodology", "results", 
+            "discussion", "conclusion", "conclusions", "summary", "abstract",
+            "overview", "review", "analysis", "findings", "recommendations"
+        ]
+    
+        sections = []
+        detected_sections = []
+    
+        # Simple section detection based on keywords
+        for marker in section_markers:
+            if marker.lower() in text.lower():
+                detected_sections.append({
+                    "title": marker.title(),
+                    "level": 2,
+                    "importance": 0.7 + (random.random() * 0.3),  # 0.7-1.0
+                    "complexity": 0.5 + (random.random() * 0.4),  # 0.5-0.9
+                    "emotionalTone": self.get_section_emotion(marker)
+                })
+    
+        # If we found sections, use them; otherwise use defaults
+        if detected_sections:
+            # Limit to max 6 sections for visual clarity
+            sections = detected_sections[:6]
+        else:
+            sections = self.generate_default_sections()
+    
+        print(f"📑 Identified {len(sections)} content sections")
+        return sections
+
+    def get_section_emotion(self, section_name):
+        """Map section names to emotional tones"""
+        emotion_mapping = {
+            "introduction": "confidence",
+            "background": "confidence", 
+            "methods": "breakthrough",
+            "methodology": "breakthrough",
+            "results": "healing",
+            "discussion": "hope",
+            "conclusion": "hope",
+            "conclusions": "hope",
+            "summary": "confidence",
+            "abstract": "confidence",
+            "overview": "confidence",
+            "review": "healing",
+            "analysis": "breakthrough",
+            "findings": "healing",
+            "recommendations": "hope"
+        }
+    
+        return emotion_mapping.get(section_name.lower(), "confidence")
+
     # Add placeholder methods for missing functions
     def calculate_readability(self, element): return 0.5
     def calculate_technical_density(self, element): return 0.5
     def assess_evidence_strength(self, element): return 0.5
     def assess_certainty_level(self, element): return 0.5
-    def identify_content_sections(self, element): return []
+    
     def analyze_argument_flow(self, element): return {}
     def analyze_heading_structure(self, element): return {}
     def get_statistic_context(self, text, position): return ""
     def assess_statistic_significance(self, stat_type, value): return 0.5
     def generate_andry_tree_roots(self): pass
-    def generate_tree_structure(self): pass
+    
     def generate_healing_elements(self): pass
     def generate_data_flows(self): pass
     def generate_emotional_fields(self): pass
