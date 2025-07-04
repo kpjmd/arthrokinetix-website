@@ -263,12 +263,12 @@ const RealArthrokinetixArtwork = ({ artwork, width = 400, height = 400 }) => {
     return branches;
   };
 
-  // EXACT manual algorithm implementation - generateTreeStructure
+  // EXACT manual algorithm implementation - generateTreeStructure (FIXED)
   const generateTreeStructure = (state) => {
     const elements = [];
     const contentSections = state.articleData.content_sections || generateDefaultSections();
     const trunkHeight = Math.min(300, contentSections.length * 40 + 100);
-    
+  
     // Main trunk (article spine) - EXACT manual algorithm
     elements.push({
       type: 'andryTrunk',
@@ -279,28 +279,60 @@ const RealArthrokinetixArtwork = ({ artwork, width = 400, height = 400 }) => {
       color: state.brandColors.primary,
       healing: 0.6 // treeParameters.healingRate
     });
-    
-    // Generate branches for each major content section - EXACT manual algorithm
+  
+    // Generate branches for each major content section - FIXED alternation
     contentSections.forEach((section, index) => {
       const branchY = state.canvasHeight * 0.85 - (index + 1) * (trunkHeight / contentSections.length);
       const branchSide = index % 2 === 0 ? -1 : 1; // Alternate sides
-      
-      elements.push({
+    
+      // FIXED: Proper angle calculation for side alternation
+      const baseAngle = branchSide === -1 ? 150 : 30; // Left: 120-180°, Right: 0-60°
+      const angleVariation = Math.random() * 30; // Add randomness
+      const finalAngle = baseAngle + (branchSide * angleVariation);
+    
+      // Generate main branch
+      const branch = {
         type: 'andryBranch',
         x: state.canvasWidth / 2,
         y: branchY,
-        angle: branchSide * (30 + Math.random() * 30),
+        angle: finalAngle, // Use corrected angle
         length: 60 + section.importance * 40,
         thickness: 4 + section.complexity * 2,
         color: getEmotionalColor(state, section.emotionalTone, 0.6),
         emotionalTone: section.emotionalTone
-      });
-    });
+      };
     
+      elements.push(branch);
+    
+      // Optionally add sub-branches for more complex trees
+      if (branch.length > 80 && Math.random() > 0.5) {
+        // Add a smaller sub-branch
+        const subAngle = finalAngle + (Math.random() - 0.5) * 40;
+        const subLength = branch.length * 0.6;
+        const subThickness = branch.thickness * 0.7;
+      
+        // Position sub-branch partway along the main branch
+        const midpoint = 0.6 + Math.random() * 0.2;
+        const subX = state.canvasWidth / 2 + Math.cos(finalAngle * Math.PI / 180) * branch.length * midpoint;
+        const subY = branchY + Math.sin(finalAngle * Math.PI / 180) * branch.length * midpoint;
+      
+        elements.push({
+          type: 'andryBranch',
+          x: subX,
+          y: subY,
+          angle: subAngle,
+          length: subLength,
+          thickness: subThickness,
+          color: getEmotionalColor(state, section.emotionalTone, 0.4),
+          emotionalTone: section.emotionalTone
+        });
+      }
+    });
+  
     return elements;
   };
 
-  // EXACT manual algorithm implementation - generateDefaultSections
+  // EXACT manual algorithm implementation - generateDefaultSections (ENHANCED)
   const generateDefaultSections = () => {
     return [
       {
@@ -316,6 +348,13 @@ const RealArthrokinetixArtwork = ({ artwork, width = 400, height = 400 }) => {
         importance: 0.8,
         complexity: 0.7,
         emotionalTone: 'healing'
+      },
+      {
+        title: 'Results',
+        level: 2,
+        importance: 0.9,
+        complexity: 0.6,
+        emotionalTone: 'breakthrough'
       },
       {
         title: 'Conclusion',
@@ -707,31 +746,113 @@ const RealArthrokinetixArtwork = ({ artwork, width = 400, height = 400 }) => {
   );
 
   const renderAndryBranch = (element, key) => {
-    const endX = element.x + Math.cos(element.angle * Math.PI / 180) * element.length;
-    const endY = element.y + Math.sin(element.angle * Math.PI / 180) * element.length;
-    
+    // Convert angle to radians and calculate end position
+    const angleRad = element.angle * Math.PI / 180;
+    const endX = element.x + Math.cos(angleRad) * element.length;
+    const endY = element.y + Math.sin(angleRad) * element.length;
+  
+    // Add slight curve to branches for more natural appearance
+    const controlX = element.x + Math.cos(angleRad) * element.length * 0.5;
+    const controlY = element.y + Math.sin(angleRad - 0.1) * element.length * 0.5;
+  
+    const d = `M ${element.x} ${element.y} Q ${controlX} ${controlY} ${endX} ${endY}`;
+  
     return (
-      <motion.line
+      <motion.path
         key={key}
-        x1={element.x}
-        y1={element.y}
-        x2={endX}
-        y2={endY}
+        d={d}
         stroke={element.color}
         strokeWidth={element.thickness}
+        fill="none"
         strokeLinecap="round"
         animate={{
-          x2: [endX, endX * 1.05, endX],
-          y2: [endY, endY * 1.05, endY]
+          strokeDasharray: ["0,0", `${element.length/4},${element.length/4}`, "0,0"],
+          opacity: [0.7, 1, 0.7]
         }}
         transition={{
-          duration: 6,
+          duration: 6 + Math.random() * 4,
           repeat: Infinity,
-          ease: "easeInOut"
+          ease: "easeInOut",
+          delay: Math.random() * 2
         }}
       />
     );
   };
+
+  // Enhanced section detection for frontend (matches backend logic)
+  const detectContentSections = (params) => {
+    // Try to extract from medical terms or create enhanced defaults
+    const medicalTerms = params.medical_terms || {};
+    const subspecialty = params.subspecialty || 'sportsMedicine';
+  
+    // If we have medical terms, create sections based on them
+    if (Object.keys(medicalTerms).length > 0) {
+      const sections = [];
+    
+      Object.entries(medicalTerms).forEach(([category, terms], index) => {
+        if (Object.keys(terms).length > 0) {
+          sections.push({
+            title: category.charAt(0).toUpperCase() + category.slice(1),
+            level: 2,
+            importance: 0.6 + (index * 0.1),
+            complexity: 0.5 + (Object.keys(terms).length * 0.05),
+            emotionalTone: getCategoryEmotion(category)
+          });
+        }
+      });
+    
+      if (sections.length > 0) {
+        return sections.slice(0, 6); // Limit to 6 sections for visual clarity
+      }
+    }
+  
+    // Enhanced defaults based on subspecialty
+    return getSubspecialtyDefaultSections(subspecialty);
+  };
+
+  const getCategoryEmotion = (category) => {
+    const categoryEmotions = {
+      procedures: 'breakthrough',
+      anatomy: 'confidence',
+      outcomes: 'healing',
+      research: 'hope'
+    };
+    return categoryEmotions[category] || 'confidence';
+  };
+
+const getSubspecialtyDefaultSections = (subspecialty) => {
+  const subspecialtySections = {
+    sportsMedicine: [
+      { title: 'Athletic Assessment', importance: 0.7, complexity: 0.6, emotionalTone: 'confidence' },
+      { title: 'Injury Analysis', importance: 0.9, complexity: 0.8, emotionalTone: 'tension' },
+      { title: 'Treatment Options', importance: 0.8, complexity: 0.7, emotionalTone: 'breakthrough' },
+      { title: 'Recovery Protocol', importance: 0.9, complexity: 0.6, emotionalTone: 'healing' },
+      { title: 'Return to Play', importance: 0.8, complexity: 0.5, emotionalTone: 'hope' }
+    ],
+    shoulderElbow: [
+      { title: 'Anatomy Review', importance: 0.6, complexity: 0.5, emotionalTone: 'confidence' },
+      { title: 'Pathophysiology', importance: 0.8, complexity: 0.8, emotionalTone: 'uncertainty' },
+      { title: 'Surgical Techniques', importance: 0.9, complexity: 0.9, emotionalTone: 'breakthrough' },
+      { title: 'Rehabilitation', importance: 0.8, complexity: 0.6, emotionalTone: 'healing' },
+      { title: 'Outcomes', importance: 0.7, complexity: 0.5, emotionalTone: 'hope' }
+    ],
+    jointReplacement: [
+      { title: 'Patient Selection', importance: 0.8, complexity: 0.6, emotionalTone: 'confidence' },
+      { title: 'Implant Design', importance: 0.9, complexity: 0.9, emotionalTone: 'breakthrough' },
+      { title: 'Surgical Approach', importance: 0.9, complexity: 0.8, emotionalTone: 'tension' },
+      { title: 'Long-term Outcomes', importance: 0.8, complexity: 0.7, emotionalTone: 'healing' }
+    ],
+    // Add more subspecialty-specific sections as needed
+  };
+  
+  const sections = subspecialtySections[subspecialty] || subspecialtySections.sportsMedicine;
+  
+  return sections.map(section => ({
+    ...section,
+    title: section.title,
+    level: 2
+  }));
+};
 
   const renderDataFlow = (element, key) => {
     const d = `M ${element.path.start.x} ${element.path.start.y} 
