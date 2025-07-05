@@ -1,7 +1,17 @@
 from fastapi import FastAPI, HTTPException, File, UploadFile, Form
 from fastapi.middleware.cors import CORSMiddleware
 from pymongo import MongoClient
-from arthrokinetix_algorithm import process_article_with_manual_algorithm
+from arthrokinetix_algorithm import process_article_with_manual_algorithm, process_content_with_adapters
+
+# Import content adapters
+try:
+    from content_adapters import process_content, ContentAdapterFactory
+    HAS_CONTENT_ADAPTERS = True
+    print("✅ Content adapters loaded successfully")
+except ImportError as e:
+    HAS_CONTENT_ADAPTERS = False
+    print(f"⚠️ Content adapters not available: {e}")
+    print("   Using legacy HTML processing only")
 import os
 from dotenv import load_dotenv
 import json
@@ -194,13 +204,30 @@ async def create_article(
         # Generate unique ID
         article_id = str(uuid.uuid4())
         
-        # Process content based on type
+        # Process content based on type using content adapters
         processed_content = ""
         html_content = ""
+        adapter_data = None
         file_data = None
         
         if content_type == "text" and content:
-            processed_content = content
+            # Process text content using adapters if available
+            if HAS_CONTENT_ADAPTERS:
+                try:
+                    adapter_element = process_content(content, "text")
+                    processed_content = adapter_element.text_content
+                    adapter_data = {
+                        "text_content": adapter_element.text_content,
+                        "structure": adapter_element.structure if hasattr(adapter_element, 'structure') else {},
+                        "metadata": adapter_element.metadata if hasattr(adapter_element, 'metadata') else {},
+                        "content_type": "text"
+                    }
+                    print(f"📝 Text processed with adapter: {len(processed_content)} characters")
+                except Exception as e:
+                    print(f"⚠️ Text adapter failed, using legacy: {e}")
+                    processed_content = content
+            else:
+                processed_content = content
             print(f"📝 Text content length: {len(processed_content)} characters")
             
         elif content_type in ["html", "pdf"] and file:
@@ -209,11 +236,27 @@ async def create_article(
             print(f"📂 File uploaded: {file.filename} ({len(file_content)} bytes)")
             
             if content_type == "html":
-                # For HTML files, extract content for analysis but keep full HTML for display
+                # Process HTML using adapters if available
                 html_content = file_content.decode('utf-8')
-                # Extract text content for emotional analysis (strip HTML tags roughly)
-                import re
-                processed_content = re.sub('<[^<]+?>', '', html_content)
+                
+                if HAS_CONTENT_ADAPTERS:
+                    try:
+                        adapter_element = process_content(html_content, "html")
+                        processed_content = adapter_element.text_content
+                        adapter_data = {
+                            "text_content": adapter_element.text_content,
+                            "structure": adapter_element.structure if hasattr(adapter_element, 'structure') else {},
+                            "metadata": adapter_element.metadata if hasattr(adapter_element, 'metadata') else {},
+                            "content_type": "html"
+                        }
+                        print(f"🌐 HTML processed with adapter: {len(processed_content)} characters")
+                    except Exception as e:
+                        print(f"⚠️ HTML adapter failed, using legacy: {e}")
+                        processed_content = re.sub('<[^<]+?>', '', html_content)
+                else:
+                    # Fallback to legacy HTML processing
+                    processed_content = re.sub('<[^<]+?>', '', html_content)
+                
                 print(f"🔤 Extracted text length: {len(processed_content)} characters")
                 
                 # Store file data
@@ -225,15 +268,33 @@ async def create_article(
                 }
                 
             elif content_type == "pdf":
-                # For PDF files, store for future processing
+                # Process PDF using adapters if available
+                if HAS_CONTENT_ADAPTERS:
+                    try:
+                        adapter_element = process_content(file_content, "pdf")
+                        processed_content = adapter_element.text_content
+                        adapter_data = {
+                            "text_content": adapter_element.text_content,
+                            "structure": adapter_element.structure if hasattr(adapter_element, 'structure') else {},
+                            "metadata": adapter_element.metadata if hasattr(adapter_element, 'metadata') else {},
+                            "content_type": "pdf"
+                        }
+                        print(f"📄 PDF processed with adapter: {len(processed_content)} characters")
+                    except Exception as e:
+                        print(f"⚠️ PDF adapter failed, storing for manual processing: {e}")
+                        processed_content = f"PDF content from {file.filename} (processing failed)"
+                        adapter_data = None
+                else:
+                    processed_content = f"PDF content from {file.filename} (no adapter available)"
+                
+                # Store file data
                 file_data = {
                     "filename": file.filename,
                     "content_type": file.content_type,
                     "size": len(file_content),
                     "content": base64.b64encode(file_content).decode('utf-8')
                 }
-                processed_content = f"PDF content from {file.filename}"
-                print(f"📄 PDF stored for future processing")
+                print(f"📄 PDF file stored")
                 
         else:
             raise HTTPException(status_code=400, detail="Invalid content type or missing content/file")
@@ -242,9 +303,22 @@ async def create_article(
         content_preview = processed_content[:500] + "..." if len(processed_content) > 500 else processed_content
         print(f"📖 Content preview:\n{content_preview}")
         
-        # Process article with enhanced Arthrokinetix algorithm
+        # Process article with enhanced Arthrokinetix algorithm using adapters
         print("\n🧠 Starting emotional analysis...")
-        emotional_data = await process_article_emotions(processed_content)
+        
+        # Use content adapters if available and we have adapter data
+        if HAS_CONTENT_ADAPTERS and adapter_data:
+            try:
+                print(f"🔄 Using adapter-enhanced processing for {content_type}")
+                emotional_data = process_content_with_adapters(adapter_data, content_type)
+                print("✅ Adapter-enhanced processing completed")
+            except Exception as e:
+                print(f"⚠️ Adapter processing failed, using legacy: {e}")
+                emotional_data = await process_article_emotions(processed_content)
+        else:
+            # Fallback to legacy processing
+            print("🔄 Using legacy emotional analysis")
+            emotional_data = await process_article_emotions(processed_content)
         
         print(f"\n💭 Emotional analysis results:")
         for key, value in emotional_data.items():
@@ -256,7 +330,7 @@ async def create_article(
         print("\n🔮 Generating emotional signature...")
         signature_data = generate_emotional_signature(emotional_data)
         
-        # Create article record
+        # Create article record with adapter enhancements
         article = {
             "id": article_id,
             "title": title,
@@ -271,7 +345,12 @@ async def create_article(
             "signature_data": signature_data,
             "evidence_strength": evidence_strength,
             "meta_description": meta_description,
-            "read_time": calculate_read_time(processed_content)
+            "read_time": calculate_read_time(processed_content),
+            
+            # Enhanced fields from content adapters
+            "adapter_data": adapter_data,
+            "processing_method": "content_adapters" if adapter_data else "legacy",
+            "adapter_version": adapter_data.get("metadata", {}).get("adapter_version") if adapter_data else None
         }
         
         print(f"\n💾 Saving article to database...")
@@ -1197,6 +1276,197 @@ async def get_share_metadata(content_type: str, content_id: str):
             
     except HTTPException:
         raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+# NEW ENDPOINTS FOR WEEK 2: SVG GENERATION AND METADATA ANALYSIS
+
+@app.post("/api/artworks/{artwork_id}/generate-svg")
+async def generate_artwork_svg(artwork_id: str):
+    """Generate SVG for existing artwork"""
+    try:
+        artwork = artworks_collection.find_one({"id": artwork_id})
+        if not artwork:
+            raise HTTPException(status_code=404, detail="Artwork not found")
+        
+        # Get algorithm parameters
+        algorithm_params = artwork.get("algorithm_parameters", {})
+        metadata = artwork.get("metadata", {})
+        visual_elements = algorithm_params.get("visual_elements", [])
+        
+        # Generate SVG using the SVG generator
+        from svg_generator import ArthrokinetixSVGGenerator
+        svg_generator = ArthrokinetixSVGGenerator()
+        
+        svg_string = svg_generator.generate_svg(
+            visual_elements,
+            metadata,
+            algorithm_params
+        )
+        
+        # Update artwork with SVG data
+        svg_data = {
+            "svg_string": svg_string,
+            "file_size": len(svg_string.encode('utf-8')),
+            "generation_timestamp": datetime.utcnow(),
+            "download_count": artwork.get("svg_data", {}).get("download_count", 0)
+        }
+        
+        artworks_collection.update_one(
+            {"id": artwork_id},
+            {"$set": {"svg_data": svg_data}}
+        )
+        
+        return {
+            "svg_string": svg_string,
+            "file_size": svg_data["file_size"],
+            "generation_timestamp": svg_data["generation_timestamp"].isoformat()
+        }
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/artworks/{artwork_id}/download-svg")
+async def download_artwork_svg(artwork_id: str):
+    """Download SVG file for artwork (ADMIN ONLY)"""
+    try:
+        artwork = artworks_collection.find_one({"id": artwork_id})
+        if not artwork:
+            raise HTTPException(status_code=404, detail="Artwork not found")
+        
+        svg_data = artwork.get("svg_data", {})
+        if not svg_data.get("svg_string"):
+            # Generate SVG if not exists
+            svg_response = await generate_artwork_svg(artwork_id)
+            svg_string = svg_response["svg_string"]
+        else:
+            svg_string = svg_data["svg_string"]
+        
+        # Increment download counter
+        artworks_collection.update_one(
+            {"id": artwork_id},
+            {"$inc": {"svg_data.download_count": 1}}
+        )
+        
+        # Generate filename
+        signature_id = artwork.get("metadata", {}).get("signature_id", artwork_id)
+        timestamp = datetime.utcnow().strftime("%Y%m%d")
+        filename = f"{signature_id}_{timestamp}_arthrokinetix.svg"
+        
+        from fastapi.responses import Response
+        return Response(
+            content=svg_string,
+            media_type="image/svg+xml",
+            headers={"Content-Disposition": f"attachment; filename={filename}"}
+        )
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/admin/metadata-analysis")
+async def get_metadata_analysis():
+    """Get comprehensive metadata analysis for admin dashboard"""
+    try:
+        # Aggregate metadata statistics
+        pipeline = [
+            {
+                "$group": {
+                    "_id": "$subspecialty",
+                    "count": {"$sum": 1},
+                    "avg_uniqueness": {"$avg": "$comprehensive_metadata.ai_analysis_data.uniqueness_factors.overall_uniqueness"},
+                    "avg_complexity": {"$avg": "$comprehensive_metadata.visual_characteristics.pattern_complexity"},
+                    "pattern_types": {"$addToSet": "$comprehensive_metadata.pattern_usage.tree_pattern_signature"}
+                }
+            }
+        ]
+        
+        subspecialty_analysis = list(artworks_collection.aggregate(pipeline))
+        
+        # Pattern frequency analysis
+        pattern_frequency_pipeline = [
+            {"$unwind": "$comprehensive_metadata.pattern_usage.tree_pattern_signature"},
+            {"$group": {
+                "_id": "$comprehensive_metadata.pattern_usage.tree_pattern_signature",
+                "frequency": {"$sum": 1}
+            }},
+            {"$sort": {"frequency": -1}},
+            {"$limit": 20}
+        ]
+        
+        pattern_frequency = list(artworks_collection.aggregate(pattern_frequency_pipeline))
+        
+        # Recent evolution trends
+        recent_artworks = list(artworks_collection.find(
+            {},
+            {"comprehensive_metadata": 1, "created_date": 1, "subspecialty": 1, "id": 1}
+        ).sort("created_date", -1).limit(50))
+        
+        # Convert ObjectIds to strings
+        for artwork in recent_artworks:
+            artwork["_id"] = str(artwork["_id"])
+        
+        # Calculate metadata completeness
+        total = artworks_collection.count_documents({})
+        with_metadata = artworks_collection.count_documents({
+            "comprehensive_metadata.visual_characteristics": {"$exists": True, "$ne": {}}
+        })
+        
+        metadata_completeness = {
+            "total_artworks": total,
+            "with_comprehensive_metadata": with_metadata,
+            "completeness_percentage": (with_metadata / max(1, total)) * 100
+        }
+        
+        return {
+            "subspecialty_analysis": subspecialty_analysis,
+            "pattern_frequency": pattern_frequency,
+            "recent_trends": recent_artworks,
+            "total_artworks": total,
+            "metadata_completeness": metadata_completeness
+        }
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/admin/svg-batch-generate")
+async def batch_generate_svgs():
+    """Generate SVGs for all artworks that don't have them (ADMIN ONLY)"""
+    try:
+        # Find artworks without SVG data
+        artworks_without_svg = list(artworks_collection.find({
+            "svg_data.svg_string": {"$exists": False}
+        }, {"id": 1, "title": 1}))
+        
+        generated_count = 0
+        failed_count = 0
+        results = []
+        
+        for artwork in artworks_without_svg:
+            try:
+                result = await generate_artwork_svg(artwork["id"])
+                generated_count += 1
+                results.append({
+                    "artwork_id": artwork["id"],
+                    "title": artwork.get("title", "Unknown"),
+                    "status": "success",
+                    "file_size": result["file_size"]
+                })
+            except Exception as e:
+                failed_count += 1
+                results.append({
+                    "artwork_id": artwork["id"],
+                    "title": artwork.get("title", "Unknown"),
+                    "status": "failed",
+                    "error": str(e)
+                })
+        
+        return {
+            "total_processed": len(artworks_without_svg),
+            "generated_count": generated_count,
+            "failed_count": failed_count,
+            "results": results
+        }
+        
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 

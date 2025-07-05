@@ -10,3 +10,12 @@ cryptography==41.0.7
 requests==2.31.0
 httpcore==1.0.9
 distro==1.9.0
+
+# Content processing dependencies
+beautifulsoup4==4.12.2
+lxml==4.9.3
+
+# PDF processing dependencies (optional - install one or more)
+# pdfplumber>=0.9.0      # Recommended - best quality text extraction
+# PyMuPDF>=1.23.0        # Alternative - fast and good quality  
+# PyPDF2>=3.0.0          # Basic - fallback option

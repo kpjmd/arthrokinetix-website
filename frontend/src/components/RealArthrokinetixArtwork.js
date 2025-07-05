@@ -1,11 +1,33 @@
-// Fixed RealArthrokinetixArtwork.js - Exact Manual Algorithm Integration
+// Fixed RealArthrokinetixArtwork.js - Exact Manual Algorithm Integration with Comprehensive Metadata
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
+
+// Import comprehensive metadata utilities for Phase 2C Advanced Analytics Dashboard
+import { 
+  analyzeVisualCharacteristics,
+  extractGenerationParameters,
+  analyzePatternUsage,
+  prepareAIAnalysisData 
+} from '../utils/metadataAnalysis';
+import { 
+  generateUniqueArtworkID,
+  calculateRenderingComplexity,
+  validateMetadata 
+} from '../utils/metadataHelpers';
+// SVG download functionality removed - only available in admin dashboard
+// import { 
+//   generateDownloadableSVG,
+//   downloadSVG,
+//   generateArtworkFilename 
+// } from '../utils/svgExport';
 
 const RealArthrokinetixArtwork = ({ artwork, width = 400, height = 400 }) => {
   const [svgContent, setSvgContent] = useState(null);
   const [debugInfo, setDebugInfo] = useState(null);
   const [algorithmState, setAlgorithmState] = useState(null);
+  // NEW: Comprehensive metadata state for Phase 2C Advanced Analytics Dashboard
+  const [artworkMetadata, setArtworkMetadata] = useState(null);
+  const [metadataValidation, setMetadataValidation] = useState(null);
 
   useEffect(() => {
     if (artwork && artwork.algorithm_parameters) {
@@ -120,6 +142,52 @@ const RealArthrokinetixArtwork = ({ artwork, width = 400, height = 400 }) => {
       ...healingElements,
       ...researchConstellation
     ];
+    
+    // NEW: Generate comprehensive metadata for Phase 2C Advanced Analytics Dashboard
+    console.log('🔬 Generating comprehensive metadata...');
+    const visualCharacteristics = analyzeVisualCharacteristics(allVisualElements, state);
+    const generationParameters = extractGenerationParameters(state, params);
+    const patternUsage = analyzePatternUsage(allVisualElements, state);
+    const aiAnalysisData = prepareAIAnalysisData(allVisualElements, params, visualCharacteristics);
+    
+    const comprehensiveMetadata = {
+      // Basic metadata (existing)
+      signature_id: generateUniqueArtworkID({ 
+        subspecialty: subspecialty,
+        dominantEmotion: dominantEmotion,
+        visual_characteristics: visualCharacteristics,
+        pattern_fingerprint: aiAnalysisData.pattern_fingerprint
+      }),
+      rarity_score: aiAnalysisData.uniqueness_factors?.color_uniqueness || 0.5,
+      generation_timestamp: new Date().toISOString(),
+      algorithm_version: params.algorithm_version || '2.0-comprehensive',
+      
+      // NEW: Comprehensive metadata for Phase 2C Advanced Analytics Dashboard
+      visual_characteristics: visualCharacteristics,
+      generation_parameters: generationParameters,
+      pattern_usage: patternUsage,
+      ai_analysis_data: aiAnalysisData,
+      
+      // Canvas and rendering info
+      canvas_dimensions: { width: state.canvasWidth, height: state.canvasHeight },
+      visual_element_count: allVisualElements.length,
+      rendering_complexity: calculateRenderingComplexity(allVisualElements),
+      
+      // Original algorithm parameters for compatibility
+      subspecialty: subspecialty,
+      dominant_emotion: dominantEmotion,
+      algorithm_parameters: params
+    };
+    
+    // Validate metadata completeness
+    const validation = validateMetadata(comprehensiveMetadata);
+    setMetadataValidation(validation);
+    
+    // Store metadata in state for potential backend saving
+    setArtworkMetadata(comprehensiveMetadata);
+    
+    console.log('✅ Comprehensive Metadata Generated:', comprehensiveMetadata);
+    console.log('📊 Metadata Validation:', validation);
     
     const svg = (
       <svg 
@@ -1026,6 +1094,9 @@ const getSubspecialtyDefaultSections = (subspecialty) => {
     return `AKX-${year}-${month}${day}-${random}`;
   };
 
+  // SVG Download functionality removed - only available in admin dashboard
+  // const handleDownloadSVG = () => { ... }
+
   // Loading state
   if (!svgContent) {
     return (
@@ -1085,6 +1156,26 @@ const getSubspecialtyDefaultSections = (subspecialty) => {
           <div>Technical: {algorithmState.articleData.technical_density?.toFixed(2)}</div>
         </div>
       )}
+
+      {/* NEW: Comprehensive Metadata Overlay for Phase 2C Advanced Analytics Dashboard */}
+      {artworkMetadata && process.env.NODE_ENV === 'development' && (
+        <div className="absolute top-2 right-2 bg-green-900/80 text-white text-xs p-2 rounded max-w-xs opacity-0 hover:opacity-100 transition-opacity">
+          <div className="font-bold mb-1">Comprehensive Metadata</div>
+          <div>Signature ID: {artworkMetadata.signature_id}</div>
+          <div>Pattern Complexity: {artworkMetadata.visual_characteristics?.pattern_complexity?.toFixed(2)}</div>
+          <div>Element Density: {artworkMetadata.visual_characteristics?.element_density?.toFixed(2)}</div>
+          <div>Color Uniqueness: {artworkMetadata.ai_analysis_data?.uniqueness_factors?.color_uniqueness?.toFixed(2)}</div>
+          <div>Rendering Complexity: {artworkMetadata.rendering_complexity?.toFixed(2)}</div>
+          {metadataValidation && (
+            <div className="mt-1 pt-1 border-t border-green-600">
+              <div>Completeness: {metadataValidation.completeness_percentage}%</div>
+              <div>Fields: {metadataValidation.field_count}</div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* SVG Download Button removed - only available in admin dashboard */}
     </div>
   );
 };
