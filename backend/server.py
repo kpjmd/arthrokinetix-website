@@ -1481,9 +1481,9 @@ async def get_metadata_analysis():
                 "$group": {
                     "_id": "$subspecialty",
                     "count": {"$sum": 1},
-                    "avg_uniqueness": {"$avg": "$comprehensive_metadata.ai_analysis_data.uniqueness_factors.overall_uniqueness"},
-                    "avg_complexity": {"$avg": "$comprehensive_metadata.visual_characteristics.pattern_complexity"},
-                    "pattern_types": {"$addToSet": "$comprehensive_metadata.pattern_usage.tree_pattern_signature"}
+                    "avg_uniqueness": {"$avg": "$algorithm_parameters.comprehensive_metadata.ai_analysis_data.uniqueness_factors.overall_uniqueness"},
+                    "avg_complexity": {"$avg": "$algorithm_parameters.comprehensive_metadata.visual_characteristics.pattern_complexity"},
+                    "pattern_types": {"$addToSet": "$algorithm_parameters.comprehensive_metadata.pattern_usage.tree_pattern_signature"}
                 }
             }
         ]
@@ -1492,9 +1492,9 @@ async def get_metadata_analysis():
         
         # Pattern frequency analysis
         pattern_frequency_pipeline = [
-            {"$unwind": "$comprehensive_metadata.pattern_usage.tree_pattern_signature"},
+            {"$unwind": "$algorithm_parameters.comprehensive_metadata.pattern_usage.tree_pattern_signature"},
             {"$group": {
-                "_id": "$comprehensive_metadata.pattern_usage.tree_pattern_signature",
+                "_id": "$algorithm_parameters.comprehensive_metadata.pattern_usage.tree_pattern_signature",
                 "frequency": {"$sum": 1}
             }},
             {"$sort": {"frequency": -1}},
@@ -1506,7 +1506,7 @@ async def get_metadata_analysis():
         # Recent evolution trends
         recent_artworks = list(artworks_collection.find(
             {},
-            {"comprehensive_metadata": 1, "created_date": 1, "subspecialty": 1, "id": 1}
+            {"algorithm_parameters.comprehensive_metadata": 1, "created_date": 1, "subspecialty": 1, "id": 1}
         ).sort("created_date", -1).limit(50))
         
         # Convert ObjectIds to strings
@@ -1516,7 +1516,7 @@ async def get_metadata_analysis():
         # Calculate metadata completeness
         total = artworks_collection.count_documents({})
         with_metadata = artworks_collection.count_documents({
-            "comprehensive_metadata.visual_characteristics": {"$exists": True, "$ne": {}}
+            "algorithm_parameters.comprehensive_metadata.visual_characteristics": {"$exists": True, "$ne": {}}
         })
         
         metadata_completeness = {
