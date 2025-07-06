@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Palette, Filter, Grid, Search, Star, Eye, Zap, AlertCircle, CheckCircle } from 'lucide-react';
+import { Palette, Filter, Grid, Search, Star, Eye, Zap, AlertCircle, CheckCircle, RefreshCw } from 'lucide-react';
 import ShareButtons from '../components/ShareButtons';
 import NFTMintButton from '../components/NFTMintButton';
 import { GalleryNewsletterForm } from '../components/NewsletterForms';
@@ -17,6 +17,8 @@ const Gallery = ({ algorithmState }) => {
   const [selectedEmotion, setSelectedEmotion] = useState('all');
   const [selectedRarity, setSelectedRarity] = useState('all');
   const [dataQuality, setDataQuality] = useState({ manual: 0, fallback: 0 });
+  const [apiError, setApiError] = useState(null);
+  const [apiStatus, setApiStatus] = useState('checking');
 
   const subspecialties = [
     { key: 'all', label: 'All Subspecialties' },
@@ -56,25 +58,52 @@ const Gallery = ({ algorithmState }) => {
   const fetchArtworks = async () => {
     try {
       setLoading(true);
+      setApiError(null);
+      setApiStatus('checking');
+      
       const url = selectedSubspecialty === 'all' 
         ? `${API_BASE}/api/artworks`
         : `${API_BASE}/api/artworks?subspecialty=${selectedSubspecialty}`;
       
       console.log('🎨 Fetching artworks from:', url);
-      const response = await fetch(url);
-      const data = await response.json();
       
+      // Check production configuration
+      if (window.location.hostname !== 'localhost' && API_BASE.includes('localhost')) {
+        console.warn('⚠️ Production deployment is using localhost API!');
+        setApiError({
+          type: 'configuration',
+          message: 'Backend URL not configured. Please set REACT_APP_BACKEND_URL in Vercel.',
+          details: `Expected: Railway backend URL, Got: ${API_BASE}`
+        });
+      }
+      
+      const response = await fetch(url);
+      
+      if (!response.ok) {
+        throw new Error(`API returned ${response.status}: ${response.statusText}`);
+      }
+      
+      const data = await response.json();
       console.log('📦 Received artworks data:', data);
       
       const fetchedArtworks = data.artworks || [];
       setArtworks(fetchedArtworks);
+      setApiStatus('connected');
       
       // Analyze data quality
       analyzeDataQuality(fetchedArtworks);
       
     } catch (error) {
       console.error('❌ Error fetching artworks:', error);
+      
+      setApiError({
+        type: error.name,
+        message: error.message,
+        endpoint: API_BASE
+      });
+      
       console.log('🔄 Using sample data as fallback');
+      setApiStatus('fallback');
       const sampleArtworks = generateSampleArtworks();
       setArtworks(sampleArtworks);
       analyzeDataQuality(sampleArtworks);
@@ -182,6 +211,36 @@ const Gallery = ({ algorithmState }) => {
           </motion.div>
         </div>
       </section>
+
+      {/* API Error Banner */}
+      {apiError && (
+        <motion.div
+          initial={{ y: -50, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          className="bg-yellow-50 border-b border-yellow-200"
+        >
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center">
+                <AlertCircle className="w-5 h-5 text-yellow-600 mr-2 flex-shrink-0" />
+                <div className="text-sm">
+                  <span className="font-medium text-yellow-800">{apiError.message}</span>
+                  {apiError.details && (
+                    <span className="text-yellow-700 ml-2">({apiError.details})</span>
+                  )}
+                </div>
+              </div>
+              <button
+                onClick={fetchArtworks}
+                className="flex items-center px-2 py-1 bg-yellow-600 text-white text-sm font-medium rounded hover:bg-yellow-700 transition-colors"
+              >
+                <RefreshCw className="w-3 h-3 mr-1" />
+                Retry
+              </button>
+            </div>
+          </div>
+        </motion.div>
+      )}
 
       {/* Filters */}
       <section className="bg-white border-b sticky top-16 z-40">

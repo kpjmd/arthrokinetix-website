@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { BookOpen, Palette, Zap, Users, TrendingUp, Heart } from 'lucide-react';
+import { BookOpen, Palette, Zap, Users, TrendingUp, Heart, AlertCircle, RefreshCw } from 'lucide-react';
 import EmotionalSignature from '../components/EmotionalSignature';
 import ShareButtons from '../components/ShareButtons';
 import { HeroNewsletterForm } from '../components/NewsletterForms';
@@ -16,32 +16,128 @@ const Homepage = ({ algorithmState, onStateUpdate }) => {
   const [loading, setLoading] = useState(true);
   const [newsletterEmail, setNewsletterEmail] = useState('');
   const [newsletterStatus, setNewsletterStatus] = useState('');
+  const [apiError, setApiError] = useState(null);
+  const [retryCount, setRetryCount] = useState(0);
+  const [apiStatus, setApiStatus] = useState('checking'); // 'checking', 'connected', 'error', 'fallback'
 
   useEffect(() => {
+    checkAPIHealth();
     fetchHomeData();
   }, []);
 
-  const fetchHomeData = async () => {
+  // API Health Check
+  const checkAPIHealth = async () => {
+    try {
+      console.log('🏥 Checking API health at:', API_BASE);
+      const healthResponse = await fetch(`${API_BASE}/health`, {
+        method: 'GET',
+        headers: { 'Content-Type': 'application/json' }
+      }).catch(() => null);
+
+      if (healthResponse && healthResponse.ok) {
+        const health = await healthResponse.json();
+        console.log('✅ API Health Check Passed:', health);
+      } else {
+        console.warn('⚠️ API Health Check Failed - backend might be down or misconfigured');
+        
+        // Additional CORS check
+        try {
+          await fetch(`${API_BASE}/api/artworks`, { method: 'HEAD' });
+        } catch (corsError) {
+          if (corsError.name === 'TypeError' && corsError.message.includes('CORS')) {
+            console.error('🚫 CORS Error detected - backend needs to allow frontend origin');
+          }
+        }
+      }
+    } catch (error) {
+      console.error('❌ API Health Check Error:', error);
+    }
+  };
+
+  const fetchHomeData = async (retry = false) => {
     try {
       setLoading(true);
+      setApiError(null);
+      setApiStatus('checking');
       
-      // Fetch latest articles and artworks
+      // Log current configuration for debugging
+      console.log('🔍 API Configuration:', {
+        API_BASE,
+        currentURL: window.location.href,
+        isProduction: window.location.hostname !== 'localhost',
+        retry: retry,
+        retryCount: retryCount
+      });
+      
+      // Check if we're in production but using localhost API
+      if (window.location.hostname !== 'localhost' && API_BASE.includes('localhost')) {
+        console.warn('⚠️ Production deployment is using localhost API! Set REACT_APP_BACKEND_URL in Vercel.');
+        setApiError({
+          type: 'configuration',
+          message: 'Backend URL not configured for production. Using demo data.',
+          details: 'REACT_APP_BACKEND_URL environment variable is missing in Vercel deployment.'
+        });
+      }
+      
+      // Fetch latest articles and artworks with timeout
+      const fetchWithTimeout = (url, timeout = 10000) => {
+        return Promise.race([
+          fetch(url),
+          new Promise((_, reject) => 
+            setTimeout(() => reject(new Error('Request timeout')), timeout)
+          )
+        ]);
+      };
+      
       const [articlesRes, artworksRes] = await Promise.all([
-        fetch(`${API_BASE}/api/articles`),
-        fetch(`${API_BASE}/api/artworks`)
+        fetchWithTimeout(`${API_BASE}/api/articles`),
+        fetchWithTimeout(`${API_BASE}/api/artworks`)
       ]);
+      
+      // Check response status
+      if (!articlesRes.ok || !artworksRes.ok) {
+        throw new Error(`API returned error: Articles ${articlesRes.status}, Artworks ${artworksRes.status}`);
+      }
       
       const articlesData = await articlesRes.json();
       const artworksData = await artworksRes.json();
       
+      console.log('✅ API Response:', {
+        articles: articlesData.articles?.length || 0,
+        artworks: artworksData.artworks?.length || 0
+      });
+      
       setArticles(articlesData.articles?.slice(0, 4) || []);
       setArtworks(artworksData.artworks?.slice(0, 4) || []);
       setTotalArtworks(artworksData.artworks?.length || 0);
+      setApiStatus('connected');
+      setRetryCount(0);
+      
     } catch (error) {
-      console.error('Error fetching home data:', error);
-      // Set sample data for demo
+      console.error('❌ Error fetching home data:', error);
+      
+      // Set detailed error information
+      setApiError({
+        type: error.name,
+        message: error.message,
+        endpoint: API_BASE,
+        timestamp: new Date().toISOString()
+      });
+      
+      // Retry logic
+      if (!retry && retryCount < 2) {
+        console.log('🔄 Retrying API call...');
+        setRetryCount(prev => prev + 1);
+        setTimeout(() => fetchHomeData(true), 2000);
+        return;
+      }
+      
+      // Final fallback to sample data
+      console.log('📦 Using sample data as fallback');
+      setApiStatus('fallback');
       setArticles(generateSampleArticles());
       setArtworks(generateSampleArtworks());
+      
     } finally {
       setLoading(false);
     }
@@ -196,6 +292,45 @@ const Homepage = ({ algorithmState, onStateUpdate }) => {
         )}
       </section>
 
+      {/* API Status Banner */}
+      {apiError && (
+        <motion.div
+          initial={{ y: -50, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          className="bg-yellow-50 border-t-4 border-yellow-400 p-4"
+        >
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center">
+                <AlertCircle className="w-6 h-6 text-yellow-600 mr-3" />
+                <div>
+                  <h3 className="text-sm font-medium text-yellow-800">
+                    {apiError.type === 'configuration' ? 'Configuration Issue' : 'Connection Issue'}
+                  </h3>
+                  <p className="text-sm text-yellow-700 mt-1">{apiError.message}</p>
+                  {apiError.details && (
+                    <p className="text-xs text-yellow-600 mt-1">{apiError.details}</p>
+                  )}
+                  {apiStatus === 'fallback' && (
+                    <p className="text-xs text-yellow-600 mt-1">Currently showing demo content.</p>
+                  )}
+                </div>
+              </div>
+              <button
+                onClick={() => {
+                  setRetryCount(0);
+                  fetchHomeData();
+                }}
+                className="flex items-center px-3 py-1.5 bg-yellow-600 text-white text-sm font-medium rounded hover:bg-yellow-700 transition-colors"
+              >
+                <RefreshCw className="w-4 h-4 mr-1" />
+                Retry
+              </button>
+            </div>
+          </div>
+        </motion.div>
+      )}
+
       {/* Latest Medical Articles Section */}
       <section className="py-20 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -303,6 +438,11 @@ const Homepage = ({ algorithmState, onStateUpdate }) => {
               Each medical article transforms into unique digital art through our proprietary algorithm, 
               creating a visual narrative of medical progress and emotional intelligence.
             </p>
+            {apiStatus === 'fallback' && (
+              <p className="text-sm text-yellow-600 mt-2">
+                (Showing demo artwork - connect to backend for real data)
+              </p>
+            )}
           </motion.div>
 
           {loading ? (
