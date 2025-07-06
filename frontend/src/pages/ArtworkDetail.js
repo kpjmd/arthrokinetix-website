@@ -247,23 +247,15 @@ const ArtworkDetail = () => {
           })}
         </div>
         
-        {/* Enhanced Processing Stats */}
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-4 pt-4 border-t">
+        {/* Key Processing Stats */}
+        <div className="grid grid-cols-3 gap-4 pt-4 border-t">
           <div className="text-center">
             <div className="text-xl font-bold text-primary">{stats.words.toLocaleString()}</div>
-            <div className="text-xs text-gray-500">Words</div>
+            <div className="text-xs text-gray-500">Source Words</div>
           </div>
           <div className="text-center">
             <div className="text-xl font-bold text-secondary">{stats.medicalTerms}</div>
             <div className="text-xs text-gray-500">Medical Terms</div>
-          </div>
-          <div className="text-center">
-            <div className="text-xl font-bold text-healing">{stats.statistics}</div>
-            <div className="text-xs text-gray-500">Statistics</div>
-          </div>
-          <div className="text-center">
-            <div className="text-xl font-bold text-innovation">{stats.citations}</div>
-            <div className="text-xs text-gray-500">Citations</div>
           </div>
           <div className="text-center">
             <div className="text-xl font-bold text-accent">{stats.visualElements}</div>
@@ -683,18 +675,6 @@ const ArtworkDetail = () => {
                 </div>
 
                 <div className="flex justify-between items-center">
-                  <span className="text-gray-600">NFT Status:</span>
-                  <span className={`font-medium ${artwork.nft_status === 'minted' ? 'text-green-600' : 'text-gray-600'}`}>
-                    {artwork.nft_status === 'minted' ? 'Minted' : 'Available'}
-                  </span>
-                </div>
-
-                <div className="flex justify-between items-center">
-                  <span className="text-gray-600">Algorithm Version:</span>
-                  <span className="font-medium">{algorithmDebug?.algorithmVersion || '2.0'}</span>
-                </div>
-
-                <div className="flex justify-between items-center">
                   <span className="text-gray-600">Data Quality:</span>
                   <span className={`font-medium ${
                     algorithmDebug?.dataQuality === 'high' ? 'text-green-600' :
@@ -703,13 +683,6 @@ const ArtworkDetail = () => {
                     {algorithmDebug?.dataQuality?.toUpperCase() || 'UNKNOWN'}
                   </span>
                 </div>
-
-                {artwork.metadata?.signature_id && (
-                  <div className="flex justify-between items-center">
-                    <span className="text-gray-600">Signature ID:</span>
-                    <span className="font-medium text-sm">{artwork.metadata.signature_id}</span>
-                  </div>
-                )}
               </div>
             </motion.div>
 
@@ -786,175 +759,63 @@ const ArtworkDetail = () => {
               <EnhancedMedicalTerms algorithmParameters={artwork.algorithm_parameters} />
             </motion.div>
 
-            {/* Enhanced Statistical & Research Data */}
-            {artwork.algorithm_parameters && (artwork.algorithm_parameters.statistical_data?.length > 0 || artwork.algorithm_parameters.research_citations?.length > 0) && (
-              <motion.div
-                initial={{ x: 50, opacity: 0 }}
-                animate={{ x: 0, opacity: 1 }}
-                transition={{ duration: 0.8, delay: 1.2 }}
-                className="bg-white rounded-xl p-6 shadow-lg"
-              >
-                <h3 className="text-xl font-bold text-primary mb-4">Research Data</h3>
-                
-                <div className="space-y-6">
-                  {/* Statistical Data */}
-                  {artwork.algorithm_parameters.statistical_data?.length > 0 && (
-                    <div>
-                      <h4 className="font-medium text-gray-900 mb-3">Statistical Elements</h4>
-                      <div className="space-y-2">
-                        {artwork.algorithm_parameters.statistical_data.slice(0, 5).map((stat, index) => (
-                          <div key={index} className="flex justify-between items-center p-2 bg-gray-50 rounded">
-                            <span className="text-sm text-gray-600 capitalize">
-                              {stat.type?.replace(/([A-Z])/g, ' $1')}
-                            </span>
-                            <div className="text-right">
-                              <span className="text-sm font-medium text-gray-900">
-                                {typeof stat.value === 'number' ? 
-                                  stat.value < 1 ? stat.value.toFixed(3) : stat.value.toFixed(0) 
-                                  : stat.value}
-                              </span>
-                              <div className="text-xs text-gray-500">
-                                Significance: {((stat.significance || 0) * 100).toFixed(0)}%
-                              </div>
-                            </div>
-                          </div>
-                        ))}
-                        {artwork.algorithm_parameters.statistical_data.length > 5 && (
-                          <div className="text-xs text-gray-500 text-center pt-2">
-                            +{artwork.algorithm_parameters.statistical_data.length - 5} more statistics
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  )}
 
-                  {/* Research Citations */}
-                  {artwork.algorithm_parameters.research_citations?.length > 0 && (
-                    <div>
-                      <h4 className="font-medium text-gray-900 mb-3">Research Citations</h4>
-                      <div className="grid grid-cols-2 gap-4">
-                        <div className="text-center p-3 bg-gray-50 rounded">
-                          <div className="text-lg font-bold text-primary">
-                            {artwork.algorithm_parameters.research_citations.length}
-                          </div>
-                          <div className="text-xs text-gray-600">Total Citations</div>
-                        </div>
-                        <div className="text-center p-3 bg-gray-50 rounded">
-                          <div className="text-lg font-bold text-secondary">
-                            {(artwork.algorithm_parameters.research_citations.reduce((sum, cit) => 
-                              sum + (cit.importance || 0), 0) / 
-                              artwork.algorithm_parameters.research_citations.length * 100
-                            ).toFixed(0)}%
-                          </div>
-                          <div className="text-xs text-gray-600">Avg. Importance</div>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </motion.div>
-            )}
-
-            {/* Algorithm Parameters Visualization */}
+            {/* SVG Metadata Section - Key for collectors */}
             <motion.div
               initial={{ x: 50, opacity: 0 }}
               animate={{ x: 0, opacity: 1 }}
               transition={{ duration: 0.8, delay: 1.4 }}
               className="bg-white rounded-xl p-6 shadow-lg"
             >
-              <h3 className="text-xl font-bold text-primary mb-4">Visual Parameters</h3>
-              
-              <div className="space-y-4">
-                <div>
-                  <div className="flex justify-between items-center mb-2">
-                    <span className="text-gray-600">Tree Complexity:</span>
-                    <span className="font-medium">
-                      {Math.round((artwork.algorithm_parameters?.tree_complexity || artwork.algorithm_parameters?.evidence_strength || 0.5) * 100)}%
-                    </span>
-                  </div>
-                  <div className="h-2 bg-gray-200 rounded">
-                    <div 
-                      className="h-full bg-gradient-to-r from-secondary to-primary rounded"
-                      style={{ width: `${(artwork.algorithm_parameters?.tree_complexity || artwork.algorithm_parameters?.evidence_strength || 0.5) * 100}%` }}
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <div className="flex justify-between items-center mb-2">
-                    <span className="text-gray-600">Emotional Intensity:</span>
-                    <span className="font-medium">
-                      {Math.round((artwork.algorithm_parameters?.emotional_intensity || 0.5) * 100)}%
-                    </span>
-                  </div>
-                  <div className="h-2 bg-gray-200 rounded">
-                    <div 
-                      className="h-full bg-gradient-to-r from-healing to-innovation rounded"
-                      style={{ width: `${(artwork.algorithm_parameters?.emotional_intensity || 0.5) * 100}%` }}
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <div className="flex justify-between items-center mb-2">
-                    <span className="text-gray-600">Data Richness:</span>
-                    <span className="font-medium">
-                      {Math.round((artwork.algorithm_parameters?.data_complexity || artwork.algorithm_parameters?.technical_density || 0.5) * 100)}%
-                    </span>
-                  </div>
-                  <div className="h-2 bg-gray-200 rounded">
-                    <div 
-                      className="h-full bg-gradient-to-r from-accent to-success rounded"
-                      style={{ width: `${(artwork.algorithm_parameters?.data_complexity || artwork.algorithm_parameters?.technical_density || 0.5) * 100}%` }}
-                    />
-                  </div>
-                </div>
-              </div>
-            </motion.div>
-
-            {/* NFT Minting Section */}
-            <motion.div
-              initial={{ x: 50, opacity: 0 }}
-              animate={{ x: 0, opacity: 1 }}
-              transition={{ duration: 0.8, delay: 1.6 }}
-              className="bg-white rounded-xl p-6 shadow-lg"
-            >
-              <h3 className="text-xl font-bold text-primary mb-4">NFT Information</h3>
+              <h3 className="text-xl font-bold text-primary mb-4">SVG Metadata</h3>
               
               <div className="space-y-4">
                 <div className="flex justify-between items-center">
-                  <span className="text-gray-600">Current Status:</span>
-                  <span className={`font-medium ${artwork.nft_status === 'minted' ? 'text-green-600' : 'text-blue-600'}`}>
-                    {artwork.nft_status === 'minted' ? 'Already Minted' : 'Available for Minting'}
+                  <span className="text-gray-600">Signature ID:</span>
+                  <span className="font-mono text-sm text-gray-900">
+                    {artwork.metadata?.signature_id || 'Not Available'}
                   </span>
                 </div>
 
-                {artwork.metadata?.rarity_score && (
-                  <div className="flex justify-between items-center">
-                    <span className="text-gray-600">Rarity Tier:</span>
-                    <span className="font-medium">
-                      {artwork.metadata.rarity_score >= 0.8 ? 'Legendary' :
-                       artwork.metadata.rarity_score >= 0.6 ? 'Rare' :
-                       artwork.metadata.rarity_score >= 0.3 ? 'Uncommon' : 'Common'}
-                    </span>
-                  </div>
-                )}
-
-                {algorithmDebug && (
-                  <div className="flex justify-between items-center">
-                    <span className="text-gray-600">Algorithm Quality:</span>
-                    <span className={`font-medium ${
-                      algorithmDebug.isManualAlgorithm ? 'text-green-600' : 'text-yellow-600'
-                    }`}>
-                      {algorithmDebug.isManualAlgorithm ? 'Enhanced v2.0' : 'Standard v1.0'}
-                    </span>
-                  </div>
-                )}
-
-                <div className="pt-4 border-t">
-                  {/* NFT Information Panel */}
-                  <NFTInfoPanel artwork={artwork} />
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-600">Generation Method:</span>
+                  <span className="font-medium">
+                    {algorithmDebug?.isManualAlgorithm ? 'Enhanced Algorithm v2.0' : 'Standard Algorithm v1.0'}
+                  </span>
                 </div>
+
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-600">Visual Elements:</span>
+                  <span className="font-medium">
+                    {artwork.algorithm_parameters?.visual_elements?.length || 0} components
+                  </span>
+                </div>
+
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-600">Data Quality Score:</span>
+                  <span className="font-medium">
+                    {algorithmDebug?.completenessScore || 0}/{algorithmDebug?.maxScore || 4}
+                  </span>
+                </div>
+
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-600">Rarity Classification:</span>
+                  <span className="font-medium">
+                    {artwork.metadata?.rarity_score >= 0.8 ? 'Legendary' :
+                     artwork.metadata?.rarity_score >= 0.6 ? 'Rare' :
+                     artwork.metadata?.rarity_score >= 0.3 ? 'Uncommon' : 'Common'}
+                     {artwork.metadata?.rarity_score ? ` (${Math.round(artwork.metadata.rarity_score * 100)}%)` : ''}
+                  </span>
+                </div>
+
+                {artwork.algorithm_parameters?.processing_timestamp && (
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-600">Generated:</span>
+                    <span className="text-sm text-gray-900">
+                      {new Date(artwork.algorithm_parameters.processing_timestamp).toLocaleDateString()}
+                    </span>
+                  </div>
+                )}
               </div>
             </motion.div>
           </div>

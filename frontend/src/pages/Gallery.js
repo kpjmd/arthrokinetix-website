@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Palette, Filter, Grid, Search, Star, Eye, Zap, AlertCircle, CheckCircle, RefreshCw } from 'lucide-react';
@@ -9,6 +9,161 @@ import RealArthrokinetixArtwork from '../components/RealArthrokinetixArtwork';
 import { useArtworks } from '../hooks/useApi';
 
 const API_BASE = process.env.REACT_APP_BACKEND_URL || 'http://localhost:8001';
+
+// Memoized ArtworkCard component to prevent unnecessary re-renders
+const ArtworkCard = React.memo(({ artwork, index, dataQuality }) => {
+  const [isVisible, setIsVisible] = useState(false);
+  const [cardRef, setCardRef] = useState(null);
+
+  // Intersection Observer for lazy loading
+  useEffect(() => {
+    if (!cardRef) return;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setIsVisible(true);
+          observer.disconnect();
+        }
+      },
+      { threshold: 0.1 }
+    );
+
+    observer.observe(cardRef);
+    return () => observer.disconnect();
+  }, [cardRef]);
+
+  return (
+    <motion.div
+      ref={setCardRef}
+      key={artwork.id}
+      initial={{ y: 50, opacity: 0 }}
+      animate={{ y: 0, opacity: 1 }}
+      transition={{ duration: 0.5, delay: index * 0.05 }} // Reduced delay for better performance
+      className="artwork-item group cursor-pointer"
+      whileHover={{ y: -8 }}
+    >
+      {/* Artwork Preview */}
+      <div className="artwork-preview relative overflow-hidden">
+        {/* Only render artwork if visible */}
+        {isVisible ? (
+          <RealArthrokinetixArtwork 
+            artwork={artwork} 
+            width={window.innerWidth <= 768 ? 250 : 300} 
+            height={window.innerWidth <= 768 ? 250 : 300}
+          />
+        ) : (
+          <div className="w-full h-full bg-gradient-to-br from-gray-200 to-gray-300 flex items-center justify-center">
+            <div className="text-gray-400 text-sm">Loading...</div>
+          </div>
+        )}
+
+        {/* Data Quality Indicator */}
+        <div className="absolute top-3 left-3">
+          <div className={`w-3 h-3 rounded-full ${
+            dataQuality.isManualAlgorithm 
+              ? 'bg-green-400' 
+              : 'bg-yellow-400'
+          }`} title={`${dataQuality.isManualAlgorithm ? 'Manual Algorithm' : 'Sample Data'} - Quality Score: ${dataQuality.score}/4`} />
+        </div>
+
+        {/* Hover overlay with functional View Details link */}
+        <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
+          <Link 
+            to={`/gallery/${artwork.id}`}
+            className="text-white text-center hover:scale-105 transition-transform"
+          >
+            <Eye className="w-8 h-8 mx-auto mb-2" />
+            <p className="text-sm font-medium">View Details</p>
+          </Link>
+        </div>
+
+        {/* Rarity indicator */}
+        {artwork.metadata?.rarity_score > 0.7 && (
+          <div className="absolute top-3 right-3">
+            <motion.div
+              animate={{ rotate: 360 }}
+              transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
+              className="w-8 h-8 bg-innovation text-white rounded-full flex items-center justify-center"
+            >
+              <Star className="w-4 h-4" />
+            </motion.div>
+          </div>
+        )}
+      </div>
+
+      {/* Artwork Info */}
+      <div className="p-6">
+        <h3 className="font-semibold text-lg text-primary mb-2 line-clamp-2">
+          {artwork.title}
+        </h3>
+        
+        <div className="flex items-center justify-between text-sm text-gray-500 mb-4">
+          <span className="capitalize">{artwork.subspecialty?.replace(/([A-Z])/g, ' $1')}</span>
+          <span>{formatDate(artwork.created_date)}</span>
+        </div>
+
+        <div className="space-y-3">
+          <div className="flex justify-between items-center">
+            <span className="text-sm text-gray-500">Emotion:</span>
+            <span 
+              className="text-sm font-medium capitalize"
+              style={{ color: getEmotionColorLocal(artwork.dominant_emotion) }}
+            >
+              {artwork.dominant_emotion}
+            </span>
+          </div>
+
+          <div className="flex justify-between items-center">
+            <span className="text-sm text-gray-500">Algorithm:</span>
+            <span className={`text-sm font-medium ${
+              dataQuality.isManualAlgorithm ? 'text-green-600' : 'text-yellow-600'
+            }`}>
+              {dataQuality.isManualAlgorithm ? 'Enhanced v2.0' : 'Sample v1.0'}
+            </span>
+          </div>
+
+          <div className="flex justify-between items-center">
+            <span className="text-sm text-gray-500">Rarity:</span>
+            <span className="text-sm font-medium">
+              {getRarityLabel(artwork.metadata?.rarity_score)}
+            </span>
+          </div>
+
+          {/* Data Quality Details */}
+          <div className="flex justify-between items-center">
+            <span className="text-sm text-gray-500">Data Quality:</span>
+            <span className="text-sm font-medium">
+              {dataQuality.score}/4 components
+            </span>
+          </div>
+        </div>
+
+        <div className="flex gap-2 mt-6">
+          <Link 
+            to={`/gallery/${artwork.id}`}
+            className="btn-primary flex-1 text-center text-sm py-2"
+          >
+            <Eye className="w-4 h-4 mr-2" />
+            View
+          </Link>
+          
+          <ShareButtons 
+            content={artwork} 
+            type="artwork"
+            className="text-sm py-2 px-3 border border-gray-300"
+          />
+          
+          <NFTMintButton 
+            artwork={artwork}
+            size="small"
+            className="text-sm py-2 px-3"
+          />
+        </div>
+      </div>
+    </motion.div>
+  );
+});
 
 const Gallery = ({ algorithmState }) => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -79,7 +234,15 @@ const Gallery = ({ algorithmState }) => {
       const hasEnhancedData = params.medical_terms && Object.keys(params.medical_terms).length > 0;
       const algorithmVersion = params.algorithm_version || artwork.metadata?.algorithm_version;
       
-      if (hasEmotionalJourney && hasEnhancedData && algorithmVersion?.includes('manual')) {
+      // Fix: Check for manual algorithm indicators more comprehensively
+      const isManualAlgorithm = hasEmotionalJourney && hasEnhancedData && (
+        algorithmVersion?.includes('manual') || 
+        algorithmVersion?.includes('2.0') || 
+        algorithmVersion?.includes('enhanced') ||
+        params.statistical_data?.length > 0
+      );
+      
+      if (isManualAlgorithm) {
         manualCount++;
       } else {
         fallbackCount++;
@@ -101,30 +264,41 @@ const Gallery = ({ algorithmState }) => {
       hasEmotionalJourney,
       hasEnhancedMedicalTerms,
       hasStatisticalData,
-      algorithmVersion?.includes('manual') || algorithmVersion?.includes('2.0')
+      algorithmVersion?.includes('manual') || algorithmVersion?.includes('2.0') || algorithmVersion?.includes('enhanced')
     ].filter(Boolean).length;
+    
+    // Fix: Use consistent logic for manual algorithm detection
+    const isManualAlgorithm = hasEmotionalJourney && hasEnhancedMedicalTerms && (
+      algorithmVersion?.includes('manual') || 
+      algorithmVersion?.includes('2.0') || 
+      algorithmVersion?.includes('enhanced') ||
+      hasStatisticalData
+    );
     
     return {
       score: qualityScore,
-      isManualAlgorithm: hasEmotionalJourney && hasEnhancedMedicalTerms,
+      isManualAlgorithm: isManualAlgorithm,
       hasCompleteData: qualityScore >= 3,
       algorithmVersion: algorithmVersion || 'unknown'
     };
   };
 
-  const filteredArtworks = artworks.filter(artwork => {
-    const matchesSearch = artwork.title.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesEmotion = selectedEmotion === 'all' || artwork.dominant_emotion === selectedEmotion;
-    
-    let matchesRarity = true;
-    if (selectedRarity !== 'all') {
-      const rarityLevel = rarityLevels.find(r => r.key === selectedRarity);
-      const artworkRarity = artwork.metadata?.rarity_score || 0;
-      matchesRarity = artworkRarity >= rarityLevel.min && artworkRarity < rarityLevel.max;
-    }
+  // Memoize filtered artworks to prevent unnecessary recalculations
+  const filteredArtworks = useMemo(() => {
+    return artworks.filter(artwork => {
+      const matchesSearch = artwork.title.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesEmotion = selectedEmotion === 'all' || artwork.dominant_emotion === selectedEmotion;
+      
+      let matchesRarity = true;
+      if (selectedRarity !== 'all') {
+        const rarityLevel = rarityLevels.find(r => r.key === selectedRarity);
+        const artworkRarity = artwork.metadata?.rarity_score || 0;
+        matchesRarity = artworkRarity >= rarityLevel.min && artworkRarity < rarityLevel.max;
+      }
 
-    return matchesSearch && matchesEmotion && matchesRarity;
-  });
+      return matchesSearch && matchesEmotion && matchesRarity;
+    });
+  }, [artworks, searchTerm, selectedEmotion, selectedRarity, rarityLevels]);
 
   const handleMintNFT = (artworkId) => {
     // Placeholder for future Manifold integration
@@ -254,11 +428,15 @@ const Gallery = ({ algorithmState }) => {
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-4">
             <p className="text-gray-600">
-              {loading ? 'Loading...' : `${filteredArtworks.length} artworks found`}
+              {loading ? 'Loading...' : 
+                searchTerm || selectedEmotion !== 'all' || selectedRarity !== 'all' || selectedSubspecialty !== 'all' 
+                  ? `${filteredArtworks.length} of ${artworks.length} artworks found`
+                  : `${artworks.length} artworks available`
+              }
             </p>
             
             {/* Algorithm quality indicator */}
-            {!loading && filteredArtworks.length > 0 && (
+            {!loading && artworks.length > 0 && (
               <div className="text-sm text-gray-500">
                 ({dataQuality.manual} enhanced, {dataQuality.fallback} samples)
               </div>
@@ -306,134 +484,12 @@ const Gallery = ({ algorithmState }) => {
               const dataQuality = getArtworkDataQuality(artwork);
               
               return (
-                <motion.div
+                <ArtworkCard
                   key={artwork.id}
-                  initial={{ y: 50, opacity: 0 }}
-                  animate={{ y: 0, opacity: 1 }}
-                  transition={{ duration: 0.5, delay: index * 0.1 }}
-                  className="artwork-item group cursor-pointer"
-                  whileHover={{ y: -8 }}
-                >
-                  {/* Artwork Preview */}
-                  <div className="artwork-preview relative overflow-hidden">
-                    {/* Enhanced Real Algorithm Component */}
-                    <RealArthrokinetixArtwork 
-                      artwork={artwork} 
-                      width={window.innerWidth <= 768 ? 250 : 300} 
-                      height={window.innerWidth <= 768 ? 250 : 300}
-                    />
-
-                    {/* Data Quality Indicator */}
-                    <div className="absolute top-3 left-3">
-                      <div className={`w-3 h-3 rounded-full ${
-                        dataQuality.isManualAlgorithm 
-                          ? 'bg-green-400' 
-                          : 'bg-yellow-400'
-                      }`} title={`${dataQuality.isManualAlgorithm ? 'Manual Algorithm' : 'Sample Data'} - Quality Score: ${dataQuality.score}/4`} />
-                    </div>
-
-                    {/* Hover overlay with functional View Details link */}
-                    <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
-                      <Link 
-                        to={`/gallery/${artwork.id}`}
-                        className="text-white text-center hover:scale-105 transition-transform"
-                      >
-                        <Eye className="w-8 h-8 mx-auto mb-2" />
-                        <p className="text-sm font-medium">View Details</p>
-                      </Link>
-                    </div>
-
-                    {/* Rarity indicator */}
-                    {artwork.metadata?.rarity_score > 0.7 && (
-                      <div className="absolute top-3 right-3">
-                        <motion.div
-                          animate={{ rotate: 360 }}
-                          transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
-                          className="w-8 h-8 bg-innovation text-white rounded-full flex items-center justify-center"
-                        >
-                          <Star className="w-4 h-4" />
-                        </motion.div>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Artwork Info */}
-                  <div className="p-6">
-                    <h3 className="font-semibold text-lg text-primary mb-2 line-clamp-2">
-                      {artwork.title}
-                    </h3>
-                    
-                    <div className="flex items-center justify-between text-sm text-gray-500 mb-4">
-                      <span className="capitalize">{artwork.subspecialty?.replace(/([A-Z])/g, ' $1')}</span>
-                      <span>{formatDate(artwork.created_date)}</span>
-                    </div>
-
-                    <div className="space-y-3">
-                      <div className="flex justify-between items-center">
-                        <span className="text-sm text-gray-500">Emotion:</span>
-                        <span 
-                          className="text-sm font-medium capitalize"
-                          style={{ color: getEmotionColorLocal(artwork.dominant_emotion) }}
-                        >
-                          {artwork.dominant_emotion}
-                        </span>
-                      </div>
-
-                      <div className="flex justify-between items-center">
-                        <span className="text-sm text-gray-500">Algorithm:</span>
-                        <span className={`text-sm font-medium ${
-                          dataQuality.isManualAlgorithm ? 'text-green-600' : 'text-yellow-600'
-                        }`}>
-                          {dataQuality.isManualAlgorithm ? 'Enhanced v2.0' : 'Sample v1.0'}
-                        </span>
-                      </div>
-
-                      <div className="flex justify-between items-center">
-                        <span className="text-sm text-gray-500">Rarity:</span>
-                        <span className="text-sm font-medium">
-                          {getRarityLabel(artwork.metadata?.rarity_score)}
-                        </span>
-                      </div>
-
-                      <div className="flex justify-between items-center">
-                        <span className="text-sm text-gray-500">NFT Status:</span>
-                        <span className={`text-sm font-medium ${artwork.nft_status === 'minted' ? 'text-green-600' : 'text-gray-600'}`}>
-                          {artwork.nft_status === 'minted' ? 'Minted' : 'Available'}
-                        </span>
-                      </div>
-
-                      {/* Data Quality Details */}
-                      <div className="flex justify-between items-center">
-                        <span className="text-sm text-gray-500">Data Quality:</span>
-                        <span className="text-sm font-medium">
-                          {dataQuality.score}/4 components
-                        </span>
-                      </div>
-                    </div>
-
-                    <div className="flex gap-2 mt-6">
-                      <Link 
-                        to={`/gallery/${artwork.id}`}
-                        className="btn-primary flex-1 text-center text-sm py-2"
-                      >
-                        <Eye className="w-4 h-4 mr-2" />
-                        View
-                      </Link>
-                      
-                      <ShareButtons 
-                        content={artwork} 
-                        type="artwork"
-                        className="text-sm py-2 px-3 border border-gray-300"
-                      />
-                      
-                      <NFTMintButton 
-                        artwork={artwork}
-                        size="small"
-                        className="text-sm py-2 px-3"
-                      />
-                    </div>
-                  </div>
-                </motion.div>
+                  artwork={artwork}
+                  index={index}
+                  dataQuality={dataQuality}
+                />
               );
             })}
           </div>
