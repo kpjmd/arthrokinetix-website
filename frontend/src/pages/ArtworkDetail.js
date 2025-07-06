@@ -20,6 +20,18 @@ const ArtworkDetail = () => {
     fetchArtwork();
   }, [id]);
 
+  // Handle ESC key for fullscreen
+  useEffect(() => {
+    const handleEscape = (e) => {
+      if (e.key === 'Escape' && fullscreen) {
+        setFullscreen(false);
+      }
+    };
+
+    document.addEventListener('keydown', handleEscape);
+    return () => document.removeEventListener('keydown', handleEscape);
+  }, [fullscreen]);
+
   const fetchArtwork = async () => {
     try {
       setLoading(true);
@@ -600,12 +612,14 @@ const ArtworkDetail = () => {
               transition={{ duration: 0.8 }}
               className="bg-white rounded-xl p-8 shadow-lg"
             >
-              <div className="aspect-square bg-gradient-to-br from-gray-100 to-gray-200 rounded-lg overflow-hidden mb-6 p-4">
-                <RealArthrokinetixArtwork 
-                  artwork={artwork} 
-                  width={400} 
-                  height={400}
-                />
+              <div className="w-full max-w-2xl mx-auto bg-gradient-to-br from-gray-100 to-gray-200 rounded-lg overflow-hidden mb-6 p-4">
+                <div className="w-full flex items-center justify-center">
+                  <RealArthrokinetixArtwork 
+                    artwork={artwork} 
+                    width={Math.min(window.innerWidth - 100, 500)} 
+                    height={Math.min(window.innerWidth - 100, 500)}
+                  />
+                </div>
               </div>
               
               <div className="text-center">
@@ -956,11 +970,11 @@ const ArtworkDetail = () => {
           className="fixed inset-0 bg-black bg-opacity-90 z-50 flex items-center justify-center p-4"
           onClick={() => setFullscreen(false)}
         >
-          <div className="max-w-4xl w-full aspect-square bg-white rounded-lg overflow-hidden">
+          <div className="w-full h-full flex items-center justify-center">
             <RealArthrokinetixArtwork 
               artwork={artwork} 
-              width={600} 
-              height={600}
+              width={Math.min(window.innerWidth - 50, window.innerHeight - 50)} 
+              height={Math.min(window.innerWidth - 50, window.innerHeight - 50)}
             />
           </div>
           <button

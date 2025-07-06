@@ -6,19 +6,35 @@ import ShareButtons from '../components/ShareButtons';
 import NFTMintButton from '../components/NFTMintButton';
 import { GalleryNewsletterForm } from '../components/NewsletterForms';
 import RealArthrokinetixArtwork from '../components/RealArthrokinetixArtwork';
+import { useArtworks } from '../hooks/useApi';
 
 const API_BASE = process.env.REACT_APP_BACKEND_URL || 'http://localhost:8001';
 
 const Gallery = ({ algorithmState }) => {
-  const [artworks, setArtworks] = useState([]);
-  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedSubspecialty, setSelectedSubspecialty] = useState('all');
   const [selectedEmotion, setSelectedEmotion] = useState('all');
   const [selectedRarity, setSelectedRarity] = useState('all');
   const [dataQuality, setDataQuality] = useState({ manual: 0, fallback: 0 });
-  const [apiError, setApiError] = useState(null);
-  const [apiStatus, setApiStatus] = useState('checking');
+  
+  // Use React Query for data fetching
+  const { 
+    data: artworksData, 
+    isLoading: loading, 
+    error: apiError, 
+    isError,
+    refetch 
+  } = useArtworks(selectedSubspecialty, 1, 50);
+  
+  // Extract artworks from the response or use fallback data
+  const artworks = artworksData?.artworks || (isError ? generateSampleArtworks() : []);
+  
+  // Analyze data quality when artworks change
+  useEffect(() => {
+    if (artworks.length > 0) {
+      analyzeDataQuality(artworks);
+    }
+  }, [artworks]);
 
   const subspecialties = [
     { key: 'all', label: 'All Subspecialties' },
@@ -51,66 +67,7 @@ const Gallery = ({ algorithmState }) => {
     { key: 'legendary', label: 'Legendary (80%+)', min: 0.8, max: 1 }
   ];
 
-  useEffect(() => {
-    fetchArtworks();
-  }, [selectedSubspecialty]);
 
-  const fetchArtworks = async () => {
-    try {
-      setLoading(true);
-      setApiError(null);
-      setApiStatus('checking');
-      
-      const url = selectedSubspecialty === 'all' 
-        ? `${API_BASE}/api/artworks`
-        : `${API_BASE}/api/artworks?subspecialty=${selectedSubspecialty}`;
-      
-      console.log('🎨 Fetching artworks from:', url);
-      
-      // Check production configuration
-      if (window.location.hostname !== 'localhost' && API_BASE.includes('localhost')) {
-        console.warn('⚠️ Production deployment is using localhost API!');
-        setApiError({
-          type: 'configuration',
-          message: 'Backend URL not configured. Please set REACT_APP_BACKEND_URL in Vercel.',
-          details: `Expected: Railway backend URL, Got: ${API_BASE}`
-        });
-      }
-      
-      const response = await fetch(url);
-      
-      if (!response.ok) {
-        throw new Error(`API returned ${response.status}: ${response.statusText}`);
-      }
-      
-      const data = await response.json();
-      console.log('📦 Received artworks data:', data);
-      
-      const fetchedArtworks = data.artworks || [];
-      setArtworks(fetchedArtworks);
-      setApiStatus('connected');
-      
-      // Analyze data quality
-      analyzeDataQuality(fetchedArtworks);
-      
-    } catch (error) {
-      console.error('❌ Error fetching artworks:', error);
-      
-      setApiError({
-        type: error.name,
-        message: error.message,
-        endpoint: API_BASE
-      });
-      
-      console.log('🔄 Using sample data as fallback');
-      setApiStatus('fallback');
-      const sampleArtworks = generateSampleArtworks();
-      setArtworks(sampleArtworks);
-      analyzeDataQuality(sampleArtworks);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const analyzeDataQuality = (artworkList) => {
     let manualCount = 0;
@@ -213,7 +170,7 @@ const Gallery = ({ algorithmState }) => {
       </section>
 
       {/* API Error Banner */}
-      {apiError && (
+      {isError && (
         <motion.div
           initial={{ y: -50, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
@@ -224,14 +181,12 @@ const Gallery = ({ algorithmState }) => {
               <div className="flex items-center">
                 <AlertCircle className="w-5 h-5 text-yellow-600 mr-2 flex-shrink-0" />
                 <div className="text-sm">
-                  <span className="font-medium text-yellow-800">{apiError.message}</span>
-                  {apiError.details && (
-                    <span className="text-yellow-700 ml-2">({apiError.details})</span>
-                  )}
+                  <span className="font-medium text-yellow-800">{apiError?.message || 'Failed to fetch artworks'}</span>
+                  <span className="text-yellow-700 ml-2">(Using sample data)</span>
                 </div>
               </div>
               <button
-                onClick={fetchArtworks}
+                onClick={refetch}
                 className="flex items-center px-2 py-1 bg-yellow-600 text-white text-sm font-medium rounded hover:bg-yellow-700 transition-colors"
               >
                 <RefreshCw className="w-3 h-3 mr-1" />
@@ -329,7 +284,20 @@ const Gallery = ({ algorithmState }) => {
         {loading ? (
           <div className="artwork-grid">
             {Array.from({ length: 8 }).map((_, index) => (
-              <div key={index} className="loading-skeleton h-80 rounded-lg" />
+              <div key={index} className="artwork-item bg-white rounded-xl overflow-hidden shadow-lg animate-pulse">
+                <div className="artwork-preview bg-gradient-to-br from-gray-200 to-gray-300">
+                  <div className="w-full h-full bg-gray-300"></div>
+                </div>
+                <div className="p-6">
+                  <div className="h-4 bg-gray-300 rounded mb-2"></div>
+                  <div className="h-3 bg-gray-200 rounded mb-1"></div>
+                  <div className="h-3 bg-gray-200 rounded w-3/4 mb-2"></div>
+                  <div className="flex gap-2 mt-4">
+                    <div className="h-8 bg-gray-200 rounded flex-1"></div>
+                    <div className="h-8 bg-gray-200 rounded w-20"></div>
+                  </div>
+                </div>
+              </div>
             ))}
           </div>
         ) : (
@@ -351,8 +319,8 @@ const Gallery = ({ algorithmState }) => {
                     {/* Enhanced Real Algorithm Component */}
                     <RealArthrokinetixArtwork 
                       artwork={artwork} 
-                      width={300} 
-                      height={300}
+                      width={window.innerWidth <= 768 ? 250 : 300} 
+                      height={window.innerWidth <= 768 ? 250 : 300}
                     />
 
                     {/* Data Quality Indicator */}

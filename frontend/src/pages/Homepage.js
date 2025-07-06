@@ -6,6 +6,7 @@ import EmotionalSignature from '../components/EmotionalSignature';
 import ShareButtons from '../components/ShareButtons';
 import { HeroNewsletterForm } from '../components/NewsletterForms';
 import SEOHead from '../components/SEOHead';
+import RealArthrokinetixArtwork from '../components/RealArthrokinetixArtwork';
 
 const API_BASE = process.env.REACT_APP_BACKEND_URL || 'http://localhost:8001';
 
@@ -77,6 +78,20 @@ const Homepage = ({ algorithmState, onStateUpdate }) => {
           message: 'Backend URL not configured for production. Using demo data.',
           details: 'REACT_APP_BACKEND_URL environment variable is missing in Vercel deployment.'
         });
+        // Return early to avoid API call with localhost URL in production
+        setApiStatus('fallback');
+        const configSampleArticles = generateSampleArticles();
+        const configSampleArtworks = generateSampleArtworks();
+        
+        console.log('🎨 Homepage Config Fallback Data:', {
+          source: 'CONFIG_ERROR',
+          reason: 'localhost URL in production',
+          count: configSampleArtworks.length
+        });
+        
+        setArticles(configSampleArticles);
+        setArtworks(configSampleArtworks);
+        return;
       }
       
       // Fetch latest articles and artworks with timeout
@@ -107,8 +122,20 @@ const Homepage = ({ algorithmState, onStateUpdate }) => {
         artworks: artworksData.artworks?.length || 0
       });
       
-      setArticles(articlesData.articles?.slice(0, 4) || []);
-      setArtworks(artworksData.artworks?.slice(0, 4) || []);
+      const fetchedArticles = articlesData.articles?.slice(0, 4) || [];
+      const fetchedArtworks = artworksData.artworks?.slice(0, 4) || [];
+      
+      // Debug logging for artwork data
+      console.log('🎨 Homepage Artwork Data:', {
+        source: 'API',
+        count: fetchedArtworks.length,
+        hasAlgorithmParams: fetchedArtworks.map(a => !!a.algorithm_parameters),
+        artworkIds: fetchedArtworks.map(a => a.id),
+        sampleArtwork: fetchedArtworks[0]
+      });
+      
+      setArticles(fetchedArticles);
+      setArtworks(fetchedArtworks);
       setTotalArtworks(artworksData.artworks?.length || 0);
       setApiStatus('connected');
       setRetryCount(0);
@@ -135,8 +162,20 @@ const Homepage = ({ algorithmState, onStateUpdate }) => {
       // Final fallback to sample data
       console.log('📦 Using sample data as fallback');
       setApiStatus('fallback');
-      setArticles(generateSampleArticles());
-      setArtworks(generateSampleArtworks());
+      const sampleArticles = generateSampleArticles();
+      const sampleArtworks = generateSampleArtworks();
+      
+      // Debug logging for sample data
+      console.log('🎨 Homepage Sample Data:', {
+        source: 'FALLBACK',
+        count: sampleArtworks.length,
+        hasAlgorithmParams: sampleArtworks.map(a => !!a.algorithm_parameters),
+        artworkIds: sampleArtworks.map(a => a.id),
+        sampleArtwork: sampleArtworks[0]
+      });
+      
+      setArticles(sampleArticles);
+      setArtworks(sampleArtworks);
       
     } finally {
       setLoading(false);
@@ -463,20 +502,12 @@ const Homepage = ({ algorithmState, onStateUpdate }) => {
                   className="artwork-item group"
                 >
                   <div className="artwork-preview relative overflow-hidden">
-                    {/* Simple placeholder art representation */}
-                    <div 
-                      className="w-full h-full rounded-lg"
-                      style={{ background: getArtworkBackground(artwork.dominant_emotion) }}
-                    >
-                      <div className="absolute inset-0 flex items-center justify-center">
-                        <div 
-                          className="w-32 h-32 rounded-full border-4 flex items-center justify-center text-2xl font-bold text-white shadow-lg"
-                          style={{ borderColor: getEmotionColor(artwork.dominant_emotion) }}
-                        >
-                          {getEmotionSymbol(artwork.dominant_emotion)}
-                        </div>
-                      </div>
-                    </div>
+                    {/* Real Algorithmic Artwork Component */}
+                    <RealArthrokinetixArtwork 
+                      artwork={artwork} 
+                      width={300} 
+                      height={300}
+                    />
 
                     {/* Hover overlay */}
                     <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
@@ -742,26 +773,198 @@ const generateSampleArtworks = () => [
   {
     id: '1',
     title: 'Algorithmic Synthesis #AKX-2024-0301-A1B2',
+    subspecialty: 'shoulderElbow',
     dominant_emotion: 'confidence',
-    created_date: '2024-03-01'
+    created_date: '2024-03-01',
+    algorithm_parameters: {
+      algorithm_version: '2.0-sample-enhanced',
+      evidence_strength: 0.85,
+      technical_density: 0.78,
+      subspecialty: 'shoulderElbow',
+      dominant_emotion: 'confidence',
+      emotional_journey: {
+        problemIntensity: 120,
+        solutionConfidence: 850,
+        innovationLevel: 340,
+        healingPotential: 760,
+        uncertaintyLevel: 180,
+        dominantEmotion: 'confidence'
+      },
+      emotional_mix: {
+        hope: 0.76,
+        confidence: 0.85,
+        healing: 0.76,
+        breakthrough: 0.34,
+        tension: 0.12,
+        uncertainty: 0.18
+      },
+      medical_terms: {
+        procedures: {
+          "tenotomy": { count: 8, weight: 1.0, significance: 8.0 },
+          "arthroscopy": { count: 6, weight: 1.0, significance: 6.0 }
+        },
+        anatomy: {
+          "shoulder": { count: 15, weight: 0.8, significance: 12.0 },
+          "biceps": { count: 18, weight: 0.8, significance: 14.4 }
+        }
+      },
+      visual_elements: [
+        { type: 'andryRoot', x: 400, y: 640, angle: 225, length: 60, thickness: 4, color: '#3498db' },
+        { type: 'healingParticle', x: 350, y: 200, size: 6, color: '#16a085' }
+      ]
+    },
+    metadata: { 
+      rarity_score: 0.84,
+      algorithm_version: '2.0-sample-enhanced',
+      signature_id: 'AKX-2024-0301-A1B2'
+    }
   },
   {
     id: '2',
     title: 'Algorithmic Synthesis #AKX-2024-0228-C3D4',
+    subspecialty: 'sportsMedicine',
     dominant_emotion: 'breakthrough',
-    created_date: '2024-02-28'
+    created_date: '2024-02-28',
+    algorithm_parameters: {
+      algorithm_version: '2.0-sample-enhanced',
+      evidence_strength: 0.92,
+      technical_density: 0.88,
+      subspecialty: 'sportsMedicine',
+      dominant_emotion: 'breakthrough',
+      emotional_journey: {
+        problemIntensity: 80,
+        solutionConfidence: 820,
+        innovationLevel: 920,
+        healingPotential: 840,
+        uncertaintyLevel: 90,
+        dominantEmotion: 'breakthrough'
+      },
+      emotional_mix: {
+        hope: 0.84,
+        confidence: 0.82,
+        healing: 0.84,
+        breakthrough: 0.92,
+        tension: 0.08,
+        uncertainty: 0.09
+      },
+      medical_terms: {
+        procedures: {
+          "reconstruction": { count: 15, weight: 1.0, significance: 15.0 },
+          "repair": { count: 20, weight: 1.0, significance: 20.0 }
+        },
+        anatomy: {
+          "acl": { count: 25, weight: 0.8, significance: 20.0 },
+          "meniscus": { count: 18, weight: 0.8, significance: 14.4 }
+        }
+      },
+      visual_elements: [
+        { type: 'andryRoot', x: 400, y: 640, angle: 200, length: 70, thickness: 6, color: '#f39c12' },
+        { type: 'healingParticle', x: 300, y: 150, size: 10, color: '#f39c12' }
+      ]
+    },
+    metadata: { 
+      rarity_score: 0.95,
+      algorithm_version: '2.0-sample-enhanced',
+      signature_id: 'AKX-2024-0228-C3D4'
+    }
   },
   {
     id: '3',
     title: 'Algorithmic Synthesis #AKX-2024-0225-E5F6',
+    subspecialty: 'jointReplacement',
     dominant_emotion: 'healing',
-    created_date: '2024-02-25'
+    created_date: '2024-02-25',
+    algorithm_parameters: {
+      algorithm_version: '2.0-sample-enhanced',
+      evidence_strength: 0.78,
+      technical_density: 0.65,
+      subspecialty: 'jointReplacement',
+      dominant_emotion: 'healing',
+      emotional_journey: {
+        problemIntensity: 200,
+        solutionConfidence: 780,
+        innovationLevel: 560,
+        healingPotential: 890,
+        uncertaintyLevel: 150,
+        dominantEmotion: 'healing'
+      },
+      emotional_mix: {
+        hope: 0.78,
+        confidence: 0.78,
+        healing: 0.89,
+        breakthrough: 0.56,
+        tension: 0.20,
+        uncertainty: 0.15
+      },
+      medical_terms: {
+        procedures: {
+          "arthroplasty": { count: 10, weight: 1.0, significance: 10.0 },
+          "replacement": { count: 15, weight: 1.0, significance: 15.0 }
+        },
+        anatomy: {
+          "hip": { count: 20, weight: 0.8, significance: 16.0 },
+          "knee": { count: 18, weight: 0.8, significance: 14.4 }
+        }
+      },
+      visual_elements: [
+        { type: 'andryRoot', x: 400, y: 640, angle: 270, length: 65, thickness: 5, color: '#16a085' },
+        { type: 'healingParticle', x: 380, y: 180, size: 8, color: '#16a085' }
+      ]
+    },
+    metadata: { 
+      rarity_score: 0.72,
+      algorithm_version: '2.0-sample-enhanced',
+      signature_id: 'AKX-2024-0225-E5F6'
+    }
   },
   {
     id: '4',
     title: 'Algorithmic Synthesis #AKX-2024-0210-K1L2',
+    subspecialty: 'handUpperExtremity',
     dominant_emotion: 'breakthrough',
-    created_date: '2024-02-10'
+    created_date: '2024-02-10',
+    algorithm_parameters: {
+      algorithm_version: '2.0-sample-enhanced',
+      evidence_strength: 0.88,
+      technical_density: 0.82,
+      subspecialty: 'handUpperExtremity',
+      dominant_emotion: 'breakthrough',
+      emotional_journey: {
+        problemIntensity: 90,
+        solutionConfidence: 880,
+        innovationLevel: 940,
+        healingPotential: 820,
+        uncertaintyLevel: 70,
+        dominantEmotion: 'breakthrough'
+      },
+      emotional_mix: {
+        hope: 0.82,
+        confidence: 0.88,
+        healing: 0.82,
+        breakthrough: 0.94,
+        tension: 0.09,
+        uncertainty: 0.07
+      },
+      medical_terms: {
+        procedures: {
+          "microsurgery": { count: 12, weight: 1.0, significance: 12.0 },
+          "reconstruction": { count: 8, weight: 1.0, significance: 8.0 }
+        },
+        anatomy: {
+          "hand": { count: 22, weight: 0.8, significance: 17.6 },
+          "wrist": { count: 15, weight: 0.8, significance: 12.0 }
+        }
+      },
+      visual_elements: [
+        { type: 'andryRoot', x: 400, y: 640, angle: 210, length: 72, thickness: 6, color: '#f39c12' },
+        { type: 'healingParticle', x: 320, y: 160, size: 9, color: '#f39c12' }
+      ]
+    },
+    metadata: { 
+      rarity_score: 0.92,
+      algorithm_version: '2.0-sample-enhanced',
+      signature_id: 'AKX-2024-0210-K1L2'
+    }
   }
 ];
 

@@ -9,6 +9,7 @@ const API_BASE = process.env.REACT_APP_BACKEND_URL || 'http://localhost:8001';
 
 const ArticlesHub = ({ algorithmState }) => {
   const [articles, setArticles] = useState([]);
+  const [artworks, setArtworks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedSubspecialty, setSelectedSubspecialty] = useState('all');
@@ -37,6 +38,7 @@ const ArticlesHub = ({ algorithmState }) => {
 
   useEffect(() => {
     fetchArticles();
+    fetchArtworks();
   }, [selectedSubspecialty]);
 
   const fetchArticles = async () => {
@@ -55,6 +57,22 @@ const ArticlesHub = ({ algorithmState }) => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const fetchArtworks = async () => {
+    try {
+      const response = await fetch(`${API_BASE}/api/artworks`);
+      const data = await response.json();
+      setArtworks(data.artworks || []);
+    } catch (error) {
+      console.error('Error fetching artworks:', error);
+      setArtworks([]);
+    }
+  };
+
+  // Helper function to get artwork for an article
+  const getArtworkForArticle = (articleId) => {
+    return artworks.find(artwork => artwork.article_id === articleId);
   };
 
   const filteredAndSortedArticles = articles
@@ -299,12 +317,22 @@ const ArticlesHub = ({ algorithmState }) => {
                       Read Article
                     </Link>
                     
-                    <Link 
-                      to={`/gallery/${article.id}`}
-                      className="btn-secondary"
-                    >
-                      View Art
-                    </Link>
+                    {getArtworkForArticle(article.id) ? (
+                      <Link 
+                        to={`/gallery/${getArtworkForArticle(article.id).id}`}
+                        className="btn-secondary"
+                      >
+                        View Art
+                      </Link>
+                    ) : (
+                      <button 
+                        disabled
+                        className="btn-secondary opacity-50 cursor-not-allowed"
+                        title="No artwork available for this article"
+                      >
+                        View Art
+                      </button>
+                    )}
                   </div>
                 </div>
               </motion.div>

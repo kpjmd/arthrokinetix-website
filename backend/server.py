@@ -81,6 +81,12 @@ if mongodb_uri:
         db.newsletter_subscribers.create_index("email")
         db.feedback.create_index("article_id")
         
+        # Create compound indexes for better performance
+        db.articles.create_index([("subspecialty", 1), ("published_date", -1)])
+        db.artworks.create_index([("subspecialty", 1), ("created_date", -1)])
+        db.artworks.create_index([("article_id", 1)])  # For article-artwork lookups
+        db.algorithm_states.create_index([("timestamp", -1), ("articles_processed", 1)])
+        
         print("Database collections initialized successfully")
     except Exception as e:
         print(f"Database initialization warning: {e}")
@@ -406,20 +412,59 @@ async def create_article(
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/api/articles")
-async def get_articles(subspecialty: Optional[str] = None):
-    """Get all articles with optional filtering"""
+async def get_articles(
+    subspecialty: Optional[str] = None,
+    page: int = 1,
+    limit: int = 20,
+    fields: Optional[str] = None
+):
+    """Get articles with optional filtering and pagination"""
     try:
+        # Build query
         query = {}
         if subspecialty:
             query["subspecialty"] = subspecialty
-            
-        articles = list(articles_collection.find(query).sort("published_date", -1))
+        
+        # Build projection (exclude heavy fields for list views)
+        projection = {}
+        if fields:
+            field_list = fields.split(',')
+            projection = {field: 1 for field in field_list}
+            projection["_id"] = 1
+        else:
+            # Default: exclude heavy content fields
+            projection = {
+                "content": 0,
+                "html_content": 0,
+                "algorithm_parameters.statistical_data": 0
+            }
+        
+        # Calculate pagination
+        skip = (page - 1) * limit
+        
+        # Get total count for pagination info
+        total = articles_collection.count_documents(query)
+        
+        # Get articles with pagination
+        articles = list(articles_collection
+                       .find(query, projection)
+                       .sort("published_date", -1)
+                       .skip(skip)
+                       .limit(limit))
         
         # Convert ObjectIds to strings
         for article in articles:
             article["_id"] = str(article["_id"])
             
-        return {"articles": articles}
+        return {
+            "articles": articles,
+            "pagination": {
+                "page": page,
+                "limit": limit,
+                "total": total,
+                "pages": (total + limit - 1) // limit
+            }
+        }
         
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -439,20 +484,58 @@ async def get_article(article_id: str):
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/api/artworks")
-async def get_artworks(subspecialty: Optional[str] = None):
-    """Get all artworks with optional filtering"""
+async def get_artworks(
+    subspecialty: Optional[str] = None,
+    page: int = 1,
+    limit: int = 20,
+    fields: Optional[str] = None
+):
+    """Get artworks with optional filtering and pagination"""
     try:
+        # Build query
         query = {}
         if subspecialty:
             query["subspecialty"] = subspecialty
-            
-        artworks = list(artworks_collection.find(query).sort("created_date", -1))
+        
+        # Build projection (exclude heavy fields for list views)
+        projection = {}
+        if fields:
+            field_list = fields.split(',')
+            projection = {field: 1 for field in field_list}
+            projection["_id"] = 1
+        else:
+            # Default: exclude heavy algorithm parameters
+            projection = {
+                "algorithm_parameters.statistical_data": 0,
+                "algorithm_parameters.raw_emotional_data": 0
+            }
+        
+        # Calculate pagination
+        skip = (page - 1) * limit
+        
+        # Get total count for pagination info
+        total = artworks_collection.count_documents(query)
+        
+        # Get artworks with pagination
+        artworks = list(artworks_collection
+                       .find(query, projection)
+                       .sort("created_date", -1)
+                       .skip(skip)
+                       .limit(limit))
         
         # Convert ObjectIds to strings
         for artwork in artworks:
             artwork["_id"] = str(artwork["_id"])
             
-        return {"artworks": artworks}
+        return {
+            "artworks": artworks,
+            "pagination": {
+                "page": page,
+                "limit": limit,
+                "total": total,
+                "pages": (total + limit - 1) // limit
+            }
+        }
         
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

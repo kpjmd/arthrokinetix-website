@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { HelmetProvider } from 'react-helmet-async';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import ClerkProvider from './components/ClerkProvider';
 import Web3Provider from './components/Web3Provider';
 import './App.css';
@@ -24,6 +25,18 @@ import AlgorithmMoodIndicator from './components/AlgorithmMoodIndicator';
 
 // API Base URL
 const API_BASE = process.env.REACT_APP_BACKEND_URL || 'http://localhost:8001';
+
+// Create a client
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 5 * 60 * 1000, // 5 minutes
+      cacheTime: 10 * 60 * 1000, // 10 minutes
+      refetchOnWindowFocus: false,
+      retry: 1,
+    },
+  },
+});
 
 function AppContent() {
   const [algorithmState, setAlgorithmState] = useState(null);
@@ -175,13 +188,15 @@ function AppContent() {
 function App() {
   return (
     <HelmetProvider>
-      <ClerkProvider>
-        <Web3Provider>
-          <Router>
-            <AppContent />
-          </Router>
-        </Web3Provider>
-      </ClerkProvider>
+      <QueryClientProvider client={queryClient}>
+        <ClerkProvider>
+          <Web3Provider>
+            <Router>
+              <AppContent />
+            </Router>
+          </Web3Provider>
+        </ClerkProvider>
+      </QueryClientProvider>
     </HelmetProvider>
   );
 }
