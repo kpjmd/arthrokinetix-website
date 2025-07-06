@@ -15,7 +15,9 @@ distro==1.9.0
 beautifulsoup4==4.12.2
 lxml==4.9.3
 
-# PDF processing dependencies (optional - install one or more)
-# pdfplumber>=0.9.0      # Recommended - best quality text extraction
-# PyMuPDF>=1.23.0        # Alternative - fast and good quality  
-# PyPDF2>=3.0.0          # Basic - fallback option
+# PDF processing dependencies
+PyPDF2>=3.0.0          # Basic PDF handling
+PyMuPDF>=1.23.0        # Advanced PDF processing with image extraction
+
+# Image processing dependencies
+Pillow>=10.0.0         # Image manipulation and analysis

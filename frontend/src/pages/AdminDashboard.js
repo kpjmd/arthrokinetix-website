@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Upload, FileText, Palette, BarChart3, Users, Lock, Eye, EyeOff, Save, Plus, X, Download, File, FileType, HelpCircle } from 'lucide-react';
+import { Upload, FileText, Palette, BarChart3, Users, Lock, Eye, EyeOff, Save, Plus, X, Download, File, FileType, HelpCircle, AlertTriangle, Activity, Database, RefreshCcw } from 'lucide-react';
 
 const API_BASE = process.env.REACT_APP_BACKEND_URL || 'http://localhost:8001';
 
@@ -18,7 +18,6 @@ const AdminDashboard = () => {
     subspecialty: 'sportsMedicine',
     contentType: 'text',  // 'text', 'html', 'pdf'
     content: '',
-    evidenceStrength: 0.5,
     metaDescription: '',
     file: null
   });
@@ -34,6 +33,12 @@ const AdminDashboard = () => {
     totalArtworks: 0,
     algorithmState: null
   });
+  
+  // Metadata analysis state
+  const [metadataAnalysis, setMetadataAnalysis] = useState(null);
+  const [loadingMetadata, setLoadingMetadata] = useState(false);
+  const [selectedArtworks, setSelectedArtworks] = useState([]);
+  const [downloadingBatch, setDownloadingBatch] = useState(false);
 
   const subspecialties = [
     { value: 'sportsMedicine', label: 'Sports Medicine' },
@@ -110,6 +115,91 @@ const AdminDashboard = () => {
       alert('Error recalculating algorithm state');
     }
   };
+  
+  // Fetch metadata analysis
+  const fetchMetadataAnalysis = async () => {
+    setLoadingMetadata(true);
+    try {
+      const response = await fetch(`${API_BASE}/api/admin/metadata-analysis`);
+      if (response.ok) {
+        const data = await response.json();
+        setMetadataAnalysis(data);
+      }
+    } catch (error) {
+      console.error('Error fetching metadata analysis:', error);
+    } finally {
+      setLoadingMetadata(false);
+    }
+  };
+  
+  // Download single artwork SVG
+  const downloadArtworkSVG = async (artworkId, artworkTitle) => {
+    try {
+      const response = await fetch(`${API_BASE}/api/artworks/${artworkId}/download-svg`);
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${artworkId}_${artworkTitle || 'artwork'}.svg`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Failed to download SVG:', error);
+      alert('Failed to download SVG');
+    }
+  };
+  
+  // Download multiple SVGs
+  const downloadBatchSVGs = async () => {
+    if (selectedArtworks.length === 0) {
+      alert('Please select artworks to download');
+      return;
+    }
+    
+    setDownloadingBatch(true);
+    try {
+      for (const artwork of selectedArtworks) {
+        await downloadArtworkSVG(artwork.id, artwork.title);
+        // Small delay between downloads
+        await new Promise(resolve => setTimeout(resolve, 500));
+      }
+      alert(`Downloaded ${selectedArtworks.length} SVG files`);
+      setSelectedArtworks([]);
+    } catch (error) {
+      console.error('Batch download failed:', error);
+      alert('Some downloads failed');
+    } finally {
+      setDownloadingBatch(false);
+    }
+  };
+  
+  // Regenerate artwork with updated algorithm
+  const handleRegenerateArtwork = async (artworkId, articleTitle) => {
+    if (!window.confirm(`Regenerate artwork for "${articleTitle}"? This will update the artwork with the latest algorithm.`)) {
+      return;
+    }
+    
+    try {
+      const response = await fetch(`${API_BASE}/api/admin/artworks/${artworkId}/regenerate`, {
+        method: 'POST'
+      });
+      
+      if (response.ok) {
+        const result = await response.json();
+        alert(`Artwork regenerated successfully! New emotion: ${result.new_parameters.dominant_emotion}`);
+        fetchDashboardData();
+        fetchMetadataAnalysis();
+      } else {
+        const error = await response.json();
+        alert(`Failed to regenerate artwork: ${error.detail}`);
+      }
+    } catch (error) {
+      console.error('Error regenerating artwork:', error);
+      alert('Error regenerating artwork');
+    }
+  };
 
   useEffect(() => {
     // Check if already authenticated
@@ -118,6 +208,7 @@ const AdminDashboard = () => {
       setIsAuthenticated(true);
       fetchDashboardData();
       fetchArticlesAdmin();
+      fetchMetadataAnalysis();
     }
   }, []);
 
@@ -139,6 +230,7 @@ const AdminDashboard = () => {
         sessionStorage.setItem('admin_authenticated', 'true');
         fetchDashboardData();
         fetchArticlesAdmin();
+        fetchMetadataAnalysis();
         setPassword('');
       } else {
         alert('Invalid password');
@@ -235,7 +327,6 @@ const AdminDashboard = () => {
       formData.append('title', articleForm.title);
       formData.append('subspecialty', articleForm.subspecialty);
       formData.append('content_type', articleForm.contentType);
-      formData.append('evidence_strength', articleForm.evidenceStrength);
       
       if (articleForm.metaDescription) {
         formData.append('meta_description', articleForm.metaDescription);
@@ -266,7 +357,6 @@ const AdminDashboard = () => {
           subspecialty: 'sportsMedicine',
           contentType: 'text',
           content: '',
-          evidenceStrength: 0.5,
           metaDescription: '',
           file: null
         });
@@ -353,7 +443,8 @@ const AdminDashboard = () => {
   const tabs = [
     { id: 'articles', label: 'Create Content', icon: FileText },
     { id: 'manage', label: 'Manage Content', icon: Users },
-    { id: 'analytics', label: 'Analytics', icon: BarChart3 }
+    { id: 'analytics', label: 'Analytics', icon: BarChart3 },
+    { id: 'metadata', label: 'Metadata & SVG', icon: Database }
   ];
 
   return (
@@ -605,34 +696,17 @@ const AdminDashboard = () => {
                     </div>
                   )}
 
-                  <div className="grid md:grid-cols-2 gap-6">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Evidence Strength: {Math.round(articleForm.evidenceStrength * 100)}%
-                      </label>
-                      <input
-                        type="range"
-                        min="0"
-                        max="1"
-                        step="0.01"
-                        value={articleForm.evidenceStrength}
-                        onChange={(e) => setArticleForm({ ...articleForm, evidenceStrength: parseFloat(e.target.value) })}
-                        className="w-full"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Meta Description
-                      </label>
-                      <input
-                        type="text"
-                        value={articleForm.metaDescription}
-                        onChange={(e) => setArticleForm({ ...articleForm, metaDescription: e.target.value })}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-primary focus:border-primary"
-                        placeholder="SEO description..."
-                      />
-                    </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Meta Description
+                    </label>
+                    <input
+                      type="text"
+                      value={articleForm.metaDescription}
+                      onChange={(e) => setArticleForm({ ...articleForm, metaDescription: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-primary focus:border-primary"
+                      placeholder="SEO description for search engines..."
+                    />
                   </div>
 
                   <button
@@ -745,6 +819,74 @@ const AdminDashboard = () => {
                     </div>
                   )}
                 </div>
+                
+                {/* Artworks Management */}
+                <div className="bg-white border border-gray-200 rounded-lg p-6 mt-6">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Artworks ({artworks.length})</h3>
+                  
+                  {artworks.length === 0 ? (
+                    <p className="text-gray-500">No artworks generated yet.</p>
+                  ) : (
+                    <div className="space-y-3">
+                      {artworks.slice(0, 10).map((artwork) => {
+                        const article = articlesList.find(a => a.id === artwork.article_id);
+                        return (
+                          <div key={artwork.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                            <div className="flex-1">
+                              <h4 className="font-medium text-gray-900">{artwork.title || `Artwork ${artwork.id?.slice(0, 8)}...`}</h4>
+                              <div className="flex items-center space-x-4 mt-1 text-sm text-gray-500">
+                                <span>Article: {article?.title || 'Unknown'}</span>
+                                <span className="capitalize">Emotion: {artwork.dominant_emotion}</span>
+                                <span className="capitalize">{artwork.subspecialty?.replace(/([A-Z])/g, ' $1')}</span>
+                              </div>
+                              <div className="flex items-center space-x-2 mt-2">
+                                <span className="px-2 py-1 bg-purple-100 text-purple-800 text-xs rounded">
+                                  Version: {artwork.metadata?.algorithm_version || '1.0'}
+                                </span>
+                                {artwork.regenerated_date && (
+                                  <span className="px-2 py-1 bg-green-100 text-green-800 text-xs rounded">
+                                    Regenerated
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                            
+                            <div className="flex items-center space-x-2">
+                              <a
+                                href={`/gallery/${artwork.id}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="flex items-center px-3 py-2 text-blue-600 hover:text-blue-800 transition-colors"
+                              >
+                                <Eye className="w-4 h-4 mr-1" />
+                                View
+                              </a>
+                              <button
+                                onClick={() => downloadArtworkSVG(artwork.id, artwork.title)}
+                                className="flex items-center px-3 py-2 text-green-600 hover:text-green-800 transition-colors"
+                              >
+                                <Download className="w-4 h-4 mr-1" />
+                                SVG
+                              </button>
+                              <button
+                                onClick={() => handleRegenerateArtwork(artwork.id, article?.title || artwork.title)}
+                                className="flex items-center px-3 py-2 text-purple-600 hover:text-purple-800 transition-colors"
+                              >
+                                <RefreshCcw className="w-4 h-4 mr-1" />
+                                Regenerate
+                              </button>
+                            </div>
+                          </div>
+                        );
+                      })}
+                      {artworks.length > 10 && (
+                        <p className="text-center text-sm text-gray-500 pt-2">
+                          Showing first 10 of {artworks.length} artworks
+                        </p>
+                      )}
+                    </div>
+                  )}
+                </div>
               </div>
             )}
 
@@ -816,6 +958,257 @@ const AdminDashboard = () => {
                     </div>
                   </div>
                 </div>
+              </div>
+            )}
+
+            {/* Metadata Analysis Tab */}
+            {activeTab === 'metadata' && (
+              <div className="space-y-6">
+                <div className="flex justify-between items-center">
+                  <h2 className="text-xl font-semibold text-gray-900">Metadata Analysis & SVG Downloads</h2>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={fetchMetadataAnalysis}
+                      className="flex items-center px-4 py-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition-colors"
+                    >
+                      <BarChart3 className="w-5 h-5 mr-2" />
+                      Refresh Analysis
+                    </button>
+                    {selectedArtworks.length > 0 && (
+                      <button
+                        onClick={downloadBatchSVGs}
+                        disabled={downloadingBatch}
+                        className="flex items-center px-4 py-2 bg-green-100 text-green-700 rounded-lg hover:bg-green-200 transition-colors disabled:opacity-50"
+                      >
+                        <Download className="w-5 h-5 mr-2" />
+                        Download {selectedArtworks.length} SVGs
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                {loadingMetadata ? (
+                  <div className="flex items-center justify-center py-12">
+                    <div className="text-center">
+                      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
+                      <p>Loading metadata analysis...</p>
+                    </div>
+                  </div>
+                ) : metadataAnalysis ? (
+                  <>
+                    {/* Metadata Completeness Overview */}
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                      <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="bg-white rounded-lg shadow p-6"
+                      >
+                        <h3 className="text-lg font-semibold text-gray-900 mb-2">Total Artworks</h3>
+                        <p className="text-3xl font-bold text-blue-600">{metadataAnalysis.total_artworks || 0}</p>
+                      </motion.div>
+                      
+                      <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.1 }}
+                        className="bg-white rounded-lg shadow p-6"
+                      >
+                        <h3 className="text-lg font-semibold text-gray-900 mb-2">With Metadata</h3>
+                        <p className="text-3xl font-bold text-green-600">
+                          {metadataAnalysis.metadata_completeness?.with_comprehensive_metadata || 0}
+                        </p>
+                      </motion.div>
+                      
+                      <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.2 }}
+                        className="bg-white rounded-lg shadow p-6"
+                      >
+                        <h3 className="text-lg font-semibold text-gray-900 mb-2">Completeness</h3>
+                        <p className="text-3xl font-bold text-purple-600">
+                          {Math.round(metadataAnalysis.metadata_completeness?.completeness_percentage || 0)}%
+                        </p>
+                      </motion.div>
+                      
+                      <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.3 }}
+                        className="bg-white rounded-lg shadow p-6"
+                      >
+                        <h3 className="text-lg font-semibold text-gray-900 mb-2">Phase 2 Ready</h3>
+                        <p className="text-3xl font-bold text-indigo-600">
+                          {metadataAnalysis.metadata_completeness?.completeness_percentage > 80 ? 'Yes' : 'No'}
+                        </p>
+                      </motion.div>
+                    </div>
+
+                    {/* Pattern Analysis with Overuse Warning */}
+                    <motion.div
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.4 }}
+                      className="bg-white rounded-lg shadow"
+                    >
+                      <div className="p-6 border-b border-gray-200">
+                        <h2 className="text-xl font-semibold text-gray-900">Pattern Frequency Analysis</h2>
+                        <p className="text-gray-600">Visual patterns usage across all artworks</p>
+                      </div>
+                      <div className="p-6">
+                        <div className="space-y-3">
+                          {metadataAnalysis.pattern_frequency?.slice(0, 10).map((pattern, index) => {
+                            const isOverused = pattern.frequency > metadataAnalysis.total_artworks * 0.1;
+                            return (
+                              <div key={pattern._id || index} className="flex items-center justify-between p-3 bg-gray-50 rounded">
+                                <div className="flex items-center">
+                                  <span className="font-medium text-gray-900">{pattern._id || 'Unknown Pattern'}</span>
+                                  {isOverused && (
+                                    <span className="ml-2 flex items-center text-amber-600">
+                                      <AlertTriangle className="w-4 h-4 mr-1" />
+                                      <span className="text-sm">Overused</span>
+                                    </span>
+                                  )}
+                                </div>
+                                <div className="flex items-center space-x-3">
+                                  <span className="text-sm text-gray-600">Used {pattern.frequency} times</span>
+                                  <div className="w-24 bg-gray-200 rounded-full h-2">
+                                    <div 
+                                      className={`h-2 rounded-full ${isOverused ? 'bg-amber-500' : 'bg-blue-500'}`}
+                                      style={{ 
+                                        width: `${Math.min(100, (pattern.frequency / Math.max(...metadataAnalysis.pattern_frequency.map(p => p.frequency))) * 100)}%` 
+                                      }}
+                                    ></div>
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    </motion.div>
+
+                    {/* Subspecialty Analysis */}
+                    <motion.div
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.5 }}
+                      className="bg-white rounded-lg shadow"
+                    >
+                      <div className="p-6 border-b border-gray-200">
+                        <h2 className="text-xl font-semibold text-gray-900">Subspecialty Pattern Analysis</h2>
+                        <p className="text-gray-600">Pattern diversity and complexity by medical subspecialty</p>
+                      </div>
+                      <div className="p-6">
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                          {metadataAnalysis.subspecialty_analysis?.map((subspecialty, index) => (
+                            <div key={subspecialty._id || index} className="border rounded-lg p-4">
+                              <h3 className="font-semibold text-gray-900 mb-3 capitalize">
+                                {subspecialty._id?.replace(/([A-Z])/g, ' $1').trim() || 'Unknown'}
+                              </h3>
+                              <div className="space-y-2">
+                                <div className="flex justify-between">
+                                  <span className="text-gray-600">Artworks:</span>
+                                  <span className="font-medium">{subspecialty.count}</span>
+                                </div>
+                                <div className="flex justify-between">
+                                  <span className="text-gray-600">Avg Uniqueness:</span>
+                                  <span className="font-medium">{(subspecialty.avg_uniqueness || 0).toFixed(2)}</span>
+                                </div>
+                                <div className="flex justify-between">
+                                  <span className="text-gray-600">Avg Complexity:</span>
+                                  <span className="font-medium">{(subspecialty.avg_complexity || 0).toFixed(2)}</span>
+                                </div>
+                                <div className="flex justify-between">
+                                  <span className="text-gray-600">Pattern Types:</span>
+                                  <span className="font-medium">{subspecialty.pattern_types?.length || 0}</span>
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </motion.div>
+
+                    {/* SVG Downloads Section */}
+                    <motion.div
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.6 }}
+                      className="bg-white rounded-lg shadow"
+                    >
+                      <div className="p-6 border-b border-gray-200">
+                        <h2 className="text-xl font-semibold text-gray-900">SVG Downloads</h2>
+                        <p className="text-gray-600">Download high-quality SVG files with embedded metadata</p>
+                      </div>
+                      <div className="p-6">
+                        <div className="mb-4 flex justify-between items-center">
+                          <p className="text-sm text-gray-600">
+                            Select artworks to download SVGs with comprehensive metadata
+                          </p>
+                          <button
+                            onClick={() => {
+                              if (selectedArtworks.length === metadataAnalysis.recent_trends?.length) {
+                                setSelectedArtworks([]);
+                              } else {
+                                setSelectedArtworks(metadataAnalysis.recent_trends || []);
+                              }
+                            }}
+                            className="text-sm text-blue-600 hover:text-blue-800"
+                          >
+                            {selectedArtworks.length === metadataAnalysis.recent_trends?.length ? 'Deselect All' : 'Select All'}
+                          </button>
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                          {metadataAnalysis.recent_trends?.slice(0, 12).map((artwork) => {
+                            const isSelected = selectedArtworks.some(a => a.id === artwork.id);
+                            return (
+                              <div 
+                                key={artwork._id} 
+                                className={`border rounded-lg p-4 transition-colors ${
+                                  isSelected ? 'border-blue-500 bg-blue-50' : 'border-gray-200'
+                                }`}
+                              >
+                                <div className="flex items-start justify-between mb-2">
+                                  <input
+                                    type="checkbox"
+                                    checked={isSelected}
+                                    onChange={(e) => {
+                                      if (e.target.checked) {
+                                        setSelectedArtworks([...selectedArtworks, artwork]);
+                                      } else {
+                                        setSelectedArtworks(selectedArtworks.filter(a => a.id !== artwork.id));
+                                      }
+                                    }}
+                                    className="mt-1"
+                                  />
+                                  <div className="flex-1 ml-3">
+                                    <h4 className="font-medium text-gray-900 text-sm">
+                                      {artwork.id?.slice(0, 8) || 'Unknown'}
+                                    </h4>
+                                    <p className="text-xs text-gray-600 capitalize mt-1">
+                                      {artwork.subspecialty?.replace(/([A-Z])/g, ' $1').trim() || 'Unknown'}
+                                    </p>
+                                  </div>
+                                </div>
+                                <button
+                                  onClick={() => downloadArtworkSVG(artwork.id, artwork.subspecialty)}
+                                  className="w-full mt-2 bg-blue-500 hover:bg-blue-600 text-white px-3 py-1.5 rounded text-sm transition-colors"
+                                >
+                                  Download SVG
+                                </button>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    </motion.div>
+                  </>
+                ) : (
+                  <div className="text-center py-12">
+                    <p className="text-gray-600">No metadata analysis available. Click "Refresh Analysis" to load data.</p>
+                  </div>
+                )}
               </div>
             )}
           </div>

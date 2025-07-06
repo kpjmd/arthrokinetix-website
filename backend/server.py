@@ -23,7 +23,8 @@ import base64
 from pathlib import Path
 import re
 import math
-import random 
+import random
+from image_handler import ImageHandler
 
 # Load environment variables
 load_dotenv('/app/backend/.env')
@@ -239,6 +240,12 @@ async def create_article(
                 # Process HTML using adapters if available
                 html_content = file_content.decode('utf-8')
                 
+                # Extract images from HTML
+                image_handler = ImageHandler()
+                extracted_images = image_handler.extract_images_from_html(html_content)
+                image_analysis = image_handler.analyze_images_for_algorithm(extracted_images)
+                print(f"🖼️ Extracted {len(extracted_images)} images from HTML")
+                
                 if HAS_CONTENT_ADAPTERS:
                     try:
                         adapter_element = process_content(html_content, "html")
@@ -259,15 +266,23 @@ async def create_article(
                 
                 print(f"🔤 Extracted text length: {len(processed_content)} characters")
                 
-                # Store file data
+                # Store file data with image information
                 file_data = {
                     "filename": file.filename,
                     "content_type": file.content_type,
                     "size": len(file_content),
-                    "content": html_content
+                    "content": html_content,
+                    "images": extracted_images,
+                    "image_analysis": image_analysis
                 }
                 
             elif content_type == "pdf":
+                # Extract images from PDF
+                image_handler = ImageHandler()
+                extracted_images = image_handler.extract_images_from_pdf(file_content)
+                image_analysis = image_handler.analyze_images_for_algorithm(extracted_images)
+                print(f"🖼️ Extracted {len(extracted_images)} images from PDF")
+                
                 # Process PDF using adapters if available
                 if HAS_CONTENT_ADAPTERS:
                     try:
@@ -287,14 +302,16 @@ async def create_article(
                 else:
                     processed_content = f"PDF content from {file.filename} (no adapter available)"
                 
-                # Store file data
+                # Store file data with image information
                 file_data = {
                     "filename": file.filename,
                     "content_type": file.content_type,
                     "size": len(file_content),
-                    "content": base64.b64encode(file_content).decode('utf-8')
+                    "content": base64.b64encode(file_content).decode('utf-8'),
+                    "images": extracted_images,
+                    "image_analysis": image_analysis
                 }
-                print(f"📄 PDF file stored")
+                print(f"📄 PDF file stored with {len(extracted_images)} images")
                 
         else:
             raise HTTPException(status_code=400, detail="Invalid content type or missing content/file")
@@ -330,6 +347,14 @@ async def create_article(
         print("\n🔮 Generating emotional signature...")
         signature_data = generate_emotional_signature(emotional_data)
         
+        # Enhance emotional data with image analysis if available
+        if file_data and 'image_analysis' in file_data:
+            image_analysis = file_data['image_analysis']
+            emotional_data['image_complexity'] = image_analysis.get('complexity_score', 0.0)
+            emotional_data['medical_imagery_confidence'] = image_analysis.get('medical_imagery_confidence', 0.0)
+            emotional_data['visual_elements_count'] = image_analysis.get('total_images', 0)
+            print(f"🎨 Enhanced emotional data with image analysis")
+        
         # Create article record with adapter enhancements
         article = {
             "id": article_id,
@@ -343,7 +368,7 @@ async def create_article(
             "published_date": datetime.utcnow(),
             "emotional_data": emotional_data,
             "signature_data": signature_data,
-            "evidence_strength": evidence_strength,
+            "evidence_strength": emotional_data.get("evidence_strength", 0.5),  # Use algorithm-detected evidence strength
             "meta_description": meta_description,
             "read_time": calculate_read_time(processed_content),
             
@@ -1426,6 +1451,70 @@ async def get_metadata_analysis():
         }
         
     except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/admin/artworks/{artwork_id}/regenerate")
+async def regenerate_artwork(artwork_id: str):
+    """Regenerate artwork with updated algorithm for a specific article"""
+    try:
+        # Find the artwork
+        existing_artwork = artworks_collection.find_one({"id": artwork_id})
+        if not existing_artwork:
+            raise HTTPException(status_code=404, detail="Artwork not found")
+        
+        # Find the associated article
+        article_id = existing_artwork.get("article_id")
+        article = articles_collection.find_one({"id": article_id})
+        if not article:
+            raise HTTPException(status_code=404, detail="Associated article not found")
+        
+        print(f"🔄 Regenerating artwork {artwork_id} for article {article_id}")
+        
+        # Get content for reprocessing
+        content = article.get('html_content') or article.get('content', '')
+        
+        # Reprocess with updated algorithm
+        manual_algorithm_output = process_article_with_manual_algorithm(content)
+        
+        # Update artwork with new algorithm output
+        update_data = {
+            "algorithm_parameters": manual_algorithm_output,
+            "regenerated_date": datetime.utcnow(),
+            "metadata.algorithm_version": "2.0-manual-regenerated",
+            "metadata.regeneration_timestamp": datetime.utcnow().isoformat(),
+            "dominant_emotion": manual_algorithm_output.get("dominant_emotion", "confidence"),
+            "subspecialty": manual_algorithm_output.get("subspecialty", existing_artwork.get("subspecialty"))
+        }
+        
+        # Clear any existing SVG data to force regeneration
+        update_data["svg_data"] = {}
+        
+        result = artworks_collection.update_one(
+            {"id": artwork_id},
+            {"$set": update_data}
+        )
+        
+        if result.modified_count > 0:
+            print(f"✅ Artwork regenerated successfully")
+            
+            # Generate new SVG
+            svg_response = await generate_artwork_svg(artwork_id)
+            
+            return {
+                "status": "success",
+                "artwork_id": artwork_id,
+                "article_id": article_id,
+                "new_parameters": manual_algorithm_output,
+                "svg_generated": True,
+                "svg_size": svg_response.get("file_size", 0)
+            }
+        else:
+            raise HTTPException(status_code=500, detail="Failed to update artwork")
+            
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"❌ Error regenerating artwork: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/api/admin/svg-batch-generate")
