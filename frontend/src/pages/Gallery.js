@@ -229,20 +229,9 @@ const Gallery = ({ algorithmState }) => {
     let fallbackCount = 0;
     
     artworkList.forEach(artwork => {
-      const params = artwork.algorithm_parameters || {};
-      const hasEmotionalJourney = params.emotional_journey && Object.keys(params.emotional_journey).length > 0;
-      const hasEnhancedData = params.medical_terms && Object.keys(params.medical_terms).length > 0;
-      const algorithmVersion = params.algorithm_version || artwork.metadata?.algorithm_version;
+      const dataQuality = getArtworkDataQuality(artwork);
       
-      // Fix: Check for manual algorithm indicators more comprehensively
-      const isManualAlgorithm = hasEmotionalJourney && hasEnhancedData && (
-        algorithmVersion?.includes('manual') || 
-        algorithmVersion?.includes('2.0') || 
-        algorithmVersion?.includes('enhanced') ||
-        params.statistical_data?.length > 0
-      );
-      
-      if (isManualAlgorithm) {
+      if (dataQuality.isManualAlgorithm) {
         manualCount++;
       } else {
         fallbackCount++;
@@ -258,28 +247,33 @@ const Gallery = ({ algorithmState }) => {
     const hasEmotionalJourney = params.emotional_journey && Object.keys(params.emotional_journey).length > 0;
     const hasEnhancedMedicalTerms = params.medical_terms && Object.keys(params.medical_terms).length > 0;
     const hasStatisticalData = params.statistical_data && params.statistical_data.length > 0;
+    const hasResearchCitations = params.research_citations && params.research_citations.length > 0;
     const algorithmVersion = params.algorithm_version || artwork.metadata?.algorithm_version;
     
-    const qualityScore = [
-      hasEmotionalJourney,
-      hasEnhancedMedicalTerms,
-      hasStatisticalData,
-      algorithmVersion?.includes('manual') || algorithmVersion?.includes('2.0') || algorithmVersion?.includes('enhanced')
-    ].filter(Boolean).length;
+    // Updated to use 4 distinct components for more accurate assessment
+    const qualityComponents = {
+      emotionalData: hasEmotionalJourney || (params.emotional_mix && Object.keys(params.emotional_mix).length > 0),
+      medicalTerms: hasEnhancedMedicalTerms,
+      statisticalData: hasStatisticalData,
+      researchCitations: hasResearchCitations
+    };
     
-    // Fix: Use consistent logic for manual algorithm detection
-    const isManualAlgorithm = hasEmotionalJourney && hasEnhancedMedicalTerms && (
-      algorithmVersion?.includes('manual') || 
-      algorithmVersion?.includes('2.0') || 
-      algorithmVersion?.includes('enhanced') ||
-      hasStatisticalData
-    );
+    const qualityScore = Object.values(qualityComponents).filter(Boolean).length;
+    
+    // Improved manual algorithm detection
+    const isManualAlgorithm = qualityComponents.emotionalData && 
+                              qualityComponents.medicalTerms && 
+                              (algorithmVersion?.includes('manual') || 
+                               algorithmVersion?.includes('2.0') || 
+                               algorithmVersion?.includes('enhanced') ||
+                               qualityScore >= 3);
     
     return {
       score: qualityScore,
       isManualAlgorithm: isManualAlgorithm,
       hasCompleteData: qualityScore >= 3,
-      algorithmVersion: algorithmVersion || 'unknown'
+      algorithmVersion: algorithmVersion || 'unknown',
+      components: qualityComponents
     };
   };
 
@@ -519,6 +513,16 @@ const getRarityLabel = (score) => {
   if (score < 0.6) return 'Uncommon';
   if (score < 0.8) return 'Rare';
   return 'Legendary';
+};
+
+// Helper function to get detailed rarity info for debugging
+const getRarityInfo = (score) => {
+  const label = getRarityLabel(score);
+  return {
+    label,
+    score: score || 0,
+    percentage: Math.round((score || 0) * 100)
+  };
 };
 
 const formatDate = (dateString) => {

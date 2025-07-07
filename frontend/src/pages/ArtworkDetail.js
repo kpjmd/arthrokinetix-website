@@ -310,8 +310,13 @@ const ArtworkDetail = () => {
     let emotionalData = {};
     let dataSource = 'none';
 
-    // Prefer emotional journey from manual algorithm
-    if (algorithmParameters.emotional_journey && Object.keys(algorithmParameters.emotional_journey).length > 0) {
+    // Prefer emotional_mix as it's already in 0-1 scale and more reliable
+    if (algorithmParameters.emotional_mix && Object.keys(algorithmParameters.emotional_mix).length > 0) {
+      emotionalData = algorithmParameters.emotional_mix;
+      dataSource = 'emotional_mix';
+    }
+    // Fall back to emotional journey (convert from 0-1000 scale)
+    else if (algorithmParameters.emotional_journey && Object.keys(algorithmParameters.emotional_journey).length > 0) {
       const journey = algorithmParameters.emotional_journey;
       
       // Convert journey values (0-1000 scale) to 0-1 scale for display
@@ -325,11 +330,6 @@ const ArtworkDetail = () => {
       };
       dataSource = 'emotional_journey';
     } 
-    // Fall back to emotional mix
-    else if (algorithmParameters.emotional_mix && Object.keys(algorithmParameters.emotional_mix).length > 0) {
-      emotionalData = algorithmParameters.emotional_mix;
-      dataSource = 'emotional_mix';
-    }
     // Final fallback
     else {
       emotionalData = {
@@ -374,8 +374,8 @@ const ArtworkDetail = () => {
       <div className="space-y-4">
         {/* Data source indicator */}
         <div className="text-xs text-gray-500 mb-4">
-          Source: {dataSource === 'emotional_journey' ? 'Enhanced Emotional Journey' : 
-                   dataSource === 'emotional_mix' ? 'Emotional Mix' : 'Sample Data'}
+          Source: {dataSource === 'emotional_mix' ? 'Processed Emotional Mix' : 
+                   dataSource === 'emotional_journey' ? 'Raw Emotional Journey' : 'Sample Data'}
         </div>
 
         <div className="grid grid-cols-2 md:grid-cols-3 gap-3">

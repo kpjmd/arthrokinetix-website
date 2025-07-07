@@ -624,14 +624,32 @@ class ArthrokinetixArtGenerator:
         }
 
     def generate_tree_structure(self):
-      """Generate tree structure - FIXED branch alternation and angles"""
-      self.visual_elements = []
+      """Generate enhanced tree structure with better content detection and more branches"""
+      # Clear existing tree elements only (preserve roots and other elements)
+      self.visual_elements = [el for el in self.visual_elements if el.get("type") not in ["andryTrunk", "andryBranch"]]
       
+      # Enhanced content section detection
       content_sections = self.article_data.get("content_sections", [])
-      if not content_sections:
-          content_sections = self.generate_default_sections()
+      if not content_sections or len(content_sections) < 3:
+          content_sections = self.generate_enhanced_sections()
+      
+      # Add statistical sections if we have significant statistical data
+      statistical_data = self.article_data.get("statistical_data", [])
+      if len(statistical_data) > 3:
+          content_sections.extend(self.generate_statistical_sections(statistical_data))
+      
+      # Add research sections if we have significant citations
+      research_citations = self.article_data.get("research_citations", [])
+      if len(research_citations) > 5:
+          content_sections.extend(self.generate_research_sections(research_citations))
     
-      trunk_height = min(300, len(content_sections) * 40 + 100)
+      # Limit total sections to prevent overcrowding but allow more branches
+      content_sections = content_sections[:12]  # Increased from 6 to 12
+      trunk_height = min(400, len(content_sections) * 35 + 120)  # Increased height
+    
+      print(f"🌿 Generating tree with {len(content_sections)} content sections")
+      print(f"   📋 Section sources: {[s.get('source', 'content') for s in content_sections]}")
+      print(f"   📏 Trunk height: {trunk_height}, Section count: {len(content_sections)}")
     
       # Main trunk (article spine)
       self.visual_elements.append({
@@ -644,24 +662,224 @@ class ArthrokinetixArtGenerator:
           "healing": self.tree_parameters["healing_rate"]
       })
     
-      # Generate branches for each major content section - FIXED alternation
+      # Generate branches for each major content section - ENHANCED with more branching
       for index, section in enumerate(content_sections):
           branch_y = self.canvas_height * 0.85 - (index + 1) * (trunk_height / len(content_sections))
           branch_side = -1 if index % 2 == 0 else 1  # Alternate sides
         
-          # FIXED: Proper angle calculation for side alternation
-          base_angle = 150 if branch_side == -1 else 30  # Left: 120-180°, Right: 0-60°
-          angle_variation = random.random() * 30  # Add randomness
-          final_angle = base_angle + (branch_side * angle_variation)
+          # Enhanced angle calculation with more variation
+          base_angle = 140 if branch_side == -1 else 40  # Left: 110-170°, Right: 10-70°
+          angle_variation = random.random() * 40  # Increased randomness
+          subspecialty_modifier = self.get_subspecialty_branch_modifier()
+          final_angle = base_angle + (branch_side * angle_variation) + subspecialty_modifier
         
-          self.generate_branch(
+          # Enhanced length and thickness based on section importance
+          base_length = 70 + section.get("importance", 0.5) * 50  # Increased base length
+          complexity_bonus = section.get("complexity", 0.5) * 30
+          final_length = base_length + complexity_bonus
+          
+          base_thickness = 4 + section.get("complexity", 0.5) * 3
+          
+          self.generate_enhanced_branch(
               self.canvas_width / 2,
               branch_y,
-              final_angle,  # Use corrected angle
-              60 + section.get("importance", 0.5) * 40,  # Length
-              4 + section.get("complexity", 0.5) * 2,   # Thickness
-              section.get("emotionalTone", "confidence")
+              final_angle,
+              final_length,
+              base_thickness,
+              section.get("emotionalTone", "confidence"),
+              section,
+              index
           )
+    
+    def generate_enhanced_sections(self):
+        """Generate enhanced content sections with better detection"""
+        # Start with basic sections
+        sections = self.generate_default_sections()
+        
+        # Add sections based on medical terms
+        medical_terms = self.article_data.get("medical_terms", {})
+        for category, terms in medical_terms.items():
+            if terms and len(terms) > 2:  # Only if significant content
+                sections.append({
+                    "title": f"{category.title()} Analysis",
+                    "level": 2,
+                    "importance": 0.7 + len(terms) * 0.05,
+                    "complexity": 0.6 + len(terms) * 0.03,
+                    "emotionalTone": self.get_medical_category_emotion(category),
+                    "source": "medical_terms"
+                })
+        
+        # Add sections based on evidence strength
+        evidence_strength = self.article_data.get("evidence_strength", 0.5)
+        if evidence_strength > 0.7:
+            sections.append({
+                "title": "Evidence Review",
+                "level": 2,
+                "importance": evidence_strength,
+                "complexity": 0.8,
+                "emotionalTone": "confidence",
+                "source": "evidence"
+            })
+        
+        return sections[:8]  # Limit to prevent overcrowding
+    
+    def generate_statistical_sections(self, statistical_data):
+        """Generate sections based on statistical content"""
+        sections = []
+        
+        # Group statistics by type
+        stat_types = {}
+        for stat in statistical_data:
+            stat_type = stat.get("type", "general")
+            if stat_type not in stat_types:
+                stat_types[stat_type] = []
+            stat_types[stat_type].append(stat)
+        
+        # Create sections for significant statistical groups
+        for stat_type, stats in stat_types.items():
+            if len(stats) >= 2:  # Only if multiple stats of this type
+                avg_significance = sum(s.get("significance", 0.5) for s in stats) / len(stats)
+                sections.append({
+                    "title": f"{stat_type.title()} Analysis",
+                    "level": 2,
+                    "importance": 0.6 + avg_significance * 0.3,
+                    "complexity": 0.7 + len(stats) * 0.05,
+                    "emotionalTone": "breakthrough",
+                    "source": "statistics"
+                })
+        
+        return sections[:3]  # Limit statistical sections
+    
+    def generate_research_sections(self, research_citations):
+        """Generate sections based on research citations"""
+        sections = []
+        
+        # Create sections based on citation impact
+        high_impact_citations = [c for c in research_citations if c.get("impact", 0.5) > 0.7]
+        
+        if len(high_impact_citations) >= 3:
+            sections.append({
+                "title": "Key Research Findings",
+                "level": 2,
+                "importance": 0.9,
+                "complexity": 0.7 + len(high_impact_citations) * 0.02,
+                "emotionalTone": "hope",
+                "source": "research"
+            })
+        
+        if len(research_citations) >= 10:
+            sections.append({
+                "title": "Literature Review",
+                "level": 2,
+                "importance": 0.8,
+                "complexity": 0.6,
+                "emotionalTone": "confidence",
+                "source": "research"
+            })
+        
+        return sections[:2]  # Limit research sections
+    
+    def get_medical_category_emotion(self, category):
+        """Get emotional tone for medical category"""
+        category_emotions = {
+            "procedures": "breakthrough",
+            "anatomy": "confidence", 
+            "outcomes": "healing",
+            "research": "hope"
+        }
+        return category_emotions.get(category, "confidence")
+    
+    def get_subspecialty_branch_modifier(self):
+        """Get subspecialty-specific branch angle modifier"""
+        subspecialty_modifiers = {
+            "sportsMedicine": 5,      # Slightly outward for movement
+            "shoulderElbow": -3,      # Slightly inward for focus
+            "jointReplacement": 0,    # Precise, no modifier
+            "trauma": 8,              # More chaotic, outward
+            "spine": -5,              # Inward, careful
+            "handUpperExtremity": 2,  # Slightly outward for dexterity
+            "footAnkle": 3            # Slightly outward for ground contact
+        }
+        return subspecialty_modifiers.get(self.subspecialty, 0)
+    
+    def generate_enhanced_branch(self, x, y, angle, length, thickness, emotional_tone, section, index):
+        """Generate enhanced branch with aggressive sub-branching"""
+        import math
+        
+        # Main branch
+        branch = {
+            "type": "andryBranch",
+            "x": x,
+            "y": y,
+            "angle": angle,
+            "length": length,
+            "thickness": thickness,
+            "color": self.get_emotional_color(emotional_tone, 0.6),
+            "emotionalTone": emotional_tone,
+            "section_source": section.get("source", "content"),
+            "generation_context": {
+                "section_importance": section.get("importance", 0.5),
+                "section_complexity": section.get("complexity", 0.5),
+                "branch_index": index
+            }
+        }
+        
+        self.visual_elements.append(branch)
+        
+        # Enhanced sub-branch generation - more aggressive
+        evidence_strength = self.article_data.get("evidence_strength", 0.5)
+        technical_density = self.article_data.get("technical_density", 0.5)
+        
+        # Multiple criteria for sub-branch generation
+        should_branch_complexity = length > 70 and section.get("complexity", 0.5) > 0.6
+        should_branch_evidence = evidence_strength > 0.6 and random.random() > 0.3
+        should_branch_technical = technical_density > 0.7 and random.random() > 0.4
+        should_branch_importance = section.get("importance", 0.5) > 0.8 and random.random() > 0.5
+        
+        if should_branch_complexity or should_branch_evidence or should_branch_technical or should_branch_importance:
+            # Generate 1-3 sub-branches instead of just 1
+            num_sub_branches = 1
+            if should_branch_complexity and should_branch_evidence:
+                num_sub_branches = 2
+            if should_branch_technical and should_branch_importance:
+                num_sub_branches = 3
+            
+            for i in range(num_sub_branches):
+                # Position sub-branches at different points along main branch
+                branch_position = 0.4 + (i * 0.2) + random.random() * 0.2
+                sub_angle = angle + (random.random() - 0.5) * 60  # Wider angle range
+                sub_length = length * (0.5 + random.random() * 0.3)  # More variable length
+                sub_thickness = thickness * (0.6 + random.random() * 0.2)
+                
+                # Calculate sub-branch position
+                sub_x = x + math.cos(angle * math.pi / 180) * length * branch_position
+                sub_y = y + math.sin(angle * math.pi / 180) * length * branch_position
+                
+                # Vary emotional tone for sub-branches
+                sub_emotions = ["confidence", "healing", "breakthrough", "hope"]
+                sub_emotion = random.choice(sub_emotions) if random.random() > 0.7 else emotional_tone
+                
+                self.visual_elements.append({
+                    "type": "andryBranch",
+                    "x": sub_x,
+                    "y": sub_y,
+                    "angle": sub_angle,
+                    "length": sub_length,
+                    "thickness": sub_thickness,
+                    "color": self.get_emotional_color(sub_emotion, 0.4),
+                    "emotionalTone": sub_emotion,
+                    "parent_branch": True,
+                    "sub_branch_index": i,
+                    "generation_context": {
+                        "parent_section": section.get("title", "Unknown"),
+                        "branch_criteria": {
+                            "complexity": should_branch_complexity,
+                            "evidence": should_branch_evidence,
+                            "technical": should_branch_technical,
+                            "importance": should_branch_importance
+                        }
+                    }
+                })
 
     def generate_branch(self, x, y, angle, length, thickness, emotional_tone):
         """Generate branch with optional sub-branches - ENHANCED"""
@@ -875,32 +1093,176 @@ class ArthrokinetixArtGenerator:
         return f"colors_{unique_colors}"
 
     def generate_andry_tree_roots(self):
-        """Generate Andry tree root system with pattern tracking"""
+        """Generate Andry tree root system with enhanced randomization and article-specific variation"""
         evidence_strength = self.article_data.get("evidence_strength", 0.5)
-        root_complexity = max(3, int(evidence_strength * 8))
+        word_count = self.article_data.get("word_count", 0)
+        citations_count = len(self.article_data.get("research_citations", []))
+        
+        # Create article-specific seed for consistent randomness
+        article_seed = abs(hash(self.article_data.get("full_text", "")[:100])) % 10000
+        random.seed(article_seed)
+        
+        # Enhanced root complexity based on multiple factors
+        base_complexity = max(4, int(evidence_strength * 12))  # Increased from 3-8 to 4-12
+        content_bonus = min(3, int(word_count / 500))  # +1 per 500 words, max 3
+        citation_bonus = min(2, citations_count // 5)  # +1 per 5 citations, max 2
+        subspecialty_bonus = self.get_subspecialty_root_bonus()
+        
+        root_complexity = base_complexity + content_bonus + citation_bonus + subspecialty_bonus
+        
+        # Subspecialty-specific root patterns
+        subspecialty_patterns = self.get_subspecialty_root_patterns()
+        current_pattern = subspecialty_patterns.get(self.subspecialty, subspecialty_patterns["default"])
         
         root_pattern_type = "evidence_based_complex" if evidence_strength > 0.7 else "simple_spread"
         
+        print(f"🌳 Root generation: complexity={root_complexity}, pattern={self.subspecialty}, seed={article_seed}")
+        print(f"   📊 Evidence: {evidence_strength:.2f}, Citations: {citations_count}, Words: {word_count}")
+        print(f"   🔧 Base: {base_complexity}, Content: +{content_bonus}, Citation: +{citation_bonus}, Subspecialty: +{subspecialty_bonus}")
+        
         for i in range(root_complexity):
-            angle = (i / root_complexity) * 180 + 180
-            length = 50 + (evidence_strength * 100)
-            thickness = 1 + (evidence_strength * 3)
+            # Base angle with subspecialty-specific spread
+            base_angle_range = current_pattern["angle_range"]
+            base_angle = (i / root_complexity) * base_angle_range + current_pattern["start_angle"]
+            
+            # Add randomization based on emotional journey
+            emotional_variation = self.get_emotional_root_variation()
+            angle_noise = (random.random() - 0.5) * current_pattern["randomness_factor"]
+            final_angle = base_angle + emotional_variation + angle_noise
+            
+            # Variable length based on evidence strength and randomness
+            base_length = 50 + (evidence_strength * 100)
+            length_variation = (random.random() - 0.5) * 40  # ±20px variation
+            final_length = base_length + length_variation
+            
+            # Variable thickness with randomness
+            base_thickness = 1 + (evidence_strength * 3)
+            thickness_variation = (random.random() - 0.5) * 1.5  # ±0.75px variation
+            final_thickness = max(0.5, base_thickness + thickness_variation)
+            
+            # Color variation based on emotional state
+            root_emotion = self.get_root_emotional_tone(i, root_complexity)
             
             self.visual_elements.append({
                 "type": "andryRoot",
                 "x": self.canvas_width / 2,
                 "y": self.canvas_height * 0.85,
-                "angle": angle,
-                "length": length,
-                "thickness": thickness,
-                "color": self.get_emotional_color("confidence", 0.3),
+                "angle": final_angle,
+                "length": final_length,
+                "thickness": final_thickness,
+                "color": self.get_emotional_color(root_emotion, 0.3 + random.random() * 0.3),
                 "pattern_type": root_pattern_type,
+                "subspecialty_pattern": self.subspecialty,
                 "generation_context": {
                     "evidence_strength": evidence_strength,
                     "root_complexity": root_complexity,
-                    "pattern_signature": f"root_{root_complexity}_{int(evidence_strength*100)}"
+                    "article_seed": article_seed,
+                    "base_angle": base_angle,
+                    "emotional_variation": emotional_variation,
+                    "angle_noise": angle_noise,
+                    "pattern_signature": f"root_{root_complexity}_{self.subspecialty}_{article_seed}"
                 }
             })
+        
+        # Reset random seed to avoid affecting other generation
+        random.seed()
+    
+    def get_subspecialty_root_bonus(self):
+        """Get subspecialty-specific bonus for root complexity"""
+        subspecialty_bonuses = {
+            "sportsMedicine": 1,  # Moderate complexity
+            "shoulderElbow": 2,   # Higher complexity (detailed anatomy)
+            "jointReplacement": 3, # Highest complexity (technical procedures)
+            "trauma": 2,          # Higher complexity (urgent/complex cases)
+            "spine": 3,           # Highest complexity (spinal anatomy)
+            "handUpperExtremity": 2, # Higher complexity (fine motor)
+            "footAnkle": 1        # Moderate complexity
+        }
+        return subspecialty_bonuses.get(self.subspecialty, 1)
+    
+    def get_subspecialty_root_patterns(self):
+        """Get subspecialty-specific root spread patterns"""
+        return {
+            "sportsMedicine": {
+                "angle_range": 160,  # Wide spread for athletic movement
+                "start_angle": 190,
+                "randomness_factor": 25
+            },
+            "shoulderElbow": {
+                "angle_range": 140,  # Focused on upper anatomy
+                "start_angle": 200,
+                "randomness_factor": 20
+            },
+            "jointReplacement": {
+                "angle_range": 120,  # Precise, surgical pattern
+                "start_angle": 210,
+                "randomness_factor": 15
+            },
+            "trauma": {
+                "angle_range": 180,  # Chaotic, wide spread
+                "start_angle": 180,
+                "randomness_factor": 35
+            },
+            "spine": {
+                "angle_range": 100,  # Narrow, vertical focus
+                "start_angle": 220,
+                "randomness_factor": 10
+            },
+            "handUpperExtremity": {
+                "angle_range": 130,  # Detailed, precise
+                "start_angle": 205,
+                "randomness_factor": 18
+            },
+            "footAnkle": {
+                "angle_range": 150,  # Ground-focused spread
+                "start_angle": 195,
+                "randomness_factor": 22
+            },
+            "default": {
+                "angle_range": 150,
+                "start_angle": 195,
+                "randomness_factor": 20
+            }
+        }
+    
+    def get_emotional_root_variation(self):
+        """Get angle variation based on emotional journey"""
+        # Use dominant emotion to influence root spread
+        dominant = self.emotional_journey.get("dominantEmotion", "confidence")
+        
+        emotional_variations = {
+            "confidence": 0,        # Stable, no variation
+            "healing": -5,          # Slight inward focus
+            "breakthrough": 10,     # Outward expansion
+            "hope": 5,              # Moderate outward
+            "tension": 15,          # Wide, chaotic spread
+            "uncertainty": -10      # Inward, cautious
+        }
+        
+        base_variation = emotional_variations.get(dominant, 0)
+        
+        # Add intensity-based scaling
+        problem_intensity = self.emotional_journey.get("problemIntensity", 0)
+        intensity_factor = (problem_intensity / 10.0) * 5  # Scale to ±5 degrees
+        
+        return base_variation + intensity_factor
+    
+    def get_root_emotional_tone(self, root_index, total_roots):
+        """Get emotional tone for individual root based on position"""
+        # Map root position to emotional spectrum
+        position_ratio = root_index / max(total_roots - 1, 1)
+        
+        # Create emotional gradient across roots
+        if position_ratio < 0.2:
+            return "confidence"      # Center roots: stable
+        elif position_ratio < 0.4:
+            return "healing"         # Inner roots: healing
+        elif position_ratio < 0.6:
+            return "breakthrough"    # Mid roots: innovation
+        elif position_ratio < 0.8:
+            return "hope"           # Outer roots: aspiration
+        else:
+            return "uncertainty"     # Edge roots: exploration
     
     def generate_healing_elements(self):
         """Generate healing elements with comprehensive metadata"""

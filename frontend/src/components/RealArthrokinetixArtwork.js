@@ -285,59 +285,253 @@ const RealArthrokinetixArtwork = ({ artwork, width = 400, height = 400 }) => {
     setSvgContent(svg);
   };
 
-  // EXACT manual algorithm implementation - generateAndryTreeRoots
+  // Enhanced manual algorithm implementation - generateAndryTreeRoots with randomization
   const generateAndryTreeRoots = (state) => {
     const elements = [];
     const evidenceStrength = state.articleData.evidence_strength || 0.5;
-    const rootComplexity = Math.max(3, Math.floor(evidenceStrength * 8));
+    const wordCount = state.articleData.word_count || 0;
+    const citationsCount = state.articleData.research_citations?.length || 0;
+    
+    // Create article-specific seed for consistent randomness (matches backend)
+    const fullText = artwork?.algorithm_parameters?.article_data?.full_text || '';
+    const articleSeed = Math.abs(hashString(fullText.substring(0, 100))) % 10000;
+    
+    // Seed the random number generator for consistent results
+    const seededRandom = createSeededRandom(articleSeed);
+    
+    // Enhanced root complexity based on multiple factors (matches backend)
+    const baseComplexity = Math.max(4, Math.floor(evidenceStrength * 12)); // Increased from 3-8 to 4-12
+    const contentBonus = Math.min(3, Math.floor(wordCount / 500)); // +1 per 500 words, max 3
+    const citationBonus = Math.min(2, Math.floor(citationsCount / 5)); // +1 per 5 citations, max 2
+    const subspecialtyBonus = getSubspecialtyRootBonus(state.subspecialty);
+    
+    const rootComplexity = baseComplexity + contentBonus + citationBonus + subspecialtyBonus;
+    
+    // Subspecialty-specific root patterns (matches backend)
+    const subspecialtyPatterns = getSubspecialtyRootPatterns();
+    const currentPattern = subspecialtyPatterns[state.subspecialty] || subspecialtyPatterns.default;
+    
+    console.log(`🌳 Frontend Root generation: complexity=${rootComplexity}, pattern=${state.subspecialty}, seed=${articleSeed}`);
+    console.log(`   📊 Evidence: ${evidenceStrength.toFixed(2)}, Citations: ${citationsCount}, Words: ${wordCount}`);
+    console.log(`   🔧 Base: ${baseComplexity}, Content: +${contentBonus}, Citation: +${citationBonus}, Subspecialty: +${subspecialtyBonus}`);
     
     for (let i = 0; i < rootComplexity; i++) {
-      const angle = (i / rootComplexity) * 180 + 180; // Spread roots below ground
-      const length = 50 + (evidenceStrength * 100);
-      const thickness = 1 + (evidenceStrength * 3);
+      // Base angle with subspecialty-specific spread (matches backend)
+      const baseAngleRange = currentPattern.angle_range;
+      const baseAngle = (i / rootComplexity) * baseAngleRange + currentPattern.start_angle;
+      
+      // Add randomization based on emotional journey (matches backend)
+      const emotionalVariation = getEmotionalRootVariation(state);
+      const angleNoise = (seededRandom() - 0.5) * currentPattern.randomness_factor;
+      const finalAngle = baseAngle + emotionalVariation + angleNoise;
+      
+      // Variable length based on evidence strength and randomness (matches backend)
+      const baseLength = 50 + (evidenceStrength * 100);
+      const lengthVariation = (seededRandom() - 0.5) * 40; // ±20px variation
+      const finalLength = baseLength + lengthVariation;
+      
+      // Variable thickness with randomness (matches backend)
+      const baseThickness = 1 + (evidenceStrength * 3);
+      const thicknessVariation = (seededRandom() - 0.5) * 1.5; // ±0.75px variation
+      const finalThickness = Math.max(0.5, baseThickness + thicknessVariation);
+      
+      // Color variation based on emotional state (matches backend)
+      const rootEmotion = getRootEmotionalTone(i, rootComplexity);
       
       elements.push({
         type: 'andryRoot',
         x: state.canvasWidth / 2,
         y: state.canvasHeight * 0.85, // Ground level
-        angle: angle,
-        length: length,
-        thickness: thickness,
-        color: getEmotionalColor(state, 'confidence', 0.3),
-        branches: generateRootBranches(angle, length * 0.7, thickness * 0.8, 2)
+        angle: finalAngle,
+        length: finalLength,
+        thickness: finalThickness,
+        color: getEmotionalColor(state, rootEmotion, 0.3 + seededRandom() * 0.3),
+        subspecialty_pattern: state.subspecialty,
+        generation_context: {
+          evidence_strength: evidenceStrength,
+          root_complexity: rootComplexity,
+          article_seed: articleSeed,
+          base_angle: baseAngle,
+          emotional_variation: emotionalVariation,
+          angle_noise: angleNoise,
+          pattern_signature: `root_${rootComplexity}_${state.subspecialty}_${articleSeed}`
+        },
+        branches: generateRootBranches(finalAngle, finalLength * 0.7, finalThickness * 0.8, 2, seededRandom)
       });
     }
     
     return elements;
   };
 
-  // EXACT manual algorithm implementation - generateRootBranches
-  const generateRootBranches = (parentAngle, maxLength, maxThickness, depth) => {
+  // Helper functions for root generation consistency (matches backend)
+  const hashString = (str) => {
+    let hash = 0;
+    if (str.length === 0) return hash;
+    for (let i = 0; i < str.length; i++) {
+      const char = str.charCodeAt(i);
+      hash = ((hash << 5) - hash) + char;
+      hash = hash & hash; // Convert to 32-bit integer
+    }
+    return hash;
+  };
+
+  const createSeededRandom = (seed) => {
+    let currentSeed = seed;
+    return function() {
+      currentSeed = (currentSeed * 9301 + 49297) % 233280;
+      return currentSeed / 233280;
+    };
+  };
+
+  const getSubspecialtyRootBonus = (subspecialty) => {
+    const subspecialtyBonuses = {
+      sportsMedicine: 1,  // Moderate complexity
+      shoulderElbow: 2,   // Higher complexity (detailed anatomy)
+      jointReplacement: 3, // Highest complexity (technical procedures)
+      trauma: 2,          // Higher complexity (urgent/complex cases)
+      spine: 3,           // Highest complexity (spinal anatomy)
+      handUpperExtremity: 2, // Higher complexity (fine motor)
+      footAnkle: 1        // Moderate complexity
+    };
+    return subspecialtyBonuses[subspecialty] || 1;
+  };
+
+  const getSubspecialtyRootPatterns = () => {
+    return {
+      sportsMedicine: {
+        angle_range: 160,  // Wide spread for athletic movement
+        start_angle: 190,
+        randomness_factor: 25
+      },
+      shoulderElbow: {
+        angle_range: 140,  // Focused on upper anatomy
+        start_angle: 200,
+        randomness_factor: 20
+      },
+      jointReplacement: {
+        angle_range: 120,  // Precise, surgical pattern
+        start_angle: 210,
+        randomness_factor: 15
+      },
+      trauma: {
+        angle_range: 180,  // Chaotic, wide spread
+        start_angle: 180,
+        randomness_factor: 35
+      },
+      spine: {
+        angle_range: 100,  // Narrow, vertical focus
+        start_angle: 220,
+        randomness_factor: 10
+      },
+      handUpperExtremity: {
+        angle_range: 130,  // Detailed, precise
+        start_angle: 205,
+        randomness_factor: 18
+      },
+      footAnkle: {
+        angle_range: 150,  // Ground-focused spread
+        start_angle: 195,
+        randomness_factor: 22
+      },
+      default: {
+        angle_range: 150,
+        start_angle: 195,
+        randomness_factor: 20
+      }
+    };
+  };
+
+  const getEmotionalRootVariation = (state) => {
+    // Use dominant emotion to influence root spread (matches backend)
+    const dominant = state.emotionalJourney.dominantEmotion || 'confidence';
+    
+    const emotionalVariations = {
+      confidence: 0,        // Stable, no variation
+      healing: -5,          // Slight inward focus
+      breakthrough: 10,     // Outward expansion
+      hope: 5,              // Moderate outward
+      tension: 15,          // Wide, chaotic spread
+      uncertainty: -10      // Inward, cautious
+    };
+    
+    const baseVariation = emotionalVariations[dominant] || 0;
+    
+    // Add intensity-based scaling (matches backend)
+    const problemIntensity = state.emotionalJourney.problemIntensity || 0;
+    const intensityFactor = (problemIntensity / 10.0) * 5; // Scale to ±5 degrees
+    
+    return baseVariation + intensityFactor;
+  };
+
+  const getRootEmotionalTone = (rootIndex, totalRoots) => {
+    // Map root position to emotional spectrum (matches backend)
+    const positionRatio = rootIndex / Math.max(totalRoots - 1, 1);
+    
+    // Create emotional gradient across roots
+    if (positionRatio < 0.2) {
+      return 'confidence';      // Center roots: stable
+    } else if (positionRatio < 0.4) {
+      return 'healing';         // Inner roots: healing
+    } else if (positionRatio < 0.6) {
+      return 'breakthrough';    // Mid roots: innovation
+    } else if (positionRatio < 0.8) {
+      return 'hope';           // Outer roots: aspiration
+    } else {
+      return 'uncertainty';     // Edge roots: exploration
+    }
+  };
+
+  // Enhanced root branches generation with seeded randomness
+  const generateRootBranches = (parentAngle, maxLength, maxThickness, depth, seededRandom) => {
     if (depth <= 0) return [];
     
     const branches = [];
-    const numBranches = Math.floor(Math.random() * 3) + 1;
+    const numBranches = Math.floor(seededRandom() * 3) + 1;
     
     for (let i = 0; i < numBranches; i++) {
-      const angleOffset = (Math.random() - 0.5) * 60;
+      const angleOffset = (seededRandom() - 0.5) * 60;
       branches.push({
         angle: parentAngle + angleOffset,
-        length: maxLength * (0.5 + Math.random() * 0.5),
-        thickness: maxThickness * (0.5 + Math.random() * 0.5),
-        branches: generateRootBranches(parentAngle + angleOffset, maxLength * 0.5, maxThickness * 0.5, depth - 1)
+        length: maxLength * (0.5 + seededRandom() * 0.5),
+        thickness: maxThickness * (0.5 + seededRandom() * 0.5),
+        branches: generateRootBranches(parentAngle + angleOffset, maxLength * 0.5, maxThickness * 0.5, depth - 1, seededRandom)
       });
     }
     
     return branches;
   };
 
-  // EXACT manual algorithm implementation - generateTreeStructure (FIXED)
+  // Enhanced manual algorithm implementation - generateTreeStructure with better content detection
   const generateTreeStructure = (state) => {
     const elements = [];
-    const contentSections = state.articleData.content_sections || generateDefaultSections();
-    const trunkHeight = Math.min(300, contentSections.length * 40 + 100);
-  
-    // Main trunk (article spine) - EXACT manual algorithm
+    
+    // Enhanced content section detection (matches backend)
+    let contentSections = state.articleData.content_sections || [];
+    if (!contentSections || contentSections.length < 3) {
+      contentSections = generateEnhancedSections(state);
+    }
+    
+    // Add statistical sections if we have significant statistical data
+    const statisticalData = state.articleData.statistical_data || [];
+    if (statisticalData.length > 3) {
+      contentSections = contentSections.concat(generateStatisticalSections(statisticalData));
+    }
+    
+    // Add research sections if we have significant citations
+    const researchCitations = state.articleData.research_citations || [];
+    if (researchCitations.length > 5) {
+      contentSections = contentSections.concat(generateResearchSections(researchCitations));
+    }
+    
+    // Limit total sections to prevent overcrowding but allow more branches
+    contentSections = contentSections.slice(0, 12); // Increased from 6 to 12
+    const trunkHeight = Math.min(400, contentSections.length * 35 + 120); // Increased height
+
+    console.log(`🌿 Frontend generating tree with ${contentSections.length} content sections`);
+    console.log(`   📋 Section sources: ${contentSections.map(s => s.source || 'content')}`);
+    console.log(`   📏 Trunk height: ${trunkHeight}, Section count: ${contentSections.length}`);
+
+    // Main trunk (article spine) - Enhanced
     elements.push({
       type: 'andryTrunk',
       x: state.canvasWidth / 2,
@@ -345,59 +539,225 @@ const RealArthrokinetixArtwork = ({ artwork, width = 400, height = 400 }) => {
       height: trunkHeight,
       thickness: 8 + (state.articleData.technical_density * 5),
       color: state.brandColors.primary,
-      healing: 0.6 // treeParameters.healingRate
+      healing: 0.6
     });
-  
-    // Generate branches for each major content section - FIXED alternation
+
+    // Generate branches for each major content section - ENHANCED with more branching
     contentSections.forEach((section, index) => {
       const branchY = state.canvasHeight * 0.85 - (index + 1) * (trunkHeight / contentSections.length);
       const branchSide = index % 2 === 0 ? -1 : 1; // Alternate sides
     
-      // FIXED: Proper angle calculation for side alternation
-      const baseAngle = branchSide === -1 ? 150 : 30; // Left: 120-180°, Right: 0-60°
-      const angleVariation = Math.random() * 30; // Add randomness
-      const finalAngle = baseAngle + (branchSide * angleVariation);
+      // Enhanced angle calculation with more variation (matches backend)
+      const baseAngle = branchSide === -1 ? 140 : 40; // Left: 110-170°, Right: 10-70°
+      const angleVariation = Math.random() * 40; // Increased randomness
+      const subspecialtyModifier = getSubspecialtyBranchModifier(state.subspecialty);
+      const finalAngle = baseAngle + (branchSide * angleVariation) + subspecialtyModifier;
+    
+      // Enhanced length and thickness based on section importance
+      const baseLength = 70 + section.importance * 50; // Increased base length
+      const complexityBonus = section.complexity * 30;
+      const finalLength = baseLength + complexityBonus;
+      
+      const baseThickness = 4 + section.complexity * 3;
     
       // Generate main branch
       const branch = {
         type: 'andryBranch',
         x: state.canvasWidth / 2,
         y: branchY,
-        angle: finalAngle, // Use corrected angle
-        length: 60 + section.importance * 40,
-        thickness: 4 + section.complexity * 2,
+        angle: finalAngle,
+        length: finalLength,
+        thickness: baseThickness,
         color: getEmotionalColor(state, section.emotionalTone, 0.6),
-        emotionalTone: section.emotionalTone
+        emotionalTone: section.emotionalTone,
+        section_source: section.source || 'content',
+        generation_context: {
+          section_importance: section.importance,
+          section_complexity: section.complexity,
+          branch_index: index
+        }
       };
     
       elements.push(branch);
     
-      // Optionally add sub-branches for more complex trees
-      if (branch.length > 80 && Math.random() > 0.5) {
-        // Add a smaller sub-branch
-        const subAngle = finalAngle + (Math.random() - 0.5) * 40;
-        const subLength = branch.length * 0.6;
-        const subThickness = branch.thickness * 0.7;
+      // Enhanced sub-branch generation - more aggressive (matches backend)
+      const evidenceStrength = state.articleData.evidence_strength || 0.5;
+      const technicalDensity = state.articleData.technical_density || 0.5;
       
-        // Position sub-branch partway along the main branch
-        const midpoint = 0.6 + Math.random() * 0.2;
-        const subX = state.canvasWidth / 2 + Math.cos(finalAngle * Math.PI / 180) * branch.length * midpoint;
-        const subY = branchY + Math.sin(finalAngle * Math.PI / 180) * branch.length * midpoint;
+      // Multiple criteria for sub-branch generation
+      const shouldBranchComplexity = finalLength > 70 && section.complexity > 0.6;
+      const shouldBranchEvidence = evidenceStrength > 0.6 && Math.random() > 0.3;
+      const shouldBranchTechnical = technicalDensity > 0.7 && Math.random() > 0.4;
+      const shouldBranchImportance = section.importance > 0.8 && Math.random() > 0.5;
       
-        elements.push({
-          type: 'andryBranch',
-          x: subX,
-          y: subY,
-          angle: subAngle,
-          length: subLength,
-          thickness: subThickness,
-          color: getEmotionalColor(state, section.emotionalTone, 0.4),
-          emotionalTone: section.emotionalTone
+      if (shouldBranchComplexity || shouldBranchEvidence || shouldBranchTechnical || shouldBranchImportance) {
+        // Generate 1-3 sub-branches instead of just 1
+        let numSubBranches = 1;
+        if (shouldBranchComplexity && shouldBranchEvidence) numSubBranches = 2;
+        if (shouldBranchTechnical && shouldBranchImportance) numSubBranches = 3;
+        
+        for (let i = 0; i < numSubBranches; i++) {
+          // Position sub-branches at different points along main branch
+          const branchPosition = 0.4 + (i * 0.2) + Math.random() * 0.2;
+          const subAngle = finalAngle + (Math.random() - 0.5) * 60; // Wider angle range
+          const subLength = finalLength * (0.5 + Math.random() * 0.3); // More variable length
+          const subThickness = baseThickness * (0.6 + Math.random() * 0.2);
+          
+          // Calculate sub-branch position
+          const subX = state.canvasWidth / 2 + Math.cos(finalAngle * Math.PI / 180) * finalLength * branchPosition;
+          const subY = branchY + Math.sin(finalAngle * Math.PI / 180) * finalLength * branchPosition;
+          
+          // Vary emotional tone for sub-branches
+          const subEmotions = ['confidence', 'healing', 'breakthrough', 'hope'];
+          const subEmotion = Math.random() > 0.7 ? subEmotions[Math.floor(Math.random() * subEmotions.length)] : section.emotionalTone;
+          
+          elements.push({
+            type: 'andryBranch',
+            x: subX,
+            y: subY,
+            angle: subAngle,
+            length: subLength,
+            thickness: subThickness,
+            color: getEmotionalColor(state, subEmotion, 0.4),
+            emotionalTone: subEmotion,
+            parent_branch: true,
+            sub_branch_index: i,
+            generation_context: {
+              parent_section: section.title || 'Unknown',
+              branch_criteria: {
+                complexity: shouldBranchComplexity,
+                evidence: shouldBranchEvidence,
+                technical: shouldBranchTechnical,
+                importance: shouldBranchImportance
+              }
+            }
+          });
+        }
+      }
+    });
+
+    return elements;
+  };
+
+  // Enhanced section generation helper functions (matches backend)
+  const generateEnhancedSections = (state) => {
+    // Start with basic sections
+    let sections = generateDefaultSections();
+    
+    // Add sections based on medical terms
+    const medicalTerms = state.articleData.medical_terms || {};
+    Object.entries(medicalTerms).forEach(([category, terms]) => {
+      if (terms && Object.keys(terms).length > 2) { // Only if significant content
+        sections.push({
+          title: `${category.charAt(0).toUpperCase() + category.slice(1)} Analysis`,
+          level: 2,
+          importance: 0.7 + Object.keys(terms).length * 0.05,
+          complexity: 0.6 + Object.keys(terms).length * 0.03,
+          emotionalTone: getMedicalCategoryEmotion(category),
+          source: 'medical_terms'
         });
       }
     });
-  
-    return elements;
+    
+    // Add sections based on evidence strength
+    const evidenceStrength = state.articleData.evidence_strength || 0.5;
+    if (evidenceStrength > 0.7) {
+      sections.push({
+        title: 'Evidence Review',
+        level: 2,
+        importance: evidenceStrength,
+        complexity: 0.8,
+        emotionalTone: 'confidence',
+        source: 'evidence'
+      });
+    }
+    
+    return sections.slice(0, 8); // Limit to prevent overcrowding
+  };
+
+  const generateStatisticalSections = (statisticalData) => {
+    const sections = [];
+    
+    // Group statistics by type
+    const statTypes = {};
+    statisticalData.forEach(stat => {
+      const statType = stat.type || 'general';
+      if (!statTypes[statType]) {
+        statTypes[statType] = [];
+      }
+      statTypes[statType].push(stat);
+    });
+    
+    // Create sections for significant statistical groups
+    Object.entries(statTypes).forEach(([statType, stats]) => {
+      if (stats.length >= 2) { // Only if multiple stats of this type
+        const avgSignificance = stats.reduce((sum, s) => sum + (s.significance || 0.5), 0) / stats.length;
+        sections.push({
+          title: `${statType.charAt(0).toUpperCase() + statType.slice(1)} Analysis`,
+          level: 2,
+          importance: 0.6 + avgSignificance * 0.3,
+          complexity: 0.7 + stats.length * 0.05,
+          emotionalTone: 'breakthrough',
+          source: 'statistics'
+        });
+      }
+    });
+    
+    return sections.slice(0, 3); // Limit statistical sections
+  };
+
+  const generateResearchSections = (researchCitations) => {
+    const sections = [];
+    
+    // Create sections based on citation impact
+    const highImpactCitations = researchCitations.filter(c => (c.impact || 0.5) > 0.7);
+    
+    if (highImpactCitations.length >= 3) {
+      sections.push({
+        title: 'Key Research Findings',
+        level: 2,
+        importance: 0.9,
+        complexity: 0.7 + highImpactCitations.length * 0.02,
+        emotionalTone: 'hope',
+        source: 'research'
+      });
+    }
+    
+    if (researchCitations.length >= 10) {
+      sections.push({
+        title: 'Literature Review',
+        level: 2,
+        importance: 0.8,
+        complexity: 0.6,
+        emotionalTone: 'confidence',
+        source: 'research'
+      });
+    }
+    
+    return sections.slice(0, 2); // Limit research sections
+  };
+
+  const getMedicalCategoryEmotion = (category) => {
+    const categoryEmotions = {
+      procedures: 'breakthrough',
+      anatomy: 'confidence',
+      outcomes: 'healing',
+      research: 'hope'
+    };
+    return categoryEmotions[category] || 'confidence';
+  };
+
+  const getSubspecialtyBranchModifier = (subspecialty) => {
+    const subspecialtyModifiers = {
+      sportsMedicine: 5,      // Slightly outward for movement
+      shoulderElbow: -3,      // Slightly inward for focus
+      jointReplacement: 0,    // Precise, no modifier
+      trauma: 8,              // More chaotic, outward
+      spine: -5,              // Inward, careful
+      handUpperExtremity: 2,  // Slightly outward for dexterity
+      footAnkle: 3            // Slightly outward for ground contact
+    };
+    return subspecialtyModifiers[subspecialty] || 0;
   };
 
   // EXACT manual algorithm implementation - generateDefaultSections (ENHANCED)
