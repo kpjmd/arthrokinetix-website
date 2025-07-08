@@ -1,12 +1,13 @@
 """
 Image Handler for Arthrokinetix
 Extracts and processes images from HTML and PDF content
+Supports WebP conversion and optimization
 """
 
 import re
 import base64
 import hashlib
-from typing import List, Dict, Optional, Tuple
+from typing import List, Dict, Optional, Tuple, Union
 from urllib.parse import urlparse, urljoin
 import requests
 from bs4 import BeautifulSoup
@@ -14,6 +15,8 @@ import io
 from PIL import Image
 import PyPDF2
 import fitz  # PyMuPDF for better PDF image extraction
+from datetime import datetime
+import uuid
 
 class ImageHandler:
     def __init__(self):
@@ -258,3 +261,167 @@ class ImageHandler:
         analysis['complexity_score'] = min(1.0, (len(images) * 0.1) + (len(analysis['image_types']) * 0.2))
         
         return analysis
+    
+    def convert_to_webp(self, image_data: Union[bytes, str], quality: int = 85, optimize: bool = True) -> Dict:
+        """
+        Convert image to WebP format for optimal web performance
+        
+        Args:
+            image_data: Image data as bytes or base64 string
+            quality: WebP quality (1-100)
+            optimize: Whether to optimize the image
+            
+        Returns:
+            Dict with WebP data and metadata
+        """
+        try:
+            # Handle base64 input
+            if isinstance(image_data, str):
+                # Remove data URL prefix if present
+                if image_data.startswith('data:'):
+                    header, data = image_data.split(',', 1)
+                    image_data = base64.b64decode(data)
+                else:
+                    image_data = base64.b64decode(image_data)
+            
+            # Open image with PIL
+            img = Image.open(io.BytesIO(image_data))
+            
+            # Convert RGBA to RGB if necessary (WebP supports RGBA but RGB is smaller)
+            if img.mode == 'RGBA':
+                # Create a white background
+                background = Image.new('RGB', img.size, (255, 255, 255))
+                background.paste(img, mask=img.split()[3])  # Use alpha channel as mask
+                img = background
+            elif img.mode not in ['RGB', 'L']:
+                img = img.convert('RGB')
+            
+            # Generate multiple sizes for responsive images
+            sizes = {
+                'thumbnail': (150, 150),
+                'small': (400, 400),
+                'medium': (800, 800),
+                'large': (1200, 1200),
+                'original': img.size
+            }
+            
+            webp_versions = {}
+            
+            for size_name, max_size in sizes.items():
+                # Create a copy for resizing
+                img_copy = img.copy()
+                
+                # Only resize if image is larger than target
+                if img_copy.size[0] > max_size[0] or img_copy.size[1] > max_size[1]:
+                    img_copy.thumbnail(max_size, Image.Resampling.LANCZOS)
+                
+                # Convert to WebP
+                output = io.BytesIO()
+                img_copy.save(output, format='WEBP', quality=quality, optimize=optimize, method=6)
+                webp_data = output.getvalue()
+                
+                webp_versions[size_name] = {
+                    'data': base64.b64encode(webp_data).decode('utf-8'),
+                    'size': len(webp_data),
+                    'dimensions': {
+                        'width': img_copy.width,
+                        'height': img_copy.height
+                    }
+                }
+            
+            # Generate unique image ID
+            image_id = f"img_{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}_{str(uuid.uuid4())[:8]}"
+            
+            return {
+                'id': image_id,
+                'format': 'webp',
+                'versions': webp_versions,
+                'original_format': img.format.lower() if img.format else 'unknown',
+                'original_size': len(image_data),
+                'hash': hashlib.md5(image_data).hexdigest(),
+                'created_at': datetime.utcnow().isoformat()
+            }
+            
+        except Exception as e:
+            print(f"Error converting to WebP: {e}")
+            return None
+    
+    def process_article_images(self, images: List[Dict], article_id: str) -> Dict:
+        """
+        Process all images for an article, converting to WebP and organizing
+        
+        Args:
+            images: List of extracted images
+            article_id: Article ID for association
+            
+        Returns:
+            Dict with processed images and metadata
+        """
+        processed_images = []
+        cover_image_candidates = []
+        
+        for idx, img in enumerate(images):
+            try:
+                # Skip if no actual image data
+                if not img.get('data') and not img.get('src'):
+                    continue
+                
+                # Get image data
+                image_data = None
+                if img.get('data'):
+                    # Already have data (from PDF or data URL)
+                    if isinstance(img['data'], str):
+                        image_data = base64.b64decode(img['data'])
+                    else:
+                        image_data = img['data']
+                elif img.get('src') and img['src'].startswith('http'):
+                    # Download external image
+                    downloaded = self.download_external_image(img['src'])
+                    if downloaded:
+                        image_data = base64.b64decode(downloaded['data'])
+                
+                if not image_data:
+                    continue
+                
+                # Convert to WebP
+                webp_result = self.convert_to_webp(image_data)
+                if not webp_result:
+                    continue
+                
+                # Add metadata
+                webp_result['article_id'] = article_id
+                webp_result['index'] = idx
+                webp_result['alt'] = img.get('alt', '')
+                webp_result['title'] = img.get('title', '')
+                webp_result['source_type'] = img.get('type', 'unknown')
+                
+                # Determine if this could be a cover image
+                # Cover images are typically larger and appear early
+                if idx < 3:  # First 3 images
+                    original_dim = webp_result['versions']['original']['dimensions']
+                    if original_dim['width'] > 600 and original_dim['height'] > 400:
+                        cover_image_candidates.append({
+                            'image_id': webp_result['id'],
+                            'score': (original_dim['width'] * original_dim['height']) / 1000000,  # Megapixels
+                            'index': idx
+                        })
+                
+                processed_images.append(webp_result)
+                
+            except Exception as e:
+                print(f"Error processing image {idx}: {e}")
+                continue
+        
+        # Select best cover image candidate
+        cover_image_id = None
+        if cover_image_candidates:
+            # Sort by score (larger images first) and index (earlier images preferred)
+            cover_image_candidates.sort(key=lambda x: (-x['score'], x['index']))
+            cover_image_id = cover_image_candidates[0]['image_id']
+        
+        return {
+            'images': processed_images,
+            'total_count': len(processed_images),
+            'cover_image_id': cover_image_id,
+            'processing_timestamp': datetime.utcnow().isoformat()
+        }

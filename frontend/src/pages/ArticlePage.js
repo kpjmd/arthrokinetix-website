@@ -170,6 +170,38 @@ const ArticlePage = ({ algorithmState, onStateUpdate }) => {
     setShowAuthModal(true);
   };
 
+  const processHtmlWithImages = (htmlContent) => {
+    if (!htmlContent || !article.has_images) return htmlContent;
+    
+    // This is a simple implementation - in production you might want to use a proper HTML parser
+    let processedHtml = htmlContent;
+    
+    // Add responsive image styles
+    const imageStyles = `
+      <style>
+        .article-html-content img {
+          max-width: 100%;
+          height: auto;
+          border-radius: 0.5rem;
+          margin: 1.5rem 0;
+          box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+        .article-html-content figure {
+          margin: 2rem 0;
+          text-align: center;
+        }
+        .article-html-content figcaption {
+          margin-top: 0.75rem;
+          font-size: 0.875rem;
+          color: #6b7280;
+          font-style: italic;
+        }
+      </style>
+    `;
+    
+    return imageStyles + processedHtml;
+  };
+
   const renderContent = () => {
     if (!article) return null;
 
@@ -178,7 +210,7 @@ const ArticlePage = ({ algorithmState, onStateUpdate }) => {
         return (
           <div className="prose prose-lg max-w-none">
             <div 
-              dangerouslySetInnerHTML={{ __html: article.html_content || article.content }}
+              dangerouslySetInnerHTML={{ __html: processHtmlWithImages(article.html_content || article.content) }}
               className="article-html-content"
             />
             {renderInfographics()}

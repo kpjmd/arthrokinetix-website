@@ -231,8 +231,23 @@ const ArticlesHub = ({ algorithmState }) => {
                   </div>
                 )}
 
+                {/* Cover Image */}
+                {article.has_images && article.cover_image_id && viewMode === 'grid' && (
+                  <div className="w-full h-48 bg-gray-100 rounded-t-lg overflow-hidden">
+                    <img
+                      src={`${API_BASE}/api/images/${article.cover_image_id}?version=medium`}
+                      alt={article.title}
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        e.target.style.display = 'none';
+                        e.target.parentElement.style.display = 'none';
+                      }}
+                    />
+                  </div>
+                )}
+                
                 {/* Subspecialty Color Bar */}
-                <div className={`w-full h-4 rounded-t-lg subspecialty-${article.subspecialty} ${viewMode === 'list' ? 'hidden' : ''}`} />
+                <div className={`w-full h-4 ${article.has_images && article.cover_image_id && viewMode === 'grid' ? '' : 'rounded-t-lg'} subspecialty-${article.subspecialty} ${viewMode === 'list' ? 'hidden' : ''}`} />
                 
                 <div className={viewMode === 'grid' ? 'p-6' : 'flex-1 py-6'}>
                   <div className="flex items-start justify-between mb-4">

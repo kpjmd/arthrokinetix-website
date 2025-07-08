@@ -21,3 +21,5 @@ PyMuPDF>=1.23.0        # Advanced PDF processing with image extraction
 
 # Image processing dependencies
 Pillow>=10.0.0         # Image manipulation and analysis
+pillow-heif>=0.13.0    # HEIF/HEIC image support
+cloudinary>=1.36.0     # Cloud image storage and optimization

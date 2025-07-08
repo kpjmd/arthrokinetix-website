@@ -25,6 +25,8 @@ import re
 import math
 import random
 from image_handler import ImageHandler
+from cloudinary_handler import CloudinaryImageHandler
+from bs4 import BeautifulSoup
 
 # Load environment variables
 load_dotenv('/app/backend/.env')
@@ -80,12 +82,15 @@ if mongodb_uri:
         db.algorithm_states.create_index("timestamp")
         db.newsletter_subscribers.create_index("email")
         db.feedback.create_index("article_id")
+        db.images.create_index("id")
+        db.images.create_index("article_id")
         
         # Create compound indexes for better performance
         db.articles.create_index([("subspecialty", 1), ("published_date", -1)])
         db.artworks.create_index([("subspecialty", 1), ("created_date", -1)])
         db.artworks.create_index([("article_id", 1)])  # For article-artwork lookups
         db.algorithm_states.create_index([("timestamp", -1), ("articles_processed", 1)])
+        db.images.create_index([("article_id", 1), ("id", 1)])  # For efficient article image lookups
         
         print("Database collections initialized successfully")
     except Exception as e:
@@ -110,6 +115,7 @@ artworks_collection = db.artworks
 users_collection = db.users
 feedback_collection = db.feedback
 algorithm_states_collection = db.algorithm_states
+images_collection = db.images
 
 @app.get("/")
 async def root():
@@ -216,6 +222,7 @@ async def create_article(
         html_content = ""
         adapter_data = None
         file_data = None
+        processed_image_data = None
         
         if content_type == "text" and content:
             # Process text content using adapters if available
@@ -246,11 +253,23 @@ async def create_article(
                 # Process HTML using adapters if available
                 html_content = file_content.decode('utf-8')
                 
-                # Extract images from HTML
-                image_handler = ImageHandler()
-                extracted_images = image_handler.extract_images_from_html(html_content)
-                image_analysis = image_handler.analyze_images_for_algorithm(extracted_images)
+                # Extract and process images from HTML using Cloudinary
+                cloudinary_handler = CloudinaryImageHandler()
+                extracted_images = cloudinary_handler.extract_images_from_html(html_content)
                 print(f"🖼️ Extracted {len(extracted_images)} images from HTML")
+                
+                # Process images with Cloudinary upload
+                processed_image_data = cloudinary_handler.process_article_images(extracted_images, article_id)
+                print(f"✅ Processed {processed_image_data['total_count']} images to Cloudinary")
+                
+                # Store processed images metadata in database
+                if processed_image_data['images']:
+                    for img in processed_image_data['images']:
+                        images_collection.insert_one(img)
+                    print(f"💾 Stored {len(processed_image_data['images'])} images metadata in database")
+                
+                # Analyze images for algorithm
+                image_analysis = cloudinary_handler.analyze_images_for_algorithm(extracted_images)
                 
                 if HAS_CONTENT_ADAPTERS:
                     try:
@@ -283,11 +302,23 @@ async def create_article(
                 }
                 
             elif content_type == "pdf":
-                # Extract images from PDF
+                # Extract and process images from PDF
                 image_handler = ImageHandler()
                 extracted_images = image_handler.extract_images_from_pdf(file_content)
-                image_analysis = image_handler.analyze_images_for_algorithm(extracted_images)
                 print(f"🖼️ Extracted {len(extracted_images)} images from PDF")
+                
+                # Process images with WebP conversion
+                processed_image_data = image_handler.process_article_images(extracted_images, article_id)
+                print(f"✅ Processed {processed_image_data['total_count']} images to WebP format")
+                
+                # Store processed images in separate collection
+                if processed_image_data['images']:
+                    for img in processed_image_data['images']:
+                        images_collection.insert_one(img)
+                    print(f"💾 Stored {len(processed_image_data['images'])} images in database")
+                
+                # Analyze images for algorithm
+                image_analysis = image_handler.analyze_images_for_algorithm(extracted_images)
                 
                 # Process PDF using adapters if available
                 if HAS_CONTENT_ADAPTERS:
@@ -378,6 +409,11 @@ async def create_article(
             "meta_description": meta_description,
             "read_time": calculate_read_time(processed_content),
             
+            # Image processing fields
+            "cover_image_id": processed_image_data['cover_image_id'] if processed_image_data else None,
+            "image_count": processed_image_data['total_count'] if processed_image_data else 0,
+            "has_images": bool(processed_image_data and processed_image_data['total_count'] > 0),
+            
             # Enhanced fields from content adapters
             "adapter_data": adapter_data,
             "processing_method": "content_adapters" if adapter_data else "legacy",
@@ -407,6 +443,218 @@ async def create_article(
         
     except Exception as e:
         print(f"❌ Error creating article: {e}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
+
+# Multi-file article upload endpoint
+@app.post("/api/articles/multi-upload")
+async def create_article_multi_file(
+    title: str = Form(...),
+    subspecialty: str = Form("sportsMedicine"),
+    evidence_strength: float = Form(0.5),
+    meta_description: Optional[str] = Form(None),
+    files: List[UploadFile] = File(...)
+):
+    """
+    Create article with HTML file and multiple local image files.
+    First file must be HTML, remaining files are images.
+    """
+    try:
+        print(f"\n🆕 Creating article with multi-file upload: {title}")
+        print(f"📁 Files received: {len(files)}")
+        
+        # Validate we have at least one file
+        if not files:
+            raise HTTPException(status_code=400, detail="No files provided")
+        
+        # First file should be HTML
+        html_file = files[0]
+        if not html_file.filename.lower().endswith(('.html', '.htm')):
+            raise HTTPException(status_code=400, detail="First file must be HTML")
+        
+        # Read HTML content
+        html_content = await html_file.read()
+        html_content = html_content.decode('utf-8')
+        print(f"📄 HTML file: {html_file.filename} ({len(html_content)} characters)")
+        
+        # Process image files (remaining files)
+        image_files = {}
+        for file in files[1:]:
+            # Check if it's an image file
+            file_ext = file.filename.lower().split('.')[-1]
+            if file_ext in ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'bmp']:
+                file_content = await file.read()
+                # Store by filename (case-insensitive key)
+                image_files[file.filename.lower()] = {
+                    'filename': file.filename,
+                    'content': file_content,
+                    'content_type': file.content_type
+                }
+                print(f"🖼️ Image file: {file.filename} ({len(file_content)} bytes)")
+        
+        print(f"📊 Total images uploaded: {len(image_files)}")
+        
+        # Generate unique article ID
+        article_id = str(uuid.uuid4())
+        
+        # Extract image references from HTML
+        soup = BeautifulSoup(html_content, 'html.parser')
+        img_tags = soup.find_all('img')
+        print(f"🔍 Found {len(img_tags)} img tags in HTML")
+        
+        # Cloudinary image handler instance
+        cloudinary_handler = CloudinaryImageHandler()
+        processed_images = []
+        unmatched_references = []
+        
+        # Process each image reference
+        for img in img_tags:
+            src = img.get('src', '')
+            if not src:
+                continue
+                
+            # Skip URLs and data URIs
+            if src.startswith(('http://', 'https://', 'data:')):
+                continue
+            
+            # Extract filename from path (handle relative paths)
+            filename = src.split('/')[-1].lower()
+            
+            print(f"🔎 Looking for image: {src} -> {filename}")
+            
+            # Try to find matching uploaded file
+            if filename in image_files:
+                print(f"✅ Matched: {filename}")
+                img_data = image_files[filename]
+                
+                # Generate unique image ID
+                image_id = f"img_{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}_{str(uuid.uuid4())[:8]}"
+                
+                # Upload to Cloudinary
+                cloudinary_result = cloudinary_handler.upload_to_cloudinary(
+                    img_data['content'], 
+                    image_id, 
+                    folder=f"articles/{article_id}"
+                )
+                
+                if cloudinary_result:
+                    # Add metadata
+                    cloudinary_result['article_id'] = article_id
+                    cloudinary_result['original_filename'] = img_data['filename']
+                    cloudinary_result['alt'] = img.get('alt', '')
+                    cloudinary_result['title'] = img.get('title', '')
+                    
+                    # Store in database (metadata only, not image data)
+                    images_collection.insert_one(cloudinary_result)
+                    processed_images.append(cloudinary_result)
+                    
+                    # Update HTML with Cloudinary URL
+                    img['src'] = cloudinary_result['urls']['medium']
+                    img['data-original-src'] = src
+                    img['data-image-id'] = cloudinary_result['id']
+            else:
+                print(f"⚠️ Unmatched reference: {src}")
+                unmatched_references.append(src)
+        
+        # Process any orphaned images (uploaded but not referenced)
+        orphaned_images = []
+        for filename, img_data in image_files.items():
+            if not any(p.get('original_filename', '').lower() == filename for p in processed_images):
+                print(f"📎 Processing orphaned image: {img_data['filename']}")
+                
+                # Generate unique image ID for orphaned image
+                image_id = f"img_{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}_{str(uuid.uuid4())[:8]}"
+                
+                # Upload to Cloudinary
+                cloudinary_result = cloudinary_handler.upload_to_cloudinary(
+                    img_data['content'], 
+                    image_id, 
+                    folder=f"articles/{article_id}/orphaned"
+                )
+                
+                if cloudinary_result:
+                    cloudinary_result['article_id'] = article_id
+                    cloudinary_result['original_filename'] = img_data['filename']
+                    cloudinary_result['orphaned'] = True
+                    images_collection.insert_one(cloudinary_result)
+                    orphaned_images.append(cloudinary_result)
+        
+        # Get updated HTML
+        updated_html = str(soup)
+        
+        # Extract text content for processing
+        processed_content = re.sub('<[^<]+?>', '', updated_html)
+        print(f"🔤 Extracted text length: {len(processed_content)} characters")
+        
+        # Process with algorithm
+        algorithm_result = process_article_with_manual_algorithm(
+            title=title,
+            subspecialty=subspecialty,
+            content=processed_content,
+            evidence_strength=evidence_strength
+        )
+        
+        # Create article document
+        article = {
+            "_id": article_id,
+            "title": title,
+            "subspecialty": subspecialty,
+            "content": processed_content,
+            "html_content": updated_html,
+            "meta_description": meta_description or f"Medical research on {title}",
+            "evidence_strength": evidence_strength,
+            "created_at": datetime.utcnow(),
+            "content_type": "html",
+            "file_data": {
+                "filename": html_file.filename,
+                "content_type": html_file.content_type,
+                "size": len(html_content),
+                "content": updated_html,
+                "image_processing": {
+                    "total_uploaded": len(image_files),
+                    "matched": len(processed_images),
+                    "orphaned": len(orphaned_images),
+                    "unmatched_references": unmatched_references
+                }
+            },
+            "algorithm_result": algorithm_result,
+            "view_count": 0
+        }
+        
+        # Insert article
+        articles_collection.insert_one(article)
+        print(f"💾 Article saved with ID: {article_id}")
+        
+        # Generate artwork
+        artwork = await generate_artwork_for_article(article)
+        
+        # Process emotional data
+        emotional_data = await process_article_emotions(article)
+        
+        # Update algorithm state
+        await update_algorithm_state(emotional_data)
+        
+        article["_id"] = str(article["_id"])
+        
+        print(f"\n✅ Multi-file article creation complete!")
+        print(f"   Images matched: {len(processed_images)}/{len(img_tags)}")
+        print(f"   Orphaned images: {len(orphaned_images)}")
+        print(f"   Unmatched references: {len(unmatched_references)}")
+        
+        return {
+            "article": article,
+            "artwork": artwork,
+            "image_processing": {
+                "matched": len(processed_images),
+                "orphaned": len(orphaned_images),
+                "unmatched": unmatched_references,
+                "total_uploaded": len(image_files)
+            }
+        }
+        
+    except Exception as e:
+        print(f"❌ Error in multi-file upload: {e}")
         import traceback
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
@@ -550,6 +798,106 @@ async def get_artwork(artwork_id: str):
             
         artwork["_id"] = str(artwork["_id"])
         return artwork
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/articles/{article_id}/images")
+async def get_article_images(article_id: str):
+    """Get all images associated with an article"""
+    try:
+        # Verify article exists
+        article = articles_collection.find_one({"id": article_id})
+        if not article:
+            raise HTTPException(status_code=404, detail="Article not found")
+        
+        # Get images from the images collection
+        images = list(images_collection.find({"article_id": article_id}))
+        
+        # Convert ObjectIds to strings and prepare response
+        for img in images:
+            img["_id"] = str(img["_id"])
+            # Remove large data fields for list view
+            if "versions" in img:
+                for version in img["versions"]:
+                    if "data" in img["versions"][version]:
+                        del img["versions"][version]["data"]
+        
+        return {
+            "article_id": article_id,
+            "images": images,
+            "total_count": len(images),
+            "cover_image_id": article.get("cover_image_id")
+        }
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/images/{image_id}")
+async def get_image(image_id: str, version: str = "medium"):
+    """Get specific image by ID with requested version - redirects to Cloudinary URL"""
+    try:
+        image = images_collection.find_one({"id": image_id})
+        if not image:
+            raise HTTPException(status_code=404, detail="Image not found")
+        
+        # Validate version
+        if version not in ["thumbnail", "small", "medium", "large", "original"]:
+            version = "medium"
+        
+        # For Cloudinary images, return URL instead of data
+        if "urls" in image and version in image["urls"]:
+            from fastapi.responses import RedirectResponse
+            return RedirectResponse(url=image["urls"][version], status_code=302)
+        
+        # Fallback for legacy base64 images (if any exist)
+        elif "versions" in image and version in image["versions"]:
+            version_data = image["versions"][version]
+            return {
+                "id": image["id"],
+                "article_id": image.get("article_id"),
+                "version": version,
+                "format": "webp",
+                "dimensions": version_data["dimensions"],
+                "size": version_data["size"],
+                "data": version_data["data"],
+                "alt": image.get("alt", ""),
+                "title": image.get("title", "")
+            }
+        else:
+            raise HTTPException(status_code=404, detail=f"Version '{version}' not found")
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/articles/{article_id}/cover-image")
+async def update_article_cover_image(article_id: str, image_data: dict):
+    """Update the cover image for an article"""
+    try:
+        # Verify article exists
+        article = articles_collection.find_one({"id": article_id})
+        if not article:
+            raise HTTPException(status_code=404, detail="Article not found")
+        
+        image_id = image_data.get("image_id")
+        
+        # Verify image exists and belongs to this article
+        if image_id:
+            image = images_collection.find_one({"id": image_id, "article_id": article_id})
+            if not image:
+                raise HTTPException(status_code=404, detail="Image not found or does not belong to this article")
+        
+        # Update article with new cover image
+        articles_collection.update_one(
+            {"id": article_id},
+            {"$set": {"cover_image_id": image_id}}
+        )
+        
+        return {
+            "article_id": article_id,
+            "cover_image_id": image_id,
+            "message": "Cover image updated successfully"
+        }
         
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

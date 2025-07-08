@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Upload, FileText, Palette, BarChart3, Users, Lock, Eye, EyeOff, Save, Plus, X, Download, File, FileType, HelpCircle, AlertTriangle, Activity, Database, RefreshCcw } from 'lucide-react';
+import { Upload, FileText, Palette, BarChart3, Users, Lock, Eye, EyeOff, Save, Plus, X, Download, File, FileType, HelpCircle, AlertTriangle, Activity, Database, RefreshCcw, Image as ImageIcon, Check } from 'lucide-react';
 
 const API_BASE = process.env.REACT_APP_BACKEND_URL || 'http://localhost:8001';
 
@@ -25,6 +25,14 @@ const AdminDashboard = () => {
   // File upload states
   const [dragActive, setDragActive] = useState(false);
   const [filePreview, setFilePreview] = useState(null);
+  
+  // Multi-file upload states
+  const [useMultiFileUpload, setUseMultiFileUpload] = useState(false);
+  const [uploadedFiles, setUploadedFiles] = useState({
+    html: null,
+    images: []
+  });
+  const [imageMatchingStatus, setImageMatchingStatus] = useState(null);
 
   const [articles, setArticles] = useState([]);
   const [artworks, setArtworks] = useState([]);
@@ -39,6 +47,11 @@ const AdminDashboard = () => {
   const [loadingMetadata, setLoadingMetadata] = useState(false);
   const [selectedArtworks, setSelectedArtworks] = useState([]);
   const [downloadingBatch, setDownloadingBatch] = useState(false);
+  
+  // Image management state
+  const [selectedArticleImages, setSelectedArticleImages] = useState(null);
+  const [loadingImages, setLoadingImages] = useState(false);
+  const [imageModalOpen, setImageModalOpen] = useState(false);
 
   const subspecialties = [
     { value: 'sportsMedicine', label: 'Sports Medicine' },
@@ -93,6 +106,52 @@ const AdminDashboard = () => {
     } catch (error) {
       console.error('Error deleting article:', error);
       alert('Error deleting article');
+    }
+  };
+  
+  // Fetch images for an article
+  const fetchArticleImages = async (articleId) => {
+    setLoadingImages(true);
+    try {
+      const response = await fetch(`${API_BASE}/api/articles/${articleId}/images`);
+      if (response.ok) {
+        const data = await response.json();
+        setSelectedArticleImages(data);
+        setImageModalOpen(true);
+      } else {
+        alert('Failed to fetch article images');
+      }
+    } catch (error) {
+      console.error('Error fetching images:', error);
+      alert('Error fetching images');
+    } finally {
+      setLoadingImages(false);
+    }
+  };
+  
+  // Update cover image for an article
+  const updateCoverImage = async (articleId, imageId) => {
+    try {
+      const response = await fetch(`${API_BASE}/api/articles/${articleId}/cover-image`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ image_id: imageId })
+      });
+
+      if (response.ok) {
+        alert('Cover image updated successfully!');
+        // Refresh the images to show the updated cover
+        fetchArticleImages(articleId);
+        fetchArticlesAdmin();
+      } else {
+        const error = await response.json();
+        alert(`Failed to update cover image: ${error.detail}`);
+      }
+    } catch (error) {
+      console.error('Error updating cover image:', error);
+      alert('Error updating cover image');
     }
   };
 
@@ -317,39 +376,123 @@ const AdminDashboard = () => {
     }
   };
 
+  // Handle multi-file selection
+  const handleMultiFileUpload = (files) => {
+    if (!files || files.length === 0) return;
+    
+    const fileArray = Array.from(files);
+    const htmlFile = fileArray.find(f => f.name.toLowerCase().endsWith('.html') || f.name.toLowerCase().endsWith('.htm'));
+    const imageFiles = fileArray.filter(f => {
+      const ext = f.name.toLowerCase().split('.').pop();
+      return ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'bmp'].includes(ext);
+    });
+    
+    if (!htmlFile) {
+      alert('Please include an HTML file');
+      return;
+    }
+    
+    setUploadedFiles({
+      html: htmlFile,
+      images: imageFiles
+    });
+    
+    // Read HTML for preview
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      setFilePreview(e.target.result);
+    };
+    reader.readAsText(htmlFile);
+  };
+
   // Enhanced article submission with file upload
   const handleArticleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
 
     try {
-      const formData = new FormData();
-      formData.append('title', articleForm.title);
-      formData.append('subspecialty', articleForm.subspecialty);
-      formData.append('content_type', articleForm.contentType);
-      
-      if (articleForm.metaDescription) {
-        formData.append('meta_description', articleForm.metaDescription);
-      }
-
-      // Handle content based on type
-      if (articleForm.contentType === 'text') {
-        formData.append('content', articleForm.content);
-      } else if (articleForm.file) {
-        formData.append('file', articleForm.file);
+      // Multi-file upload path
+      if (useMultiFileUpload && uploadedFiles.html) {
+        const formData = new FormData();
+        formData.append('title', articleForm.title);
+        formData.append('subspecialty', articleForm.subspecialty);
+        formData.append('evidence_strength', '0.5');
+        
+        if (articleForm.metaDescription) {
+          formData.append('meta_description', articleForm.metaDescription);
+        }
+        
+        // Add HTML file first
+        formData.append('files', uploadedFiles.html);
+        
+        // Add all image files
+        uploadedFiles.images.forEach(img => {
+          formData.append('files', img);
+        });
+        
+        const response = await fetch(`${API_BASE}/api/articles/multi-upload`, {
+          method: 'POST',
+          body: formData
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          
+          // Show image matching results
+          if (data.image_processing) {
+            setImageMatchingStatus(data.image_processing);
+          }
+          
+          alert('Article created successfully with multi-file upload!');
+          
+          // Reset form
+          setArticleForm({
+            title: '',
+            subspecialty: 'sportsMedicine',
+            contentType: 'html',
+            content: '',
+            metaDescription: '',
+            file: null
+          });
+          setUploadedFiles({ html: null, images: [] });
+          setFilePreview(null);
+          setImageMatchingStatus(null);
+          
+          fetchDashboardData();
+          fetchArticlesAdmin();
+        } else {
+          const error = await response.json();
+          alert(`Failed to create article: ${error.detail}`);
+        }
       } else {
-        alert('Please provide content or upload a file');
-        return;
-      }
+        // Original single-file upload path
+        const formData = new FormData();
+        formData.append('title', articleForm.title);
+        formData.append('subspecialty', articleForm.subspecialty);
+        formData.append('content_type', articleForm.contentType);
+        
+        if (articleForm.metaDescription) {
+          formData.append('meta_description', articleForm.metaDescription);
+        }
 
-      const response = await fetch(`${API_BASE}/api/articles`, {
-        method: 'POST',
-        body: formData
-      });
+        // Handle content based on type
+        if (articleForm.contentType === 'text') {
+          formData.append('content', articleForm.content);
+        } else if (articleForm.file) {
+          formData.append('file', articleForm.file);
+        } else {
+          alert('Please provide content or upload a file');
+          return;
+        }
 
-      if (response.ok) {
-        const result = await response.json();
-        alert(`Article created successfully! ID: ${result.article.id}`);
+        const response = await fetch(`${API_BASE}/api/articles`, {
+          method: 'POST',
+          body: formData
+        });
+
+        if (response.ok) {
+          const result = await response.json();
+          alert(`Article created successfully! ID: ${result.article.id}`);
         
         // Reset form
         setArticleForm({
@@ -367,6 +510,7 @@ const AdminDashboard = () => {
       } else {
         const error = await response.json();
         alert(`Failed to create article: ${error.detail}`);
+      }
       }
     } catch (error) {
       console.error('Error creating article:', error);
@@ -634,8 +778,128 @@ const AdminDashboard = () => {
                         File Upload
                       </label>
                       
-                      {/* Drag and Drop Area */}
-                      <div
+                      {/* Multi-file upload toggle for HTML */}
+                      {articleForm.contentType === 'html' && (
+                        <div className="mb-4">
+                          <label className="flex items-center space-x-2">
+                            <input
+                              type="checkbox"
+                              checked={useMultiFileUpload}
+                              onChange={(e) => {
+                                setUseMultiFileUpload(e.target.checked);
+                                setUploadedFiles({ html: null, images: [] });
+                                setFilePreview(null);
+                                setArticleForm({ ...articleForm, file: null });
+                              }}
+                              className="rounded text-primary focus:ring-primary"
+                            />
+                            <span className="text-sm font-medium text-gray-700">
+                              Upload HTML with local images
+                            </span>
+                            <HelpCircle className="w-4 h-4 text-gray-400" title="Upload HTML file along with referenced image files" />
+                          </label>
+                          <p className="ml-6 text-xs text-gray-500 mt-1">
+                            Select multiple files: HTML + all referenced images (e.g., biceps.jpeg)
+                          </p>
+                        </div>
+                      )}
+                      
+                      {/* Multi-file upload area */}
+                      {useMultiFileUpload && articleForm.contentType === 'html' ? (
+                        <div>
+                          <div
+                            className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors ${
+                              dragActive 
+                                ? 'border-primary bg-blue-50' 
+                                : 'border-gray-300 hover:border-gray-400'
+                            }`}
+                            onDragEnter={handleDrag}
+                            onDragLeave={handleDrag}
+                            onDragOver={handleDrag}
+                            onDrop={(e) => {
+                              e.preventDefault();
+                              setDragActive(false);
+                              handleMultiFileUpload(e.dataTransfer.files);
+                            }}
+                          >
+                            <Upload className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                            <p className="text-lg font-medium text-gray-600 mb-2">
+                              Drag and drop HTML + Image files here
+                            </p>
+                            <p className="text-sm text-gray-500 mb-4">or</p>
+                            <input
+                              type="file"
+                              multiple
+                              accept=".html,.htm,.jpg,.jpeg,.png,.gif,.webp,.svg,.bmp"
+                              onChange={(e) => handleMultiFileUpload(e.target.files)}
+                              className="hidden"
+                              id="multi-file-upload"
+                            />
+                            <label
+                              htmlFor="multi-file-upload"
+                              className="inline-flex items-center px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 cursor-pointer"
+                            >
+                              <Upload className="w-4 h-4 mr-2" />
+                              Choose Files
+                            </label>
+                          </div>
+                          
+                          {/* Multi-file preview */}
+                          {uploadedFiles.html && (
+                            <div className="mt-4 space-y-3">
+                              <div className="p-4 bg-gray-50 rounded-lg">
+                                <div className="flex items-center justify-between mb-2">
+                                  <h4 className="font-medium text-gray-900">Selected Files:</h4>
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setUploadedFiles({ html: null, images: [] });
+                                      setFilePreview(null);
+                                    }}
+                                    className="text-red-600 hover:text-red-800"
+                                  >
+                                    <X className="w-4 h-4" />
+                                  </button>
+                                </div>
+                                
+                                <div className="space-y-2">
+                                  <div className="flex items-center text-sm">
+                                    <File className="w-4 h-4 mr-2 text-blue-600" />
+                                    <span className="font-medium">HTML:</span>
+                                    <span className="ml-2">{uploadedFiles.html.name}</span>
+                                  </div>
+                                  
+                                  {uploadedFiles.images.length > 0 && (
+                                    <div>
+                                      <div className="flex items-center text-sm mb-1">
+                                        <ImageIcon className="w-4 h-4 mr-2 text-green-600" />
+                                        <span className="font-medium">Images ({uploadedFiles.images.length}):</span>
+                                      </div>
+                                      <ul className="ml-6 text-xs text-gray-600 space-y-1">
+                                        {uploadedFiles.images.map((img, idx) => (
+                                          <li key={idx}>{img.name}</li>
+                                        ))}
+                                      </ul>
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                              
+                              {/* HTML Preview */}
+                              {filePreview && (
+                                <div className="p-4 bg-gray-50 rounded-lg">
+                                  <h4 className="font-medium text-gray-900 mb-2">HTML Preview:</h4>
+                                  <div className="max-h-48 overflow-y-auto border border-gray-200 rounded p-4 bg-white">
+                                    <div dangerouslySetInnerHTML={{ __html: filePreview }} />
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      ) : (
+                        /* Original single file upload */
+                        <div
                         className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors ${
                           dragActive 
                             ? 'border-primary bg-blue-50' 
@@ -693,6 +957,7 @@ const AdminDashboard = () => {
                           )}
                         </div>
                       )}
+                      )}
                     </div>
                   )}
 
@@ -725,6 +990,36 @@ const AdminDashboard = () => {
                     )}
                     Create Content & Generate Art
                   </button>
+                  
+                  {/* Image Matching Status */}
+                  {imageMatchingStatus && (
+                    <div className="mt-6 p-4 bg-blue-50 rounded-lg">
+                      <h4 className="font-medium text-blue-900 mb-2 flex items-center">
+                        <Check className="w-5 h-5 mr-2" />
+                        Image Processing Results
+                      </h4>
+                      <div className="space-y-1 text-sm">
+                        <p className="text-blue-800">
+                          ✅ Matched: {imageMatchingStatus.matched} images
+                        </p>
+                        <p className="text-blue-800">
+                          📎 Orphaned: {imageMatchingStatus.orphaned} images (uploaded but not referenced)
+                        </p>
+                        {imageMatchingStatus.unmatched && imageMatchingStatus.unmatched.length > 0 && (
+                          <div>
+                            <p className="text-orange-800">
+                              ⚠️ Unmatched references: {imageMatchingStatus.unmatched.length}
+                            </p>
+                            <ul className="ml-4 mt-1 text-xs text-orange-700">
+                              {imageMatchingStatus.unmatched.map((ref, idx) => (
+                                <li key={idx}>• {ref}</li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
                 </form>
 
                 {/* Recent Articles */}
@@ -806,6 +1101,15 @@ const AdminDashboard = () => {
                               <Eye className="w-4 h-4 mr-1" />
                               View
                             </a>
+                            {article.has_images && (
+                              <button
+                                onClick={() => fetchArticleImages(article.id)}
+                                className="flex items-center px-3 py-2 text-green-600 hover:text-green-800 transition-colors"
+                              >
+                                <ImageIcon className="w-4 h-4 mr-1" />
+                                Images ({article.image_count || 0})
+                              </button>
+                            )}
                             <button
                               onClick={() => handleDeleteArticle(article.id, article.title)}
                               className="flex items-center px-3 py-2 text-red-600 hover:text-red-800 transition-colors"
@@ -1214,6 +1518,93 @@ const AdminDashboard = () => {
           </div>
         </div>
       </section>
+      
+      {/* Image Management Modal */}
+      {imageModalOpen && selectedArticleImages && (
+        <div className="fixed inset-0 z-50 overflow-y-auto">
+          <div className="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center">
+            <div className="fixed inset-0 transition-opacity" aria-hidden="true">
+              <div className="absolute inset-0 bg-gray-500 opacity-75" onClick={() => setImageModalOpen(false)}></div>
+            </div>
+
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              className="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-6xl sm:w-full"
+            >
+              <div className="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                <div className="flex justify-between items-center mb-4">
+                  <h3 className="text-lg font-medium text-gray-900">
+                    Image Management - {selectedArticleImages.total_count} Images
+                  </h3>
+                  <button
+                    onClick={() => setImageModalOpen(false)}
+                    className="text-gray-400 hover:text-gray-500"
+                  >
+                    <X className="w-6 h-6" />
+                  </button>
+                </div>
+
+                {loadingImages ? (
+                  <div className="text-center py-8">
+                    <motion.div
+                      animate={{ rotate: 360 }}
+                      transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                      className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full mx-auto"
+                    />
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                    {selectedArticleImages.images.map((image) => (
+                      <div key={image.id} className="relative group">
+                        <div className="aspect-square bg-gray-100 rounded-lg overflow-hidden">
+                          <img
+                            src={`${API_BASE}/api/images/${image.id}?version=small`}
+                            alt={image.alt || 'Article image'}
+                            className="w-full h-full object-cover"
+                            onError={(e) => {
+                              e.target.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="100" height="100"%3E%3Crect width="100" height="100" fill="%23f3f4f6"/%3E%3Ctext x="50%" y="50%" text-anchor="middle" dy=".3em" fill="%239ca3af"%3ENo Preview%3C/text%3E%3C/svg%3E';
+                            }}
+                          />
+                        </div>
+                        
+                        <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-50 transition-opacity rounded-lg flex items-center justify-center">
+                          <div className="opacity-0 group-hover:opacity-100 transition-opacity space-y-2">
+                            {selectedArticleImages.cover_image_id === image.id ? (
+                              <div className="bg-green-500 text-white px-3 py-1 rounded text-sm flex items-center">
+                                <Check className="w-4 h-4 mr-1" />
+                                Cover Image
+                              </div>
+                            ) : (
+                              <button
+                                onClick={() => updateCoverImage(selectedArticleImages.article_id, image.id)}
+                                className="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-sm transition-colors"
+                              >
+                                Set as Cover
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                        
+                        {image.alt && (
+                          <p className="mt-1 text-xs text-gray-600 truncate">{image.alt}</p>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {selectedArticleImages.images.length === 0 && !loadingImages && (
+                  <div className="text-center py-8">
+                    <ImageIcon className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                    <p className="text-gray-600">No images found for this article</p>
+                  </div>
+                )}
+              </div>
+            </motion.div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
