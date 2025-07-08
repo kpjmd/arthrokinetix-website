@@ -589,10 +589,7 @@ async def create_article_multi_file(
         
         # Process with algorithm
         algorithm_result = process_article_with_manual_algorithm(
-            title=title,
-            subspecialty=subspecialty,
-            content=processed_content,
-            evidence_strength=evidence_strength
+            content=processed_content
         )
         
         # Create article document
