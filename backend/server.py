@@ -77,12 +77,12 @@ if mongodb_uri:
         client.admin.command('ping')
         
         # Ensure collections exist and create indexes if needed
-        db.articles.create_index("id")
-        db.artworks.create_index("id") 
+        db.articles.create_index("id", unique=True)
+        db.artworks.create_index("id", unique=True) 
         db.algorithm_states.create_index("timestamp")
-        db.newsletter_subscribers.create_index("email")
+        db.newsletter_subscribers.create_index("email", unique=True)
         db.feedback.create_index("article_id")
-        db.images.create_index("id")
+        db.images.create_index("id", unique=True)
         db.images.create_index("article_id")
         
         # Create compound indexes for better performance

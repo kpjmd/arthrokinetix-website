@@ -50,7 +50,14 @@ const ArticlesHub = ({ algorithmState }) => {
       
       const response = await fetch(url);
       const data = await response.json();
-      setArticles(data.articles || []);
+      
+      // Deduplicate articles by ID
+      const uniqueArticles = data.articles ? 
+        Array.from(new Map(data.articles.map(item => [item.id, item])).values()) : 
+        [];
+      
+      console.log(`📚 Fetched ${data.articles?.length || 0} articles, ${uniqueArticles.length} unique`);
+      setArticles(uniqueArticles);
     } catch (error) {
       console.error('Error fetching articles:', error);
       setArticles(generateSampleArticles());

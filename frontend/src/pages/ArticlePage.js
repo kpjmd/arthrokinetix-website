@@ -17,9 +17,14 @@ const ArticlePage = ({ algorithmState, onStateUpdate }) => {
   const [article, setArticle] = useState(null);
   const [artwork, setArtwork] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [authMode, setAuthMode] = useState('sign-up');
   const [algorithmDebug, setAlgorithmDebug] = useState(null);
+  
+  // Debug logging
+  console.log('🔍 ArticlePage mounted with slug:', slug);
+  console.log('🔍 Current URL:', window.location.pathname);
 
   const emotionOptions = [
     { key: 'hope', label: 'Hope', icon: '🌱', color: '#27ae60' },
@@ -35,14 +40,39 @@ const ArticlePage = ({ algorithmState, onStateUpdate }) => {
   }, [slug]);
 
   const fetchArticle = async () => {
+    if (!slug) {
+      console.error('Cannot fetch article: slug is undefined');
+      setError('Invalid article URL');
+      setLoading(false);
+      return;
+    }
+    
     try {
       setLoading(true);
+      setError(null);
       console.log('📖 Fetching article:', slug);
       
       const response = await fetch(`${API_BASE}/api/articles/${slug}`);
+      
+      if (!response.ok) {
+        console.error(`Failed to fetch article: ${response.status} ${response.statusText}`);
+        if (response.status === 404) {
+          setError('Article not found');
+        } else {
+          setError(`Failed to load article (Error ${response.status})`);
+        }
+        setLoading(false);
+        return;
+      }
+      
       const articleData = await response.json();
       
       console.log('📊 Received article data:', articleData);
+      console.log('📄 Article content type:', articleData.content_type);
+      console.log('📝 Has content:', !!articleData.content);
+      console.log('📝 Has HTML content:', !!articleData.html_content);
+      console.log('📝 Content length:', articleData.content?.length || 0);
+      
       setArticle(articleData);
 
       // Analyze algorithm data quality
@@ -69,10 +99,7 @@ const ArticlePage = ({ algorithmState, onStateUpdate }) => {
       
     } catch (error) {
       console.error('❌ Error fetching article:', error);
-      console.log('🔄 Using sample data as fallback');
-      setArticle(getSampleArticle(slug));
-      setArtwork(getSampleArtwork(slug));
-    } finally {
+      setError('Failed to load article. Please try again later.');
       setLoading(false);
     }
   };
@@ -204,6 +231,17 @@ const ArticlePage = ({ algorithmState, onStateUpdate }) => {
 
   const renderContent = () => {
     if (!article) return null;
+    
+    // Check if article has any content to display
+    if (!article.content && !article.html_content && article.content_type !== 'pdf') {
+      return (
+        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6 mb-8">
+          <p className="text-yellow-700">
+            No content available for this article. The article may still be processing.
+          </p>
+        </div>
+      );
+    }
 
     switch (article.content_type) {
       case 'html':
@@ -423,13 +461,17 @@ const ArticlePage = ({ algorithmState, onStateUpdate }) => {
     );
   }
 
-  if (!article) {
+  if (!article || error) {
     return (
       <div className="min-h-screen bg-gray-50 pt-16 flex items-center justify-center">
         <div className="text-center">
           <BookOpen className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-          <h2 className="text-2xl font-semibold text-gray-600 mb-2">Article not found</h2>
-          <p className="text-gray-500 mb-6">The article you're looking for doesn't exist.</p>
+          <h2 className="text-2xl font-semibold text-gray-600 mb-2">
+            {error || 'Article not found'}
+          </h2>
+          <p className="text-gray-500 mb-6">
+            {error ? 'Please check the URL and try again.' : 'The article you\'re looking for doesn\'t exist.'}
+          </p>
           <Link 
             to="/articles" 
             className="btn-primary inline-flex items-center"

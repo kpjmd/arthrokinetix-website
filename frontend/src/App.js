@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, useParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { HelmetProvider } from 'react-helmet-async';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -37,6 +37,12 @@ const queryClient = new QueryClient({
     },
   },
 });
+
+// Component to handle slug redirects
+function RedirectWithSlug() {
+  const { slug } = useParams();
+  return <Navigate to={`/articles/${slug}`} replace />;
+}
 
 function AppContent() {
   const [algorithmState, setAlgorithmState] = useState(null);
@@ -133,7 +139,10 @@ function AppContent() {
 
           {/* Legacy Research Routes - Redirect to Articles */}
           <Route path="/research" element={<Navigate to="/articles" replace />} />
-          <Route path="/research/:slug" element={<Navigate to="/articles/:slug" replace />} />
+          <Route 
+            path="/research/:slug" 
+            element={<RedirectWithSlug />} 
+          />
           <Route 
             path="/research-enhanced" 
             element={
