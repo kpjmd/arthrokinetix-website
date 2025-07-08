@@ -898,7 +898,6 @@ const AdminDashboard = () => {
                           )}
                         </div>
                       ) : (
-                        /* Original single file upload */
                         <div
                         className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors ${
                           dragActive 
@@ -957,6 +956,7 @@ const AdminDashboard = () => {
                           )}
                         </div>
                       )}
+                        </div>
                       )}
                     </div>
                   )}
