@@ -899,15 +899,15 @@ const AdminDashboard = () => {
                         </div>
                       ) : (
                         <div
-                        className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors ${
-                          dragActive 
-                            ? 'border-primary bg-blue-50' 
-                            : 'border-gray-300 hover:border-gray-400'
-                        }`}
-                        onDragEnter={handleDrag}
-                        onDragLeave={handleDrag}
-                        onDragOver={handleDrag}
-                        onDrop={handleDrop}
+                          className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors ${
+                            dragActive 
+                              ? 'border-primary bg-blue-50' 
+                              : 'border-gray-300 hover:border-gray-400'
+                          }`}
+                          onDragEnter={handleDrag}
+                          onDragLeave={handleDrag}
+                          onDragOver={handleDrag}
+                          onDrop={handleDrop}
                       >
                         <Upload className="w-12 h-12 text-gray-400 mx-auto mb-4" />
                         <p className="text-lg font-medium text-gray-600 mb-2">
@@ -928,10 +928,9 @@ const AdminDashboard = () => {
                           <Upload className="w-4 h-4 mr-2" />
                           Choose File
                         </label>
-                      </div>
 
-                      {/* File Preview */}
-                      {filePreview && (
+                        {/* File Preview */}
+                        {filePreview && (
                         <div className="mt-4 p-4 bg-gray-50 rounded-lg">
                           <div className="flex items-center justify-between mb-2">
                             <h4 className="font-medium text-gray-900">File Preview:</h4>
@@ -955,11 +954,9 @@ const AdminDashboard = () => {
                             <p className="text-sm text-gray-600">{filePreview}</p>
                           )}
                         </div>
+                        )}
+                      </div>
                       )}
-                        </div>
-                      )}
-                    </div>
-                  )}
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -1020,6 +1017,7 @@ const AdminDashboard = () => {
                       </div>
                     </div>
                   )}
+                  </div>
                 </form>
 
                 {/* Recent Articles */}
