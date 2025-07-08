@@ -623,11 +623,14 @@ async def create_article_multi_file(
         articles_collection.insert_one(article)
         print(f"💾 Article saved with ID: {article_id}")
         
-        # Generate artwork
-        artwork = await generate_artwork_for_article(article)
-        
         # Process emotional data
-        emotional_data = await process_article_emotions(article)
+        emotional_data = await process_article_emotions(processed_content)
+        
+        # Generate emotional signature
+        signature_data = generate_emotional_signature(emotional_data)
+        
+        # Generate artwork
+        artwork = await generate_artwork(article_id, emotional_data, signature_data)
         
         # Update algorithm state
         await update_algorithm_state(emotional_data)
