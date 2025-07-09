@@ -317,7 +317,7 @@ const AdminDashboard = () => {
       setArticles(articlesData.articles || []);
       setArtworks(artworksData.artworks || []);
       setStats({
-        totalArticles: articlesData.articles?.length || 0,
+        totalArticles: articlesData.pagination?.total || 0,
         totalArtworks: artworksData.artworks?.length || 0,
         algorithmState: stateData
       });

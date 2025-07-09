@@ -75,12 +75,8 @@ const ArticlePage = ({ algorithmState, onStateUpdate }) => {
       
       setArticle(articleData);
 
-      // Analyze algorithm data quality
-      if (articleData.emotional_data || articleData.algorithm_parameters) {
-        const debug = analyzeAlgorithmData(articleData);
-        setAlgorithmDebug(debug);
-        console.log('🔬 Algorithm data analysis:', debug);
-      }
+      // Note: Algorithm data analysis will be done after artwork is fetched
+      // since algorithm_parameters are stored in artwork, not article
 
       // Fetch corresponding artwork
       try {
@@ -91,6 +87,13 @@ const ArticlePage = ({ algorithmState, onStateUpdate }) => {
           if (matchingArtwork) {
             setArtwork(matchingArtwork);
             console.log('🎨 Found matching artwork:', matchingArtwork.title);
+            
+            // Analyze algorithm data from artwork
+            if (matchingArtwork.algorithm_parameters || matchingArtwork.emotional_data) {
+              const debug = analyzeAlgorithmData(matchingArtwork);
+              setAlgorithmDebug(debug);
+              console.log('🔬 Algorithm data analysis:', debug);
+            }
           }
         }
       } catch (artworkError) {
@@ -104,9 +107,9 @@ const ArticlePage = ({ algorithmState, onStateUpdate }) => {
     }
   };
 
-  const analyzeAlgorithmData = (articleData) => {
-    const emotionalData = articleData.emotional_data || {};
-    const algorithmParams = articleData.algorithm_parameters || {};
+  const analyzeAlgorithmData = (artworkData) => {
+    const emotionalData = artworkData.emotional_data || {};
+    const algorithmParams = artworkData.algorithm_parameters || {};
     
     // Check for manual algorithm indicators
     const hasEmotionalJourney = algorithmParams.emotional_journey && Object.keys(algorithmParams.emotional_journey).length > 0;
@@ -368,7 +371,7 @@ const ArticlePage = ({ algorithmState, onStateUpdate }) => {
   const renderAlgorithmDataAnalysis = () => {
     if (!algorithmDebug) return null;
 
-    const algorithmParams = article.algorithm_parameters || {};
+    const algorithmParams = artwork?.algorithm_parameters || {};
 
     return (
       <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 mb-6">
