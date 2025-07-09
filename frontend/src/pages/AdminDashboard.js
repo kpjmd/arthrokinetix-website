@@ -74,13 +74,20 @@ const AdminDashboard = () => {
   // Fetch articles with admin details
   const fetchArticlesAdmin = async () => {
     try {
+      console.log('📋 [ADMIN] Fetching articles from:', `${API_BASE}/api/admin/articles`);
       const response = await fetch(`${API_BASE}/api/admin/articles`);
+      console.log('📋 [ADMIN] Response status:', response.status);
+      
       if (response.ok) {
         const data = await response.json();
+        console.log('📋 [ADMIN] Received data:', data);
+        console.log('📋 [ADMIN] Articles count:', data.articles?.length || 0);
         setArticlesList(data.articles || []);
+      } else {
+        console.error('📋 [ADMIN] Response not OK:', response.status, response.statusText);
       }
     } catch (error) {
-      console.error('Error fetching admin articles:', error);
+      console.error('📋 [ADMIN] Error fetching admin articles:', error);
     }
   };
 

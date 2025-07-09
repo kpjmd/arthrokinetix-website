@@ -72,8 +72,11 @@ const ArticlePage = ({ algorithmState, onStateUpdate }) => {
       console.log('📝 Has content:', !!articleData.content);
       console.log('📝 Has HTML content:', !!articleData.html_content);
       console.log('📝 Content length:', articleData.content?.length || 0);
+      console.log('📝 Article title:', articleData.title);
+      console.log('📝 Article ID:', articleData.id);
       
       setArticle(articleData);
+      console.log('✅ Article state updated');
 
       // Note: Algorithm data analysis will be done after artwork is fetched
       // since algorithm_parameters are stored in artwork, not article
@@ -99,6 +102,9 @@ const ArticlePage = ({ algorithmState, onStateUpdate }) => {
       } catch (artworkError) {
         console.log('⚠️ Could not fetch artwork data:', artworkError);
       }
+      
+      // Always set loading to false after fetching
+      setLoading(false);
       
     } catch (error) {
       console.error('❌ Error fetching article:', error);
@@ -452,6 +458,8 @@ const ArticlePage = ({ algorithmState, onStateUpdate }) => {
     );
   };
 
+  console.log('🔍 Render check - Loading:', loading, 'Article:', !!article, 'Error:', error);
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 pt-16 flex items-center justify-center">
@@ -465,6 +473,7 @@ const ArticlePage = ({ algorithmState, onStateUpdate }) => {
   }
 
   if (!article || error) {
+    console.log('🚫 Showing error/not found state');
     return (
       <div className="min-h-screen bg-gray-50 pt-16 flex items-center justify-center">
         <div className="text-center">
@@ -489,6 +498,8 @@ const ArticlePage = ({ algorithmState, onStateUpdate }) => {
 
   const emotionalData = getEmotionalDataToDisplay();
 
+  console.log('✅ Rendering article page with article:', article?.title);
+  
   return (
     <>
       <div className="min-h-screen bg-gray-50 pt-16">

@@ -1402,6 +1402,7 @@ async def get_articles_admin():
     """Get all articles with admin details"""
     try:
         articles = list(articles_collection.find({}).sort("published_date", -1))
+        print(f"[ADMIN API] Found {len(articles)} articles in database")
         
         # Convert ObjectIds to strings and add admin metadata
         for article in articles:
@@ -1415,6 +1416,7 @@ async def get_articles_admin():
             feedback_count = feedback_collection.count_documents({"article_id": article["id"]})
             article["feedback_count"] = feedback_count
             
+        print(f"[ADMIN API] Returning {len(articles)} articles with metadata")
         return {"articles": articles, "total": len(articles)}
         
     except Exception as e:
