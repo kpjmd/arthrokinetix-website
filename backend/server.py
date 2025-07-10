@@ -17,6 +17,7 @@ from dotenv import load_dotenv
 import json
 from datetime import datetime
 import uuid
+import hashlib
 from typing import List, Dict, Optional
 import anthropic
 import base64
@@ -400,6 +401,15 @@ async def create_article(
         print(f"📁 Content type: {content_type}")
         print(f"🏥 Input subspecialty: {subspecialty}")
         
+        # Check for duplicate articles by title
+        existing_article = articles_collection.find_one({"title": title})
+        if existing_article:
+            print(f"⚠️ Article with title '{title}' already exists")
+            raise HTTPException(
+                status_code=409, 
+                detail=f"An article with the title '{title}' already exists. Please use a different title."
+            )
+        
         # Generate unique ID
         article_id = str(uuid.uuid4())
         
@@ -650,6 +660,15 @@ async def create_article_multi_file(
         print(f"\n🆕 Creating article with multi-file upload: {title}")
         print(f"📁 Files received: {len(files)}")
         
+        # Check for duplicate articles by title
+        existing_article = articles_collection.find_one({"title": title})
+        if existing_article:
+            print(f"⚠️ Article with title '{title}' already exists")
+            raise HTTPException(
+                status_code=409, 
+                detail=f"An article with the title '{title}' already exists. Please use a different title."
+            )
+        
         # Validate we have at least one file
         if not files:
             raise HTTPException(status_code=400, detail="No files provided")
@@ -714,15 +733,31 @@ async def create_article_multi_file(
                 print(f"✅ Matched: {filename}")
                 img_data = image_files[filename]
                 
-                # Generate unique image ID
-                image_id = f"img_{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}_{str(uuid.uuid4())[:8]}"
+                # Calculate image hash to check for duplicates
+                image_hash = hashlib.md5(img_data['content']).hexdigest()
                 
-                # Upload to Cloudinary
-                cloudinary_result = cloudinary_handler.upload_to_cloudinary(
-                    img_data['content'], 
-                    image_id, 
-                    folder=f"articles/{article_id}"
-                )
+                # Check if image already exists by hash
+                existing_image = images_collection.find_one({'hash': image_hash})
+                
+                if existing_image:
+                    print(f"♻️ Reusing existing image with hash: {image_hash}")
+                    # Create a reference to the existing image for this article
+                    cloudinary_result = existing_image.copy()
+                    cloudinary_result['_id'] = None  # Remove _id to create new document
+                    cloudinary_result['article_id'] = article_id
+                    cloudinary_result['original_filename'] = img_data['filename']
+                    cloudinary_result['alt'] = img.get('alt', '')
+                    cloudinary_result['title'] = img.get('title', '')
+                else:
+                    # Generate unique image ID
+                    image_id = f"img_{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}_{str(uuid.uuid4())[:8]}"
+                    
+                    # Upload to Cloudinary
+                    cloudinary_result = cloudinary_handler.upload_to_cloudinary(
+                        img_data['content'], 
+                        image_id, 
+                        folder=f"articles/{article_id}"
+                    )
                 
                 if cloudinary_result:
                     # Add metadata
@@ -749,15 +784,30 @@ async def create_article_multi_file(
             if not any(p.get('original_filename', '').lower() == filename for p in processed_images):
                 print(f"📎 Processing orphaned image: {img_data['filename']}")
                 
-                # Generate unique image ID for orphaned image
-                image_id = f"img_{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}_{str(uuid.uuid4())[:8]}"
+                # Calculate image hash to check for duplicates
+                image_hash = hashlib.md5(img_data['content']).hexdigest()
                 
-                # Upload to Cloudinary
-                cloudinary_result = cloudinary_handler.upload_to_cloudinary(
-                    img_data['content'], 
-                    image_id, 
-                    folder=f"articles/{article_id}/orphaned"
-                )
+                # Check if image already exists by hash
+                existing_image = images_collection.find_one({'hash': image_hash})
+                
+                if existing_image:
+                    print(f"♻️ Reusing existing orphaned image with hash: {image_hash}")
+                    # Create a reference to the existing image for this article
+                    cloudinary_result = existing_image.copy()
+                    cloudinary_result['_id'] = None  # Remove _id to create new document
+                    cloudinary_result['article_id'] = article_id
+                    cloudinary_result['original_filename'] = img_data['filename']
+                    cloudinary_result['orphaned'] = True
+                else:
+                    # Generate unique image ID for orphaned image
+                    image_id = f"img_{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}_{str(uuid.uuid4())[:8]}"
+                    
+                    # Upload to Cloudinary
+                    cloudinary_result = cloudinary_handler.upload_to_cloudinary(
+                        img_data['content'], 
+                        image_id, 
+                        folder=f"articles/{article_id}/orphaned"
+                    )
                 
                 if cloudinary_result:
                     cloudinary_result['article_id'] = article_id
