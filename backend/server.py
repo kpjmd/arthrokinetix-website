@@ -24,6 +24,8 @@ from pathlib import Path
 import re
 import math
 import random
+import asyncio
+import threading
 from image_handler import ImageHandler
 from cloudinary_handler import CloudinaryImageHandler
 from bs4 import BeautifulSoup
@@ -206,14 +208,46 @@ def remove_duplicate_articles():
         import traceback
         traceback.print_exc()
 
-# Run migration and deduplication on startup if database is available
+# Flag to track if migrations have been completed
+migration_completed = False
+
+def run_migrations_async():
+    """Run migrations in a separate thread"""
+    global migration_completed
+    if db:
+        try:
+            print("[STARTUP] Running database migrations in background...")
+            migrate_articles()
+            remove_duplicate_articles()
+            migration_completed = True
+            print("[STARTUP] Database migrations completed successfully")
+        except Exception as e:
+            print(f"[STARTUP ERROR] Migration failed: {e}")
+            import traceback
+            traceback.print_exc()
+
+# Start migrations in background thread to not block startup
 if db:
-    migrate_articles()
-    remove_duplicate_articles()
+    migration_thread = threading.Thread(target=run_migrations_async)
+    migration_thread.daemon = True
+    migration_thread.start()
 
 @app.get("/")
 async def root():
-    return {"message": "Arthrokinetix API - Emotional Medical Content & Art Generation"}
+    return {
+        "message": "Arthrokinetix API - Emotional Medical Content & Art Generation",
+        "status": "healthy",
+        "migration_completed": migration_completed
+    }
+
+@app.get("/health")
+async def health_check():
+    """Health check endpoint for Railway"""
+    return {
+        "status": "healthy",
+        "migration_completed": migration_completed,
+        "database_connected": db is not None
+    }
 
 # Algorithm state management
 @app.get("/api/algorithm-state")
