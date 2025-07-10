@@ -93,6 +93,7 @@ if mongodb_uri:
         db.images.create_index([("article_id", 1), ("id", 1)])  # For efficient article image lookups
         
         print("Database collections initialized successfully")
+        
     except Exception as e:
         print(f"Database initialization warning: {e}")
         
@@ -116,6 +117,99 @@ users_collection = db.users
 feedback_collection = db.feedback
 algorithm_states_collection = db.algorithm_states
 images_collection = db.images
+
+# Database migration function
+def migrate_articles():
+    """Migrate articles to ensure consistent field naming"""
+    try:
+        # Find articles that have '_id' but no 'id' field
+        articles_to_fix = list(articles_collection.find({"id": {"$exists": False}}))
+        
+        if articles_to_fix:
+            print(f"[MIGRATION] Found {len(articles_to_fix)} articles to migrate")
+            
+            for article in articles_to_fix:
+                # Add 'id' field using _id value
+                article_id = str(article["_id"])
+                articles_collection.update_one(
+                    {"_id": article["_id"]},
+                    {"$set": {"id": article_id}}
+                )
+                print(f"[MIGRATION] Updated article: {article.get('title', 'Unknown')}")
+            
+            print(f"[MIGRATION] Migration complete - fixed {len(articles_to_fix)} articles")
+        else:
+            print("[MIGRATION] No articles need migration")
+            
+        # Also check for date field inconsistencies
+        articles_with_created_at = list(articles_collection.find({
+            "created_at": {"$exists": True},
+            "published_date": {"$exists": False}
+        }))
+        
+        if articles_with_created_at:
+            print(f"[MIGRATION] Found {len(articles_with_created_at)} articles with date field issues")
+            for article in articles_with_created_at:
+                articles_collection.update_one(
+                    {"_id": article["_id"]},
+                    {
+                        "$set": {"published_date": article["created_at"]},
+                        "$unset": {"created_at": ""}
+                    }
+                )
+            print(f"[MIGRATION] Fixed date fields for {len(articles_with_created_at)} articles")
+            
+    except Exception as e:
+        print(f"[MIGRATION ERROR] {e}")
+        import traceback
+        traceback.print_exc()
+
+# Function to remove duplicate articles
+def remove_duplicate_articles():
+    """Remove duplicate articles keeping the most recent one"""
+    try:
+        # Find all articles and group by title
+        pipeline = [
+            {"$group": {
+                "_id": "$title",
+                "count": {"$sum": 1},
+                "ids": {"$push": "$_id"},
+                "docs": {"$push": "$$ROOT"}
+            }},
+            {"$match": {"count": {"$gt": 1}}}
+        ]
+        
+        duplicates = list(articles_collection.aggregate(pipeline))
+        
+        if duplicates:
+            print(f"[DEDUP] Found {len(duplicates)} groups of duplicate articles")
+            total_removed = 0
+            
+            for group in duplicates:
+                docs = group["docs"]
+                # Sort by published_date or _id to keep the most recent
+                docs.sort(key=lambda x: x.get("published_date", x["_id"]), reverse=True)
+                
+                # Keep the first (most recent) and remove the rest
+                to_remove = docs[1:]
+                for doc in to_remove:
+                    articles_collection.delete_one({"_id": doc["_id"]})
+                    total_removed += 1
+                    print(f"[DEDUP] Removed duplicate: {doc.get('title', 'Unknown')[:50]}...")
+            
+            print(f"[DEDUP] Removed {total_removed} duplicate articles")
+        else:
+            print("[DEDUP] No duplicate articles found")
+            
+    except Exception as e:
+        print(f"[DEDUP ERROR] {e}")
+        import traceback
+        traceback.print_exc()
+
+# Run migration and deduplication on startup if database is available
+if db:
+    migrate_articles()
+    remove_duplicate_articles()
 
 @app.get("/")
 async def root():
@@ -594,14 +688,14 @@ async def create_article_multi_file(
         
         # Create article document
         article = {
-            "_id": article_id,
+            "id": article_id,  # Use 'id' for consistency
             "title": title,
             "subspecialty": subspecialty,
             "content": processed_content,
             "html_content": updated_html,
             "meta_description": meta_description or f"Medical research on {title}",
             "evidence_strength": evidence_strength,
-            "created_at": datetime.utcnow(),
+            "published_date": datetime.utcnow(),  # Use 'published_date' for consistency
             "content_type": "html",
             "file_data": {
                 "filename": html_file.filename,
@@ -635,7 +729,9 @@ async def create_article_multi_file(
         # Update algorithm state
         await update_algorithm_state(emotional_data)
         
-        article["_id"] = str(article["_id"])
+        # MongoDB automatically adds _id, convert it to string for JSON serialization
+        if "_id" in article:
+            article["_id"] = str(article["_id"])
         
         print(f"\n✅ Multi-file article creation complete!")
         print(f"   Images matched: {len(processed_images)}/{len(img_tags)}")
@@ -1416,13 +1512,25 @@ async def get_articles_admin():
             if "updated_date" in article and hasattr(article["updated_date"], "isoformat"):
                 article["updated_date"] = article["updated_date"].isoformat()
             
-            # Add associated artwork count
-            artwork_count = artworks_collection.count_documents({"article_id": article["id"]})
-            article["artwork_count"] = artwork_count
+            # Get article ID (handle both 'id' and '_id' formats)
+            article_id = article.get("id") or article.get("_id")
             
-            # Add feedback count
-            feedback_count = feedback_collection.count_documents({"article_id": article["id"]})
-            article["feedback_count"] = feedback_count
+            if article_id:
+                # Add associated artwork count
+                artwork_count = artworks_collection.count_documents({"article_id": article_id})
+                article["artwork_count"] = artwork_count
+                
+                # Add feedback count
+                feedback_count = feedback_collection.count_documents({"article_id": article_id})
+                article["feedback_count"] = feedback_count
+                
+                # Ensure article has 'id' field for frontend compatibility
+                if "id" not in article:
+                    article["id"] = article_id
+            else:
+                print(f"[ADMIN API WARNING] Article missing ID: {article.get('title', 'Unknown')}")
+                article["artwork_count"] = 0
+                article["feedback_count"] = 0
             
         print(f"[ADMIN API] Returning {len(articles)} articles with metadata")
         return {"articles": articles, "total": len(articles)}
