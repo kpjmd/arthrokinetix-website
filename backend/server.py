@@ -30,8 +30,8 @@ from image_handler import ImageHandler
 from cloudinary_handler import CloudinaryImageHandler
 from bs4 import BeautifulSoup
 
-# Load environment variables
-load_dotenv('/app/backend/.env')
+# Load environment variables - use default path for Railway
+load_dotenv()
 
 app = FastAPI(title="Arthrokinetix API")
 
@@ -60,48 +60,18 @@ async def debug_cors():
         "admin_password_set": bool(os.getenv("ADMIN_PASSWORD"))
     }
 
-# Database connection with consistent naming
-mongodb_uri = os.environ.get('MONGODB_URI')
-if mongodb_uri:
-    client = MongoClient(
-        mongodb_uri,
-        serverSelectionTimeoutMS=5000,  # 5 second timeout
-        connectTimeoutMS=5000,
-        socketTimeoutMS=5000
-    )
-    # Force consistent database naming - use lowercase
-    db = client.arthrokinetix  # Changed from client.arthrokinetix to force lowercase
-    print("MongoDB connected successfully to arthrokinetix database")
-    
-    # Test connection and ensure collections exist
-    try:
-        # Ping the database
-        client.admin.command('ping')
-        
-        # Ensure collections exist and create indexes if needed
-        db.articles.create_index("id", unique=True)
-        db.artworks.create_index("id", unique=True) 
-        db.algorithm_states.create_index("timestamp")
-        db.newsletter_subscribers.create_index("email", unique=True)
-        db.feedback.create_index("article_id")
-        db.images.create_index("id", unique=True)
-        db.images.create_index("article_id")
-        
-        # Create compound indexes for better performance
-        db.articles.create_index([("subspecialty", 1), ("published_date", -1)])
-        db.artworks.create_index([("subspecialty", 1), ("created_date", -1)])
-        db.artworks.create_index([("article_id", 1)])  # For article-artwork lookups
-        db.algorithm_states.create_index([("timestamp", -1), ("articles_processed", 1)])
-        db.images.create_index([("article_id", 1), ("id", 1)])  # For efficient article image lookups
-        
-        print("Database collections initialized successfully")
-        
-    except Exception as e:
-        print(f"Database initialization warning: {e}")
-        
-else:
-    print("No MONGODB_URI found")
-    db = None
+# Global variables for database connection
+client = None
+db = None
+database_initialized = False
+
+# Initialize as None - will be set during startup
+articles_collection = None
+artworks_collection = None
+users_collection = None
+feedback_collection = None
+algorithm_states_collection = None
+images_collection = None
 
 # Anthropic client with correct environment variable name
 anthropic_api_key = os.environ.get('ANTHROPIC_API_KEY')  # Changed from CLAUDE_API_KEY
@@ -112,17 +82,15 @@ else:
     print("No ANTHROPIC_API_KEY found")
     anthropic_client = None
 
-# Collections
-articles_collection = db.articles
-artworks_collection = db.artworks
-users_collection = db.users
-feedback_collection = db.feedback
-algorithm_states_collection = db.algorithm_states
-images_collection = db.images
+# Collections will be initialized during startup
 
 # Database migration function
 def migrate_articles():
     """Migrate articles to ensure consistent field naming"""
+    if not articles_collection:
+        print("[MIGRATION] Skipping - database not initialized")
+        return
+        
     try:
         # Find articles that have '_id' but no 'id' field
         articles_to_fix = list(articles_collection.find({"id": {"$exists": False}}))
@@ -169,6 +137,10 @@ def migrate_articles():
 # Function to remove duplicate articles
 def remove_duplicate_articles():
     """Remove duplicate articles keeping the most recent one"""
+    if not articles_collection:
+        print("[DEDUP] Skipping - database not initialized")
+        return
+        
     try:
         # Find all articles and group by title
         pipeline = [
@@ -214,23 +186,97 @@ migration_completed = False
 def run_migrations_async():
     """Run migrations in a separate thread"""
     global migration_completed
-    if db:
-        try:
-            print("[STARTUP] Running database migrations in background...")
-            migrate_articles()
-            remove_duplicate_articles()
-            migration_completed = True
-            print("[STARTUP] Database migrations completed successfully")
-        except Exception as e:
-            print(f"[STARTUP ERROR] Migration failed: {e}")
-            import traceback
-            traceback.print_exc()
+    try:
+        print("[STARTUP] Running database migrations in background...")
+        migrate_articles()
+        remove_duplicate_articles()
+        migration_completed = True
+        print("[STARTUP] Database migrations completed successfully")
+    except Exception as e:
+        print(f"[STARTUP ERROR] Migration failed: {e}")
+        import traceback
+        traceback.print_exc()
 
-# Start migrations in background thread to not block startup
-if db:
-    migration_thread = threading.Thread(target=run_migrations_async)
-    migration_thread.daemon = True
-    migration_thread.start()
+@app.on_event("startup")
+async def startup_event():
+    """Initialize database connection and collections on startup"""
+    global client, db, database_initialized
+    global articles_collection, artworks_collection, users_collection
+    global feedback_collection, algorithm_states_collection, images_collection
+    
+    print("[STARTUP] Initializing database connection...")
+    
+    mongodb_uri = os.environ.get('MONGODB_URI')
+    if not mongodb_uri:
+        print("[STARTUP] No MONGODB_URI found - running without database")
+        database_initialized = False
+        return
+    
+    try:
+        # Create MongoDB client
+        client = MongoClient(
+            mongodb_uri,
+            serverSelectionTimeoutMS=5000,
+            connectTimeoutMS=5000,
+            socketTimeoutMS=5000
+        )
+        
+        # Use the database
+        db = client.arthrokinetix
+        
+        # Quick ping to verify connection
+        client.admin.command('ping')
+        print("[STARTUP] MongoDB connected successfully")
+        
+        # Initialize collections
+        articles_collection = db.articles
+        artworks_collection = db.artworks
+        users_collection = db.users
+        feedback_collection = db.feedback
+        algorithm_states_collection = db.algorithm_states
+        images_collection = db.images
+        
+        database_initialized = True
+        
+        # Start index creation and migrations in background
+        def init_database_async():
+            try:
+                print("[STARTUP] Creating database indexes...")
+                # Create indexes
+                db.articles.create_index("id", unique=True)
+                db.artworks.create_index("id", unique=True)
+                db.algorithm_states.create_index("timestamp")
+                db.newsletter_subscribers.create_index("email", unique=True)
+                db.feedback.create_index("article_id")
+                db.images.create_index("id", unique=True)
+                db.images.create_index("article_id")
+                
+                # Compound indexes
+                db.articles.create_index([("subspecialty", 1), ("published_date", -1)])
+                db.artworks.create_index([("subspecialty", 1), ("created_date", -1)])
+                db.artworks.create_index([("article_id", 1)])
+                db.algorithm_states.create_index([("timestamp", -1), ("articles_processed", 1)])
+                db.images.create_index([("article_id", 1), ("id", 1)])
+                
+                print("[STARTUP] Database indexes created successfully")
+                
+                # Run migrations
+                migrate_articles()
+                remove_duplicate_articles()
+                
+            except Exception as e:
+                print(f"[STARTUP ERROR] Database initialization failed: {e}")
+                import traceback
+                traceback.print_exc()
+        
+        # Run database initialization in background thread
+        init_thread = threading.Thread(target=init_database_async)
+        init_thread.daemon = True
+        init_thread.start()
+        
+    except Exception as e:
+        print(f"[STARTUP ERROR] Failed to connect to MongoDB: {e}")
+        database_initialized = False
 
 @app.get("/")
 async def root():
@@ -242,11 +288,23 @@ async def root():
 
 @app.get("/health")
 async def health_check():
-    """Health check endpoint for Railway"""
+    """Health check endpoint for Railway - always returns healthy for liveness"""
     return {
         "status": "healthy",
-        "migration_completed": migration_completed,
-        "database_connected": db is not None
+        "database_initialized": database_initialized,
+        "migration_completed": migration_completed
+    }
+
+@app.get("/ready")
+async def readiness_check():
+    """Readiness check endpoint - verifies database is connected"""
+    if not database_initialized:
+        raise HTTPException(status_code=503, detail="Database not initialized")
+    
+    return {
+        "status": "ready",
+        "database_initialized": database_initialized,
+        "migration_completed": migration_completed
     }
 
 # Algorithm state management
