@@ -959,7 +959,8 @@ async def get_articles(
 async def get_article(article_id: str):
     """Get specific article by ID"""
     try:
-        article = articles_collection.find_one({"id": article_id})
+        # Try to find by 'id' field first, then by '_id' field for backwards compatibility
+        article = articles_collection.find_one({"$or": [{"id": article_id}, {"_id": article_id}]})
         if not article:
             raise HTTPException(status_code=404, detail="Article not found")
             
@@ -1044,8 +1045,8 @@ async def get_artwork(artwork_id: str):
 async def get_article_images(article_id: str):
     """Get all images associated with an article"""
     try:
-        # Verify article exists
-        article = articles_collection.find_one({"id": article_id})
+        # Verify article exists - check both 'id' and '_id' fields
+        article = articles_collection.find_one({"$or": [{"id": article_id}, {"_id": article_id}]})
         if not article:
             raise HTTPException(status_code=404, detail="Article not found")
         

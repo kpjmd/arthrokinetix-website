@@ -1099,7 +1099,7 @@ const AdminDashboard = () => {
               
                           <div className="flex items-center space-x-2">
                             <a
-                              href={`/research/${article.id}`}
+                              href={`/articles/${article.id}`}
                               target="_blank"
                               rel="noopener noreferrer"
                               className="flex items-center px-3 py-2 text-blue-600 hover:text-blue-800 transition-colors"
