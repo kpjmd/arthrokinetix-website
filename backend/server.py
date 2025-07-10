@@ -1408,6 +1408,14 @@ async def get_articles_admin():
         for article in articles:
             article["_id"] = str(article["_id"])
             
+            # Convert datetime objects to ISO format strings
+            if "published_date" in article and hasattr(article["published_date"], "isoformat"):
+                article["published_date"] = article["published_date"].isoformat()
+            if "created_date" in article and hasattr(article["created_date"], "isoformat"):
+                article["created_date"] = article["created_date"].isoformat()
+            if "updated_date" in article and hasattr(article["updated_date"], "isoformat"):
+                article["updated_date"] = article["updated_date"].isoformat()
+            
             # Add associated artwork count
             artwork_count = artworks_collection.count_documents({"article_id": article["id"]})
             article["artwork_count"] = artwork_count
@@ -1420,6 +1428,9 @@ async def get_articles_admin():
         return {"articles": articles, "total": len(articles)}
         
     except Exception as e:
+        print(f"[ADMIN API ERROR] {type(e).__name__}: {str(e)}")
+        import traceback
+        traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.delete("/api/admin/articles/{article_id}")

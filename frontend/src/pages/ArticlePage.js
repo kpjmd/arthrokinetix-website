@@ -12,7 +12,7 @@ import SEOHead from '../components/SEOHead';
 const API_BASE = process.env.REACT_APP_BACKEND_URL || 'http://localhost:8001';
 
 const ArticlePage = ({ algorithmState, onStateUpdate }) => {
-  const { slug } = useParams();
+  const { id } = useParams();
   const { user, isSignedIn } = useUser();
   const [article, setArticle] = useState(null);
   const [artwork, setArtwork] = useState(null);
@@ -23,8 +23,9 @@ const ArticlePage = ({ algorithmState, onStateUpdate }) => {
   const [algorithmDebug, setAlgorithmDebug] = useState(null);
   
   // Debug logging
-  console.log('🔍 ArticlePage mounted with slug:', slug);
+  console.log('🔍 ArticlePage mounted with id:', id);
   console.log('🔍 Current URL:', window.location.pathname);
+  console.log('🔍 URL params:', useParams());
 
   const emotionOptions = [
     { key: 'hope', label: 'Hope', icon: '🌱', color: '#27ae60' },
@@ -37,12 +38,12 @@ const ArticlePage = ({ algorithmState, onStateUpdate }) => {
 
   useEffect(() => {
     fetchArticle();
-  }, [slug]);
+  }, [id]);
 
   const fetchArticle = async () => {
-    if (!slug) {
-      console.error('Cannot fetch article: slug is undefined');
-      setError('Invalid article URL');
+    if (!id) {
+      console.error('Cannot fetch article: id is undefined');
+      setError('Invalid article URL - no article ID provided');
       setLoading(false);
       return;
     }
@@ -50,9 +51,9 @@ const ArticlePage = ({ algorithmState, onStateUpdate }) => {
     try {
       setLoading(true);
       setError(null);
-      console.log('📖 Fetching article:', slug);
+      console.log('📖 Fetching article with ID:', id);
       
-      const response = await fetch(`${API_BASE}/api/articles/${slug}`);
+      const response = await fetch(`${API_BASE}/api/articles/${id}`);
       
       if (!response.ok) {
         console.error(`Failed to fetch article: ${response.status} ${response.statusText}`);
@@ -86,7 +87,7 @@ const ArticlePage = ({ algorithmState, onStateUpdate }) => {
         const artworkResponse = await fetch(`${API_BASE}/api/artworks`);
         const artworkData = await artworkResponse.json();
         if (artworkData.artworks?.length > 0) {
-          const matchingArtwork = artworkData.artworks.find(art => art.article_id === slug);
+          const matchingArtwork = artworkData.artworks.find(art => art.article_id === id);
           if (matchingArtwork) {
             setArtwork(matchingArtwork);
             console.log('🎨 Found matching artwork:', matchingArtwork.title);

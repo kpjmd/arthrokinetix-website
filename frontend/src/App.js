@@ -128,7 +128,7 @@ function AppContent() {
             } 
           />
           <Route 
-            path="/articles/:slug" 
+            path="/articles/:id" 
             element={
               <ArticlePage 
                 algorithmState={algorithmState}

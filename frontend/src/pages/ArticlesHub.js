@@ -57,6 +57,17 @@ const ArticlesHub = ({ algorithmState }) => {
         [];
       
       console.log(`📚 Fetched ${data.articles?.length || 0} articles, ${uniqueArticles.length} unique`);
+      
+      // Log first article structure for debugging
+      if (uniqueArticles.length > 0) {
+        console.log('📋 First article structure:', {
+          id: uniqueArticles[0].id,
+          _id: uniqueArticles[0]._id,
+          title: uniqueArticles[0].title,
+          keys: Object.keys(uniqueArticles[0])
+        });
+      }
+      
       setArticles(uniqueArticles);
     } catch (error) {
       console.error('Error fetching articles:', error);
@@ -331,13 +342,25 @@ const ArticlesHub = ({ algorithmState }) => {
                   </div>
 
                   <div className="flex gap-3">
-                    <Link 
-                      to={`/articles/${article.id}`}
-                      className="btn-primary flex-1 text-center"
-                    >
-                      <BookOpen className="w-4 h-4 mr-2" />
-                      Read Article
-                    </Link>
+                    {article.id ? (
+                      <Link 
+                        to={`/articles/${article.id}`}
+                        className="btn-primary flex-1 text-center"
+                        onClick={() => console.log('📄 Navigating to article:', article.id, article.title)}
+                      >
+                        <BookOpen className="w-4 h-4 mr-2" />
+                        Read Article
+                      </Link>
+                    ) : (
+                      <button
+                        disabled
+                        className="btn-primary flex-1 text-center opacity-50 cursor-not-allowed"
+                        title="Article ID missing"
+                      >
+                        <BookOpen className="w-4 h-4 mr-2" />
+                        Read Article
+                      </button>
+                    )}
                     
                     {getArtworkForArticle(article.id) ? (
                       <Link 
