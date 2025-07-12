@@ -2,17 +2,25 @@ import React from 'react';
 import { motion } from 'framer-motion';
 
 const EmotionalSignature = ({ signatureData, emotionalData, size = 80 }) => {
-  if (!signatureData || !emotionalData) return null;
+  if (!signatureData) return null;
+  
+  // Provide fallback emotional data if missing
+  const safeEmotionalData = emotionalData || {
+    dominant_emotion: 'confidence',
+    hope: 0.5,
+    confidence: 0.5,
+    healing: 0.5,
+    breakthrough: 0.5
+  };
 
   // Provide safe defaults for all signature properties
   const {
     concentric_rings = { count: 3, thickness: 2, rotation_speed: 1 },
     geometric_overlays = { color: '#3498db', scale: 0.5, shape: 'circle' },
-    floating_particles = { count: 8, color: '#3498db' },
-    color_gradients = []
+    floating_particles = { count: 8, color: '#3498db' }
   } = signatureData;
   
-  const dominantEmotion = emotionalData.dominant_emotion || 'confidence';
+  const dominantEmotion = safeEmotionalData.dominant_emotion || 'confidence';
 
   return (
     <div 

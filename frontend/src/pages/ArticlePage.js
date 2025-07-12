@@ -27,9 +27,9 @@ const ArticlePage = ({ algorithmState, onStateUpdate }) => {
   console.log('🔍 Current URL:', window.location.pathname);
   console.log('🔍 URL params:', useParams());
 
-  const analyzeAlgorithmData = useCallback((artworkData) => {
+  const analyzeAlgorithmData = useCallback((artworkData, articleData) => {
     const algorithmParams = artworkData.algorithm_parameters || {};
-    const emotionalData = artworkData.emotional_data || article?.emotional_data || {};
+    const emotionalData = artworkData.emotional_data || articleData?.emotional_data || {};
     
     // Check for manual algorithm indicators - check both algorithm_parameters and emotional_data
     const hasEmotionalJourney = algorithmParams.emotional_journey && Object.keys(algorithmParams.emotional_journey).length > 0;
@@ -64,7 +64,7 @@ const ArticlePage = ({ algorithmState, onStateUpdate }) => {
       },
       dataQuality: completenessScore >= 3 ? 'high' : completenessScore >= 2 ? 'medium' : 'low'
     };
-  }, [article]);
+  }, []);
 
   const fetchArticle = useCallback(async () => {
     if (!id) {
@@ -118,12 +118,7 @@ const ArticlePage = ({ algorithmState, onStateUpdate }) => {
             setArtwork(matchingArtwork);
             console.log('🎨 Found matching artwork:', matchingArtwork.title);
             
-            // Analyze algorithm data from artwork
-            if (matchingArtwork.algorithm_parameters || matchingArtwork.emotional_data) {
-              const debug = analyzeAlgorithmData(matchingArtwork);
-              setAlgorithmDebug(debug);
-              console.log('🔬 Algorithm data analysis:', debug);
-            }
+            // Note: Algorithm analysis will be done in separate useEffect
           }
         }
       } catch (artworkError) {
@@ -138,11 +133,20 @@ const ArticlePage = ({ algorithmState, onStateUpdate }) => {
       setError('Failed to load article. Please try again later.');
       setLoading(false);
     }
-  }, [id, analyzeAlgorithmData]);
+  }, [id]);
 
   useEffect(() => {
     fetchArticle();
   }, [fetchArticle]);
+
+  // Separate useEffect for algorithm analysis to prevent circular dependencies
+  useEffect(() => {
+    if (artwork && (artwork.algorithm_parameters || artwork.emotional_data)) {
+      const debug = analyzeAlgorithmData(artwork, article);
+      setAlgorithmDebug(debug);
+      console.log('🔬 Algorithm data analysis:', debug);
+    }
+  }, [artwork, article, analyzeAlgorithmData]);
 
   const getEmotionalDataToDisplay = () => {
     if (!article) return {};
@@ -372,15 +376,15 @@ const ArticlePage = ({ algorithmState, onStateUpdate }) => {
   const renderTechnicalDetails = () => {
     if (!algorithmDebug) return null;
 
-    const algorithmParams = artwork?.algorithm_parameters || article.algorithm_parameters || {};
+    const algorithmParams = artwork?.algorithm_parameters || article?.algorithm_parameters || {};
     const emotionalData = artwork?.emotional_data || article?.emotional_data || {};
     
-    // Combine data from both sources, prioritizing algorithm_parameters
+    // Safely combine data from both sources, prioritizing algorithm_parameters
     const combinedParams = {
       ...algorithmParams,
-      statistical_data: algorithmParams.statistical_data || emotionalData.statistical_data,
-      research_citations: algorithmParams.research_citations || emotionalData.research_citations,
-      medical_terms: algorithmParams.medical_terms || emotionalData.medical_terms
+      statistical_data: algorithmParams.statistical_data || emotionalData.statistical_data || [],
+      research_citations: algorithmParams.research_citations || emotionalData.research_citations || [],
+      medical_terms: algorithmParams.medical_terms || emotionalData.medical_terms || {}
     };
 
     return (
@@ -780,7 +784,7 @@ const ArticlePage = ({ algorithmState, onStateUpdate }) => {
 
                 {/* Subtle Emotional Signature - Top Right */}
                 <div className="flex flex-col items-center">
-                  {article.signature_data && emotionalData && (
+                  {article.signature_data && (
                     <div className="mb-2">
                       <EmotionalSignature 
                         signatureData={article.signature_data}
