@@ -610,6 +610,17 @@ async def create_article(
         print("\n🔮 Generating emotional signature...")
         signature_data = generate_emotional_signature(emotional_data)
         
+        # Validate signature_data was generated
+        if not signature_data or not signature_data.get("id"):
+            print("⚠️ Warning: Failed to generate signature_data, using fallback")
+            signature_data = {
+                "id": f"AKX-{datetime.utcnow().strftime('%Y-%m%d')}-{str(uuid.uuid4())[:4].upper()}",
+                "concentric_rings": {"count": 3, "thickness": 2, "rotation_speed": 1},
+                "geometric_overlays": {"shape": "circle", "color": "#3498db", "scale": 0.5},
+                "floating_particles": {"count": 8, "color": "#3498db"},
+                "rarity_score": 0.5
+            }
+        
         # Enhance emotional data with image analysis if available
         if file_data and 'image_analysis' in file_data:
             image_analysis = file_data['image_analysis']
@@ -858,7 +869,24 @@ async def create_article_multi_file(
             content=processed_content
         )
         
-        # Create article document
+        # Process emotional data BEFORE creating article document
+        emotional_data = await process_article_emotions(processed_content)
+        
+        # Generate emotional signature
+        signature_data = generate_emotional_signature(emotional_data)
+        
+        # Validate signature_data was generated
+        if not signature_data or not signature_data.get("id"):
+            print("⚠️ Warning: Failed to generate signature_data, using fallback")
+            signature_data = {
+                "id": f"AKX-{datetime.utcnow().strftime('%Y-%m%d')}-{str(uuid.uuid4())[:4].upper()}",
+                "concentric_rings": {"count": 3, "thickness": 2, "rotation_speed": 1},
+                "geometric_overlays": {"shape": "circle", "color": "#3498db", "scale": 0.5},
+                "floating_particles": {"count": 8, "color": "#3498db"},
+                "rarity_score": 0.5
+            }
+        
+        # Create article document with all data including signature
         article = {
             "id": article_id,  # Use 'id' for consistency
             "title": title,
@@ -882,18 +910,14 @@ async def create_article_multi_file(
                 }
             },
             "algorithm_result": algorithm_result,
+            "emotional_data": emotional_data,
+            "signature_data": signature_data,
             "view_count": 0
         }
         
-        # Insert article
+        # Insert article with complete data
         articles_collection.insert_one(article)
-        print(f"💾 Article saved with ID: {article_id}")
-        
-        # Process emotional data
-        emotional_data = await process_article_emotions(processed_content)
-        
-        # Generate emotional signature
-        signature_data = generate_emotional_signature(emotional_data)
+        print(f"💾 Article saved with ID: {article_id} (with signature)")
         
         # Generate artwork
         artwork = await generate_artwork(article_id, emotional_data, signature_data)
@@ -2281,6 +2305,180 @@ async def batch_generate_svgs():
             "results": results
         }
         
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/admin/check-signatures")
+async def check_signatures():
+    """Check which articles are missing signature_data"""
+    try:
+        # Find articles without signature_data
+        articles_missing = list(articles_collection.find(
+            {"signature_data": {"$exists": False}},
+            {"id": 1, "title": 1, "published_date": 1, "has_images": 1, "emotional_data": {"$exists": True}}
+        ))
+        
+        # Find articles with signature_data
+        articles_with = articles_collection.count_documents({"signature_data": {"$exists": True}})
+        
+        return {
+            "total_articles": articles_collection.count_documents({}),
+            "with_signatures": articles_with,
+            "missing_signatures": len(articles_missing),
+            "missing_articles": [
+                {
+                    "id": article.get("id") or str(article.get("_id")),
+                    "title": article.get("title"),
+                    "published_date": article.get("published_date"),
+                    "has_images": article.get("has_images", False),
+                    "has_emotional_data": article.get("emotional_data", False)
+                }
+                for article in articles_missing
+            ]
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/admin/fix-signatures")
+async def fix_missing_signatures():
+    """Fix all articles missing signature_data"""
+    try:
+        # Find articles without signature_data
+        articles_missing_signature = list(articles_collection.find({
+            "signature_data": {"$exists": False}
+        }))
+        
+        print(f"🔍 Found {len(articles_missing_signature)} articles missing signature_data")
+        
+        fixed_count = 0
+        failed_count = 0
+        results = []
+        
+        for article in articles_missing_signature:
+            try:
+                article_id = article.get("id") or article.get("_id")
+                print(f"📝 Processing article: {article.get('title')} (ID: {article_id})")
+                
+                # Check if article has emotional_data
+                emotional_data = article.get("emotional_data")
+                
+                if not emotional_data:
+                    # Try to regenerate emotional data
+                    content = article.get("content", "")
+                    if content:
+                        print(f"  🤖 Regenerating emotional data...")
+                        emotional_data = await process_article_emotions(content)
+                        
+                        # Update article with emotional_data
+                        articles_collection.update_one(
+                            {"id": article_id},
+                            {"$set": {"emotional_data": emotional_data}}
+                        )
+                
+                if emotional_data:
+                    # Generate signature
+                    signature_data = generate_emotional_signature(emotional_data)
+                    
+                    # Update article with signature_data
+                    articles_collection.update_one(
+                        {"id": article_id},
+                        {"$set": {"signature_data": signature_data}}
+                    )
+                    
+                    fixed_count += 1
+                    results.append({
+                        "article_id": article_id,
+                        "title": article.get("title"),
+                        "status": "fixed",
+                        "signature_id": signature_data.get("id")
+                    })
+                    print(f"  ✅ Fixed! Signature ID: {signature_data.get('id')}")
+                else:
+                    failed_count += 1
+                    results.append({
+                        "article_id": article_id,
+                        "title": article.get("title"),
+                        "status": "failed",
+                        "reason": "No emotional data available"
+                    })
+                    print(f"  ❌ Failed: No emotional data")
+                    
+            except Exception as e:
+                failed_count += 1
+                results.append({
+                    "article_id": article.get("id") or article.get("_id"),
+                    "title": article.get("title"),
+                    "status": "error",
+                    "error": str(e)
+                })
+                print(f"  ❌ Error: {e}")
+        
+        return {
+            "total_missing": len(articles_missing_signature),
+            "fixed": fixed_count,
+            "failed": failed_count,
+            "results": results
+        }
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/admin/articles/{article_id}/fix-signature")
+async def fix_article_signature(article_id: str):
+    """Fix signature_data for a specific article"""
+    try:
+        # Find the article
+        article = articles_collection.find_one({"id": article_id})
+        
+        if not article:
+            raise HTTPException(status_code=404, detail="Article not found")
+        
+        # Check if already has signature_data
+        if article.get("signature_data"):
+            return {
+                "status": "already_exists",
+                "article_id": article_id,
+                "title": article.get("title"),
+                "signature_id": article["signature_data"].get("id"),
+                "message": "Article already has signature_data"
+            }
+        
+        # Get or generate emotional_data
+        emotional_data = article.get("emotional_data")
+        
+        if not emotional_data:
+            content = article.get("content", "")
+            if not content:
+                raise HTTPException(status_code=400, detail="Article has no content to analyze")
+            
+            print(f"🤖 Generating emotional data for article: {article.get('title')}")
+            emotional_data = await process_article_emotions(content)
+            
+            # Update article with emotional_data
+            articles_collection.update_one(
+                {"id": article_id},
+                {"$set": {"emotional_data": emotional_data}}
+            )
+        
+        # Generate signature
+        signature_data = generate_emotional_signature(emotional_data)
+        
+        # Update article with signature_data
+        articles_collection.update_one(
+            {"id": article_id},
+            {"$set": {"signature_data": signature_data}}
+        )
+        
+        return {
+            "status": "fixed",
+            "article_id": article_id,
+            "title": article.get("title"),
+            "signature_data": signature_data,
+            "message": "Signature generated successfully"
+        }
+        
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
