@@ -27,11 +27,6 @@ const ArticlePage = ({ algorithmState, onStateUpdate }) => {
   console.log('🔍 Current URL:', window.location.pathname);
   console.log('🔍 URL params:', useParams());
 
-
-  useEffect(() => {
-    fetchArticle();
-  }, [fetchArticle]);
-
   const fetchArticle = useCallback(async () => {
     if (!id) {
       console.error('Cannot fetch article: id is undefined');
@@ -105,6 +100,10 @@ const ArticlePage = ({ algorithmState, onStateUpdate }) => {
       setLoading(false);
     }
   }, [id]);
+
+  useEffect(() => {
+    fetchArticle();
+  }, [fetchArticle]);
 
   const analyzeAlgorithmData = (artworkData) => {
     const algorithmParams = artworkData.algorithm_parameters || {};
@@ -876,83 +875,3 @@ const ArticlePage = ({ algorithmState, onStateUpdate }) => {
 };
 
 export default ArticlePage;
-  id,
-  title: "Enhanced Biceps Tenotomy vs. Tenodesis Analysis",
-  content_type: "html",
-  content: `This comprehensive analysis explores the surgical decision-making process between biceps tenotomy and tenodesis procedures...`,
-  subspecialty: "shoulderElbow",
-  published_date: new Date().toISOString(),
-  read_time: 12,
-  evidence_strength: 0.85,
-  meta_description: "Deep dive into biceps surgical options with enhanced algorithmic emotional analysis.",
-  
-  // Enhanced sample data structure matching manual algorithm
-  algorithm_parameters: {
-    algorithm_version: '2.0-manual-enhanced',
-    evidence_strength: 0.85,
-    technical_density: 0.78,
-    subspecialty: 'shoulderElbow',
-    dominant_emotion: 'confidence',
-    
-    // Complete emotional journey data
-    emotional_journey: {
-      problemIntensity: 180,
-      solutionConfidence: 850,
-      innovationLevel: 420,
-      healingPotential: 760,
-      uncertaintyLevel: 240,
-      dominantEmotion: 'confidence'
-    },
-    
-    // Enhanced medical terms
-    medical_terms: {
-      procedures: {
-        "tenotomy": { count: 15, weight: 1.0, significance: 15.0 },
-        "tenodesis": { count: 18, weight: 1.0, significance: 18.0 },
-        "arthroscopy": { count: 8, weight: 1.0, significance: 8.0 }
-      },
-      anatomy: {
-        "biceps": { count: 25, weight: 0.8, significance: 20.0 },
-        "shoulder": { count: 20, weight: 0.8, significance: 16.0 },
-        "labrum": { count: 12, weight: 0.8, significance: 9.6 }
-      },
-      outcomes: {
-        "satisfaction": { count: 10, weight: 1.2, significance: 12.0 },
-        "function": { count: 8, weight: 1.2, significance: 9.6 }
-      }
-    },
-    
-    // Statistical data array
-    statistical_data: [
-      { type: "percentages", value: 91, significance: 0.91, rawText: "91% satisfaction" },
-      { type: "percentages", value: 96, significance: 0.96, rawText: "96% satisfaction" },
-      { type: "pValues", value: 0.03, significance: 0.97, rawText: "p < 0.03" }
-    ],
-    
-    // Research citations
-    research_citations: [
-      { index: 0, importance: 0.9, impact: 0.95 },
-      { index: 1, importance: 0.85, impact: 0.9 },
-      { index: 2, importance: 0.8, impact: 0.85 }
-    ],
-    
-    processing_timestamp: new Date().toISOString(),
-    article_word_count: 2847,
-    data_complexity: 0.82
-  },
-  
-  signature_data: {
-    id: "AKX-SAMPLE-ENHANCED",
-    rarity_score: 0.84,
-    concentric_rings: { count: 5, thickness: 3, rotation_speed: 1.2 },
-    geometric_overlays: { shape: "circle", color: "#3498db", scale: 1.1 },
-    floating_particles: { count: 12, color: "#3498db" }
-  }
-});
-
-const getSampleArtwork = (articleId) => ({
-  id: `artwork-${articleId}`,
-  article_id: articleId,
-  title: "Enhanced Algorithmic Synthesis #AKX-SAMPLE-ENHANCED",
-  dominant_emotion: "confidence",
-  created_date: new Date().toISOString()
