@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Search, Filter, Grid, List, BookOpen, Clock, Award } from 'lucide-react';
+import { Search, Filter, Grid, List, BookOpen, Clock, Award, FileText, Shield, CheckCircle } from 'lucide-react';
 import EmotionalSignature from '../components/EmotionalSignature';
 import { ArticlesNewsletterForm } from '../components/NewsletterForms';
 
 const API_BASE = process.env.REACT_APP_BACKEND_URL || 'http://localhost:8001';
 
-const ArticlesHub = ({ algorithmState }) => {
+const ArticlesHub = () => {
   const [articles, setArticles] = useState([]);
   const [artworks, setArtworks] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -31,8 +31,8 @@ const ArticlesHub = ({ algorithmState }) => {
 
   const sortOptions = [
     { key: 'date', label: 'Publication Date' },
-    { key: 'emotional_intensity', label: 'Emotional Intensity' },
     { key: 'evidence_strength', label: 'Evidence Strength' },
+    { key: 'clinical_relevance', label: 'Clinical Relevance' },
     { key: 'read_time', label: 'Read Time' }
   ];
 
@@ -100,8 +100,11 @@ const ArticlesHub = ({ algorithmState }) => {
     )
     .sort((a, b) => {
       switch (sortBy) {
-        case 'emotional_intensity':
-          return (b.emotional_data?.emotional_intensity || 0) - (a.emotional_data?.emotional_intensity || 0);
+        case 'clinical_relevance':
+          // Sort by combination of evidence strength and technical density
+          const aRelevance = ((a.evidence_strength || 0) * 0.7) + ((a.technical_density || 0) * 0.3);
+          const bRelevance = ((b.evidence_strength || 0) * 0.7) + ((b.technical_density || 0) * 0.3);
+          return bRelevance - aRelevance;
         case 'evidence_strength':
           return (b.evidence_strength || 0) - (a.evidence_strength || 0);
         case 'read_time':
@@ -113,8 +116,20 @@ const ArticlesHub = ({ algorithmState }) => {
 
   return (
     <div className="min-h-screen bg-gray-50 pt-16">
-      {/* Header */}
-      <section className="bg-gradient-to-r from-primary to-secondary text-white py-16">
+      <style jsx>{`
+        .subspecialty-gradient-sportsMedicine { background: linear-gradient(135deg, #3b82f6, #2563eb); }
+        .subspecialty-gradient-jointReplacement { background: linear-gradient(135deg, #8b5cf6, #7c3aed); }
+        .subspecialty-gradient-trauma { background: linear-gradient(135deg, #ef4444, #dc2626); }
+        .subspecialty-gradient-spine { background: linear-gradient(135deg, #10b981, #059669); }
+        .subspecialty-gradient-handUpperExtremity { background: linear-gradient(135deg, #f59e0b, #d97706); }
+        .subspecialty-gradient-footAnkle { background: linear-gradient(135deg, #ec4899, #db2777); }
+        .subspecialty-gradient-shoulderElbow { background: linear-gradient(135deg, #6366f1, #4f46e5); }
+        .subspecialty-gradient-pediatrics { background: linear-gradient(135deg, #14b8a6, #0d9488); }
+        .subspecialty-gradient-oncology { background: linear-gradient(135deg, #a855f7, #9333ea); }
+        .subspecialty-gradient-undefined { background: linear-gradient(135deg, #6b7280, #4b5563); }
+      `}</style>
+      {/* Professional Header */}
+      <section className="bg-gradient-to-r from-slate-50 to-blue-50 border-b py-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <motion.div
             initial={{ y: 50, opacity: 0 }}
@@ -122,11 +137,28 @@ const ArticlesHub = ({ algorithmState }) => {
             transition={{ duration: 0.8 }}
             className="text-center"
           >
-            <h1 className="text-4xl font-bold mb-4">Medical Content Hub</h1>
-            <p className="text-xl text-blue-100 max-w-3xl mx-auto">
-              Explore evidence-based medical content in orthopedic and sports medicine, 
-              enhanced with emotional intelligence and transformed into algorithmic art.
+            <div className="flex items-center justify-center mb-4">
+              <Shield className="w-8 h-8 text-blue-600 mr-3" />
+              <h1 className="text-4xl font-bold text-gray-900">Medical Literature Library</h1>
+            </div>
+            <p className="text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed">
+              Access evidence-based clinical content in orthopedic surgery and sports medicine. 
+              Our curated library provides peer-reviewed insights for medical professionals and researchers.
             </p>
+            <div className="mt-8 flex items-center justify-center space-x-6 text-sm text-gray-500">
+              <span className="flex items-center">
+                <CheckCircle className="w-4 h-4 mr-1 text-green-600" />
+                Evidence-Based Content
+              </span>
+              <span className="flex items-center">
+                <FileText className="w-4 h-4 mr-1 text-blue-600" />
+                Clinical Perspectives
+              </span>
+              <span className="flex items-center">
+                <Award className="w-4 h-4 mr-1 text-purple-600" />
+                Research Quality
+              </span>
+            </div>
           </motion.div>
         </div>
       </section>
@@ -140,8 +172,8 @@ const ArticlesHub = ({ algorithmState }) => {
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
               <input
                 type="text"
-                placeholder="Search medical content..."
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-secondary focus:border-transparent"
+                placeholder="Search clinical literature..."
+                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
@@ -152,7 +184,7 @@ const ArticlesHub = ({ algorithmState }) => {
               <select
                 value={selectedSubspecialty}
                 onChange={(e) => setSelectedSubspecialty(e.target.value)}
-                className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-secondary focus:border-transparent"
+                className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               >
                 {subspecialties.map(sub => (
                   <option key={sub.value} value={sub.value}>{sub.label}</option>
@@ -162,7 +194,7 @@ const ArticlesHub = ({ algorithmState }) => {
               <select
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value)}
-                className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-secondary focus:border-transparent"
+                className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               >
                 {sortOptions.map(option => (
                   <option key={option.key} value={option.key}>Sort by {option.label}</option>
@@ -173,13 +205,15 @@ const ArticlesHub = ({ algorithmState }) => {
               <div className="flex border border-gray-300 rounded-lg overflow-hidden">
                 <button
                   onClick={() => setViewMode('grid')}
-                  className={`p-2 ${viewMode === 'grid' ? 'bg-secondary text-white' : 'bg-white text-gray-600'}`}
+                  className={`p-2 ${viewMode === 'grid' ? 'bg-blue-600 text-white' : 'bg-white text-gray-600'}`}
+                  title="Grid view"
                 >
                   <Grid className="w-5 h-5" />
                 </button>
                 <button
                   onClick={() => setViewMode('list')}
-                  className={`p-2 ${viewMode === 'list' ? 'bg-secondary text-white' : 'bg-white text-gray-600'}`}
+                  className={`p-2 ${viewMode === 'list' ? 'bg-blue-600 text-white' : 'bg-white text-gray-600'}`}
+                  title="List view"
                 >
                   <List className="w-5 h-5" />
                 </button>
@@ -192,211 +226,266 @@ const ArticlesHub = ({ algorithmState }) => {
       {/* Results Count */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         <div className="flex items-center justify-between">
-          <p className="text-gray-600">
-            {loading ? 'Loading...' : `${filteredAndSortedArticles.length} articles found`}
-          </p>
+          <div>
+            <p className="text-gray-900 font-medium">
+              {loading ? 'Loading publications...' : (
+                <>
+                  <span className="text-2xl font-semibold">{filteredAndSortedArticles.length}</span>
+                  <span className="text-gray-600 ml-2">clinical publications found</span>
+                </>
+              )}
+            </p>
+            {selectedSubspecialty !== 'all' && (
+              <p className="text-sm text-gray-500 mt-1">
+                Filtered by {subspecialties.find(s => s.value === selectedSubspecialty)?.label}
+              </p>
+            )}
+          </div>
           
-          {algorithmState && (
-            <div className="flex items-center gap-2 text-sm text-gray-600">
-              <span>Algorithm is currently feeling:</span>
-              <span 
-                className="font-medium capitalize"
-                style={{ color: algorithmState.visual_representation?.color }}
-              >
-                {algorithmState.emotional_state?.dominant_emotion}
-              </span>
-            </div>
-          )}
+          <div className="text-sm text-gray-500">
+            <span className="flex items-center">
+              <Shield className="w-4 h-4 mr-1" />
+              Quality-verified content
+            </span>
+          </div>
         </div>
       </section>
 
       {/* Articles Grid/List */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-20">
         {loading ? (
-          <div className={viewMode === 'grid' ? 'grid md:grid-cols-2 lg:grid-cols-3 gap-8' : 'space-y-6'}>
-            {Array.from({ length: 6 }).map((_, index) => (
-              <div key={index} className="loading-skeleton h-64 rounded-lg" />
-            ))}
+          <div className="flex flex-col items-center justify-center py-20">
+            <div className="w-16 h-16 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin mb-4"></div>
+            <p className="text-gray-600">Loading clinical publications...</p>
           </div>
         ) : (
-          <div className={viewMode === 'grid' ? 'grid md:grid-cols-2 lg:grid-cols-3 gap-8' : 'space-y-6'}>
-            {filteredAndSortedArticles.map((article, index) => (
-              <motion.div
-                key={article.id}
-                initial={{ y: 50, opacity: 0 }}
-                animate={{ y: 0, opacity: 1 }}
-                transition={{ duration: 0.5, delay: index * 0.1 }}
-                className={viewMode === 'grid' ? 'article-card relative' : 'article-card flex gap-6 relative'}
-              >
-                {/* Emotional Signature */}
-                {article.signature_data && viewMode === 'grid' && (
-                  <div className="absolute -top-10 -right-10">
-                    <EmotionalSignature 
-                      signatureData={article.signature_data}
-                      emotionalData={article.emotional_data}
-                      size={70}
-                    />
-                  </div>
-                )}
+          <div className={viewMode === 'grid' ? 'grid md:grid-cols-2 lg:grid-cols-3 gap-6' : 'space-y-4'}>
+            {filteredAndSortedArticles.map((article, index) => {
+              const evidenceStrength = article.evidence_strength || 0;
+              const evidenceQuality = getEvidenceQualityBadge(evidenceStrength, article.technical_density);
+              
+              return (
+                <motion.div
+                  key={article.id}
+                  initial={{ y: 20, opacity: 0 }}
+                  animate={{ y: 0, opacity: 1 }}
+                  transition={{ duration: 0.4, delay: index * 0.05 }}
+                  className={viewMode === 'grid' ? 
+                    'bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow border border-gray-100' : 
+                    'bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow border border-gray-100 flex gap-6'
+                  }
+                >
+                  {/* Grid View Layout */}
+                  {viewMode === 'grid' && (
+                    <div className="relative">
+                      {/* Subtle Emotional Signature - Top Right Corner */}
+                      {article.signature_data && (
+                        <div className="absolute top-4 right-4 z-10">
+                          <EmotionalSignature 
+                            signatureData={article.signature_data}
+                            emotionalData={article.emotional_data}
+                            size={40}
+                          />
+                        </div>
+                      )}
 
-                {viewMode === 'list' && article.signature_data && (
-                  <div className="flex-shrink-0">
-                    <EmotionalSignature 
-                      signatureData={article.signature_data}
-                      emotionalData={article.emotional_data}
-                      size={80}
-                    />
-                  </div>
-                )}
+                      {/* Cover Image or Subspecialty Header */}
+                      {article.has_images && article.cover_image_id ? (
+                        <div className="w-full h-48 bg-gray-100 rounded-t-lg overflow-hidden">
+                          <img
+                            src={`${API_BASE}/api/images/${article.cover_image_id}?version=medium`}
+                            alt={article.title}
+                            className="w-full h-full object-cover"
+                            onError={(e) => {
+                              e.target.style.display = 'none';
+                              e.target.parentElement.style.display = 'none';
+                            }}
+                          />
+                        </div>
+                      ) : (
+                        <div className={`w-full h-16 rounded-t-lg bg-gradient-to-r subspecialty-gradient-${article.subspecialty} flex items-center px-6`}>
+                          <FileText className="w-5 h-5 text-white/80 mr-2" />
+                          <span className="text-white font-medium capitalize">
+                            {article.subspecialty?.replace(/([A-Z])/g, ' $1').trim() || 'Clinical Article'}
+                          </span>
+                        </div>
+                      )}
+                
+                      <div className="p-6">
+                        {/* Evidence Quality Badge */}
+                        <div className="mb-3">
+                          {evidenceQuality}
+                        </div>
+                        
+                        {/* Article Title */}
+                        <h3 className="font-semibold text-lg text-gray-900 mb-3 line-clamp-2 hover:text-blue-600 transition-colors">
+                          {article.title}
+                        </h3>
+                        
+                        {/* Professional Metadata */}
+                        <div className="flex flex-wrap items-center gap-3 text-sm text-gray-600 mb-4">
+                          <span className="flex items-center">
+                            <Clock className="w-4 h-4 mr-1" />
+                            {article.read_time || 5} min read
+                          </span>
+                          <span className="flex items-center">
+                            <FileText className="w-4 h-4 mr-1" />
+                            {article.content_type?.toUpperCase() || 'TEXT'}
+                          </span>
+                          {article.published_date && (
+                            <span className="text-gray-500">
+                              {new Date(article.published_date).toLocaleDateString('en-US', { 
+                                month: 'short', 
+                                day: 'numeric', 
+                                year: 'numeric' 
+                              })}
+                            </span>
+                          )}
+                        </div>
+                        
+                        {/* Meta Description or Excerpt */}
+                        {article.meta_description && (
+                          <p className="text-sm text-gray-600 mb-4 line-clamp-2">
+                            {article.meta_description}
+                          </p>
+                        )}
 
-                {/* Cover Image */}
-                {article.has_images && article.cover_image_id && viewMode === 'grid' && (
-                  <div className="w-full h-48 bg-gray-100 rounded-t-lg overflow-hidden">
-                    <img
-                      src={`${API_BASE}/api/images/${article.cover_image_id}?version=medium`}
-                      alt={article.title}
-                      className="w-full h-full object-cover"
-                      onError={(e) => {
-                        e.target.style.display = 'none';
-                        e.target.parentElement.style.display = 'none';
-                      }}
-                    />
-                  </div>
-                )}
-                
-                {/* Subspecialty Color Bar */}
-                <div className={`w-full h-4 ${article.has_images && article.cover_image_id && viewMode === 'grid' ? '' : 'rounded-t-lg'} subspecialty-${article.subspecialty} ${viewMode === 'list' ? 'hidden' : ''}`} />
-                
-                <div className={viewMode === 'grid' ? 'p-6' : 'flex-1 py-6'}>
-                  <div className="flex items-start justify-between mb-4">
-                    <h3 className="font-semibold text-xl text-primary mb-2 line-clamp-3 flex-1">
-                      {article.title}
-                    </h3>
-                    
-                    {viewMode === 'list' && (
-                      <div className="ml-4 flex items-center gap-2">
-                        <Award 
-                          className="w-5 h-5"
-                          style={{ color: getEmotionColor(article.emotional_data?.dominant_emotion) }}
-                        />
-                        <span className="text-sm font-medium">
-                          {Math.round((article.evidence_strength || 0) * 100)}%
-                        </span>
+                        {/* Subtle Clinical Insight */}
+                        {article.emotional_data?.dominant_emotion && (
+                          <div className="text-xs text-gray-500 mb-4">
+                            Clinical focus: <span className="capitalize font-medium">{article.emotional_data.dominant_emotion}</span>
+                          </div>
+                        )}
+
+                        {/* Action Button */}
+                        <Link 
+                          to={`/articles/${article.id}`}
+                          className="inline-flex items-center text-blue-600 hover:text-blue-700 font-medium text-sm transition-colors"
+                        >
+                          Read Full Article
+                          <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                          </svg>
+                        </Link>
                       </div>
-                    )}
-                  </div>
-                  
-                  {/* Article metadata */}
-                  <div className="flex flex-wrap items-center gap-4 text-sm text-gray-500 mb-4">
-                    <span className="flex items-center gap-1">
-                      <Filter className="w-4 h-4" />
-                      <span className="capitalize">{article.subspecialty?.replace(/([A-Z])/g, ' $1')}</span>
-                    </span>
-                    <span className="flex items-center gap-1">
-                      <Clock className="w-4 h-4" />
-                      <span>{article.read_time || 5} min read</span>
-                    </span>
-                    <span className="flex items-center gap-1">
-                      <Award className="w-4 h-4" />
-                      <span>{Math.round((article.evidence_strength || 0) * 100)}% evidence</span>
-                    </span>
-                  </div>
-
-                  {/* Emotional data */}
-                  <div className="space-y-3 mb-6">
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm text-gray-500">Dominant emotion:</span>
-                      <span 
-                        className="text-sm font-medium capitalize"
-                        style={{ color: getEmotionColor(article.emotional_data?.dominant_emotion) }}
-                      >
-                        {article.emotional_data?.dominant_emotion}
-                      </span>
                     </div>
-
-                    {/* Emotional intensity bars */}
-                    {article.emotional_data && (
-                      <div className="space-y-2">
-                        {['hope', 'confidence', 'healing', 'breakthrough'].map(emotion => {
-                          const value = article.emotional_data[emotion] || 0;
-                          if (value < 0.1) return null;
-                          
-                          return (
-                            <div key={emotion} className="flex items-center gap-2">
-                              <span className="text-xs capitalize text-gray-500 w-20">{emotion}:</span>
-                              <div className="flex-1 h-2 bg-gray-200 rounded">
-                                <div 
-                                  className="h-full rounded transition-all duration-300"
-                                  style={{ 
-                                    width: `${value * 100}%`, 
-                                    backgroundColor: getEmotionColor(emotion)
-                                  }}
-                                />
-                              </div>
-                              <span className="text-xs text-gray-500 w-8">{Math.round(value * 100)}%</span>
+                  )}
+                  
+                  {/* List View Layout */}
+                  {viewMode === 'list' && (
+                    <>
+                      <div className="flex-1 p-6">
+                        <div className="flex items-start justify-between mb-3">
+                          <div className="flex-1">
+                            {/* Evidence Badge and Title */}
+                            <div className="flex items-center gap-3 mb-2">
+                              {evidenceQuality}
+                              <span className="text-sm text-gray-500">
+                                {article.subspecialty?.replace(/([A-Z])/g, ' $1').trim() || 'Clinical Article'}
+                              </span>
                             </div>
-                          );
-                        })}
+                            <h3 className="font-semibold text-xl text-gray-900 mb-2 hover:text-blue-600 transition-colors">
+                              {article.title}
+                            </h3>
+                          </div>
+                          
+                          {/* Subtle Signature for List View */}
+                          {article.signature_data && (
+                            <div className="ml-4">
+                              <EmotionalSignature 
+                                signatureData={article.signature_data}
+                                emotionalData={article.emotional_data}
+                                size={50}
+                              />
+                            </div>
+                          )}
+                        </div>
+                        
+                        {/* Metadata Bar */}
+                        <div className="flex items-center gap-4 text-sm text-gray-600 mb-3">
+                          <span className="flex items-center">
+                            <Clock className="w-4 h-4 mr-1" />
+                            {article.read_time || 5} min read
+                          </span>
+                          <span className="flex items-center">
+                            <FileText className="w-4 h-4 mr-1" />
+                            {article.content_type?.toUpperCase() || 'TEXT'}
+                          </span>
+                          {article.published_date && (
+                            <span>
+                              {new Date(article.published_date).toLocaleDateString('en-US', { 
+                                month: 'short', 
+                                day: 'numeric', 
+                                year: 'numeric' 
+                              })}
+                            </span>
+                          )}
+                        </div>
+                        
+                        {/* Description */}
+                        {article.meta_description && (
+                          <p className="text-gray-600 mb-4 line-clamp-2">
+                            {article.meta_description}
+                          </p>
+                        )}
+                        
+                        {/* Actions */}
+                        <div className="flex items-center gap-4">
+                          <Link 
+                            to={`/articles/${article.id}`}
+                            className="inline-flex items-center text-blue-600 hover:text-blue-700 font-medium transition-colors"
+                          >
+                            Read Full Article
+                            <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                            </svg>
+                          </Link>
+                          
+                          {getArtworkForArticle(article.id) && (
+                            <Link 
+                              to={`/gallery/${getArtworkForArticle(article.id).id}`}
+                              className="text-sm text-gray-500 hover:text-gray-700 transition-colors"
+                            >
+                              View Visualization
+                            </Link>
+                          )}
+                        </div>
                       </div>
-                    )}
-                  </div>
-
-                  <div className="flex gap-3">
-                    {article.id ? (
-                      <Link 
-                        to={`/articles/${article.id}`}
-                        className="btn-primary flex-1 text-center"
-                        onClick={() => console.log('📄 Navigating to article:', article.id, article.title)}
-                      >
-                        <BookOpen className="w-4 h-4 mr-2" />
-                        Read Article
-                      </Link>
-                    ) : (
-                      <button
-                        disabled
-                        className="btn-primary flex-1 text-center opacity-50 cursor-not-allowed"
-                        title="Article ID missing"
-                      >
-                        <BookOpen className="w-4 h-4 mr-2" />
-                        Read Article
-                      </button>
-                    )}
-                    
-                    {getArtworkForArticle(article.id) ? (
-                      <Link 
-                        to={`/gallery/${getArtworkForArticle(article.id).id}`}
-                        className="btn-secondary"
-                      >
-                        View Art
-                      </Link>
-                    ) : (
-                      <button 
-                        disabled
-                        className="btn-secondary opacity-50 cursor-not-allowed"
-                        title="No artwork available for this article"
-                      >
-                        View Art
-                      </button>
-                    )}
-                  </div>
-                </div>
-              </motion.div>
-            ))}
+                    </>
+                  )}
+                </motion.div>
+              );
+            })}
           </div>
         )}
 
         {!loading && filteredAndSortedArticles.length === 0 && (
-          <div className="text-center py-20">
-            <BookOpen className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-xl font-semibold text-gray-600 mb-2">No articles found</h3>
-            <p className="text-gray-500">Try adjusting your search terms or filters.</p>
+          <div className="text-center py-20 bg-white rounded-lg border border-gray-200">
+            <FileText className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+            <h3 className="text-xl font-semibold text-gray-700 mb-2">No clinical publications found</h3>
+            <p className="text-gray-500 mb-6">Try adjusting your search terms or filters to find relevant medical content.</p>
+            <Link 
+              to="/" 
+              className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            >
+              Return to Homepage
+            </Link>
           </div>
         )}
       </section>
 
-      {/* Newsletter Signup Section */}
-      <section className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pb-16">
-        <ArticlesNewsletterForm />
+      {/* Professional Newsletter Section */}
+      <section className="bg-gray-100 border-t mt-16">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+          <div className="text-center mb-8">
+            <h2 className="text-2xl font-bold text-gray-900 mb-3">Stay Informed with Clinical Updates</h2>
+            <p className="text-gray-600 max-w-2xl mx-auto">
+              Join our professional community to receive evidence-based medical content, 
+              research insights, and clinical perspectives delivered to your inbox.
+            </p>
+          </div>
+          <ArticlesNewsletterForm />
+        </div>
       </section>
     </div>
   );
@@ -414,6 +503,33 @@ const getEmotionColor = (emotion) => {
   return colors[emotion] || '#3498db';
 };
 
+const getEvidenceQualityBadge = (evidenceStrength, technicalDensity) => {
+  const strength = evidenceStrength || 0;
+  const density = technicalDensity || 0;
+  const overallQuality = (strength * 0.7) + (density * 0.3);
+  
+  let badgeColor = 'bg-gray-100 text-gray-700';
+  let badgeText = 'Clinical Content';
+  
+  if (overallQuality >= 0.8) {
+    badgeColor = 'bg-green-100 text-green-800';
+    badgeText = 'High Evidence Quality';
+  } else if (overallQuality >= 0.6) {
+    badgeColor = 'bg-blue-100 text-blue-800';
+    badgeText = 'Strong Evidence';
+  } else if (overallQuality >= 0.4) {
+    badgeColor = 'bg-yellow-100 text-yellow-800';
+    badgeText = 'Moderate Evidence';
+  }
+  
+  return (
+    <div className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${badgeColor}`}>
+      <CheckCircle className="w-3 h-3 mr-1" />
+      {badgeText}
+    </div>
+  );
+};
+
 const generateSampleArticles = () => [
   {
     id: '1',
@@ -422,6 +538,9 @@ const generateSampleArticles = () => [
     published_date: '2024-03-01',
     read_time: 8,
     evidence_strength: 0.85,
+    technical_density: 0.78,
+    content_type: 'text',
+    meta_description: 'Comprehensive analysis of ACL reconstruction outcomes in elite athletes, examining return-to-sport rates and long-term functional outcomes.',
     emotional_data: { 
       dominant_emotion: 'confidence',
       hope: 0.6,
@@ -445,6 +564,9 @@ const generateSampleArticles = () => [
     published_date: '2024-02-28',
     read_time: 12,
     evidence_strength: 0.92,
+    technical_density: 0.85,
+    content_type: 'html',
+    meta_description: 'Exploring cutting-edge stem cell therapy approaches for rotator cuff repair, with focus on regenerative medicine applications.',
     emotional_data: { 
       dominant_emotion: 'breakthrough',
       hope: 0.8,
@@ -468,6 +590,9 @@ const generateSampleArticles = () => [
     published_date: '2024-02-25',
     read_time: 6,
     evidence_strength: 0.78,
+    technical_density: 0.72,
+    content_type: 'text',
+    meta_description: 'Current evidence on regenerative medicine approaches for meniscus tear treatment, focusing on healing potential and patient outcomes.',
     emotional_data: { 
       dominant_emotion: 'healing',
       hope: 0.9,
@@ -491,6 +616,9 @@ const generateSampleArticles = () => [
     published_date: '2024-02-20',
     read_time: 10,
     evidence_strength: 0.82,
+    technical_density: 0.88,
+    content_type: 'pdf',
+    meta_description: 'Systematic review of complications and risk factors in total hip arthroplasty, providing evidence-based risk stratification strategies.',
     emotional_data: { 
       dominant_emotion: 'tension',
       hope: 0.3,
@@ -515,6 +643,9 @@ const generateSampleArticles = () => [
     published_date: '2024-02-15',
     read_time: 7,
     evidence_strength: 0.65,
+    technical_density: 0.75,
+    content_type: 'text',
+    meta_description: 'Systematic review examining uncertainties in current spinal fusion techniques and their impact on surgical decision-making.',
     emotional_data: { 
       dominant_emotion: 'uncertainty',
       hope: 0.4,
@@ -539,6 +670,9 @@ const generateSampleArticles = () => [
     published_date: '2024-02-10',
     read_time: 9,
     evidence_strength: 0.88,
+    technical_density: 0.82,
+    content_type: 'html',
+    meta_description: 'Review of innovative microsurgical techniques in hand surgery, highlighting recent advances and clinical applications.', 
     emotional_data: { 
       dominant_emotion: 'breakthrough',
       hope: 0.75,

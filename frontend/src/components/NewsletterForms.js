@@ -73,9 +73,9 @@ const NewsletterSignup = ({
         <h3 className="text-lg font-bold text-green-800 mb-2">Welcome to Arthrokinetix!</h3>
         <p className="text-green-700 text-sm">{message}</p>
         <div className="mt-4 text-xs text-green-600">
-          <p>✓ Medical content updates</p>
-          <p>✓ Algorithm evolution reports</p>
-          <p>✓ Early NFT access</p>
+          <p>✓ Clinical evidence updates</p>
+          <p>✓ Research insights and analysis</p>
+          <p>✓ Professional community access</p>
         </div>
       </motion.div>
     );
@@ -126,7 +126,7 @@ const NewsletterSignup = ({
       </form>
       
       <p className="text-xs text-gray-500 mt-4">
-        Join healthcare professionals and art enthusiasts. Unsubscribe anytime.
+        Join medical professionals and researchers. Unsubscribe anytime.
       </p>
     </motion.div>
   );
@@ -186,8 +186,8 @@ export const GalleryNewsletterForm = () => (
 // Articles Page Newsletter Form
 export const ArticlesNewsletterForm = () => (
   <NewsletterSignup
-    title="Stay Updated with Medical Content"
-    description="Subscribe for weekly evidence-based medical articles, unlock emotional feedback features, and influence our AI algorithm's development."
+    title="Clinical Evidence Updates"
+    description="Join healthcare professionals receiving weekly evidence-based content, research insights, and opportunities to contribute clinical perspectives to our evolving platform."
     icon={FileText}
     iconColor="#2563eb"
     bgGradient="from-blue-50 to-cyan-50"
