@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Award, CheckCircle, Stethoscope, GraduationCap } from 'lucide-react';
+import { Award, CheckCircle, Stethoscope } from 'lucide-react';
 
 const MedicalAuthorityBadge = ({ variant = 'hero', className = '' }) => {
   if (variant === 'hero') {
@@ -25,7 +25,7 @@ const MedicalAuthorityBadge = ({ variant = 'hero', className = '' }) => {
           </div>
         </div>
         
-        <div className="mt-4 grid grid-cols-3 gap-4">
+        <div className="mt-4 grid grid-cols-2 gap-4">
           <motion.div 
             className="flex items-center gap-2"
             whileHover={{ scale: 1.05 }}
@@ -38,19 +38,12 @@ const MedicalAuthorityBadge = ({ variant = 'hero', className = '' }) => {
             whileHover={{ scale: 1.05 }}
           >
             <Stethoscope className="w-4 h-4 text-healing" />
-            <span className="text-xs text-white/90">Peer-Reviewed</span>
-          </motion.div>
-          <motion.div 
-            className="flex items-center gap-2"
-            whileHover={{ scale: 1.05 }}
-          >
-            <GraduationCap className="w-4 h-4 text-healing" />
-            <span className="text-xs text-white/90">CME-Focused</span>
+            <span className="text-xs text-white/90">Physician-Reviewed</span>
           </motion.div>
         </div>
         
         <div className="mt-4 text-xs text-blue-100/80">
-          Specializing in Regenerative Medicine & Advanced Orthopedic Techniques
+          Specializing in Orthopedic Sports Medicine & Regenerative Medicine
         </div>
       </motion.div>
     );
@@ -58,13 +51,10 @@ const MedicalAuthorityBadge = ({ variant = 'hero', className = '' }) => {
 
   // Compact variant
   return (
-    <div className={`flex items-center gap-3 bg-primary/5 rounded-lg px-4 py-2 ${className}`}>
+    <div className={`flex items-center justify-center gap-3 bg-primary/5 rounded-lg px-4 py-2 ${className}`}>
       <Award className="w-5 h-5 text-primary" />
-      <div>
+      <div className="text-center">
         <p className="text-sm font-semibold text-primary">
-          Board-Certified Orthopedic Surgeon
-        </p>
-        <p className="text-xs text-gray-600">
           Evidence-Based Medical Platform
         </p>
       </div>

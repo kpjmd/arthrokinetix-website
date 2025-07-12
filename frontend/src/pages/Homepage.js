@@ -286,14 +286,9 @@ const Homepage = ({ algorithmState, onStateUpdate }) => {
           </div>
         </motion.div>
 
-        {/* Medical Authority Badge - Top Center */}
-        <div className="absolute top-8 left-1/2 transform -translate-x-1/2 z-20">
-          <MedicalAuthorityBadge variant="hero" />
-        </div>
-
-        {/* Algorithm State Display - Perfectly Centered */}
+        {/* Algorithm State Display - Centered but Lower */}
         {algorithmState && (
-          <div className="absolute bottom-8 left-0 right-0 pointer-events-none z-10">
+          <div className="absolute bottom-16 left-0 right-0 pointer-events-none z-10">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
               <div className="text-center">
                 <motion.div 
@@ -618,6 +613,15 @@ const Homepage = ({ algorithmState, onStateUpdate }) => {
                 </p>
               </motion.div>
             ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Medical Authority Section */}
+      <section className="py-12 bg-gradient-to-br from-primary/10 to-secondary/10">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-center">
+            <MedicalAuthorityBadge variant="hero" className="transform scale-90" />
           </div>
         </div>
       </section>

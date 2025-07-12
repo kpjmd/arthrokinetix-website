@@ -58,10 +58,11 @@ const About = () => {
           >
             <h1 className="text-5xl font-bold mb-6">About Arthrokinetix</h1>
             <p className="text-xl text-blue-100 leading-relaxed mb-6">
-              Founded by a Board-Certified Orthopedic Surgeon pioneering the future of medical education 
-              through emotional intelligence and algorithmic art generation.
+              Pioneering the future of medical education through emotional intelligence and algorithmic art generation.
             </p>
-            <MedicalAuthorityBadge variant="compact" className="inline-block bg-white/20 backdrop-blur" />
+            <div className="flex justify-center">
+              <MedicalAuthorityBadge variant="compact" className="bg-white/20 backdrop-blur" />
+            </div>
           </motion.div>
         </div>
       </section>
