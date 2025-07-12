@@ -88,7 +88,7 @@ else:
 # Database migration function
 def migrate_articles():
     """Migrate articles to ensure consistent field naming"""
-    if not articles_collection:
+    if articles_collection is None:
         print("[MIGRATION] Skipping - database not initialized")
         return
         
@@ -138,7 +138,7 @@ def migrate_articles():
 # Function to remove duplicate articles
 def remove_duplicate_articles():
     """Remove duplicate articles keeping the most recent one"""
-    if not articles_collection:
+    if articles_collection is None:
         print("[DEDUP] Skipping - database not initialized")
         return
         
