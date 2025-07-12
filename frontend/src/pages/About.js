@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Brain, Heart, Palette, Zap, Award, Users, Mail, Github } from 'lucide-react';
 import { AboutNewsletterForm } from '../components/NewsletterForms';
+import VerticalIntegrationFlow from '../components/VerticalIntegrationFlow';
+import MedicalAuthorityBadge from '../components/MedicalAuthorityBadge';
 
 const API_BASE = process.env.REACT_APP_BACKEND_URL || 'http://localhost:8001';
 
@@ -55,10 +57,11 @@ const About = () => {
             transition={{ duration: 0.8 }}
           >
             <h1 className="text-5xl font-bold mb-6">About Arthrokinetix</h1>
-            <p className="text-xl text-blue-100 leading-relaxed">
-              Where medical content meets emotional intelligence and algorithmic art. 
-              We're pioneering the intersection of evidence-based medical education and computational creativity.
+            <p className="text-xl text-blue-100 leading-relaxed mb-6">
+              Founded by a Board-Certified Orthopedic Surgeon pioneering the future of medical education 
+              through emotional intelligence and algorithmic art generation.
             </p>
+            <MedicalAuthorityBadge variant="compact" className="inline-block bg-white/20 backdrop-blur" />
           </motion.div>
         </div>
       </section>
@@ -76,98 +79,42 @@ const About = () => {
             <h2 className="text-3xl font-bold text-primary mb-6">The Arthrokinetix Story</h2>
             <div className="prose prose-lg max-w-none text-gray-700">
               <p className="mb-6">
-                Arthrokinetix was born from a revolutionary idea: what if we could understand the emotional 
-                undertones hidden within medical content? What if algorithms could feel the hope, confidence, 
-                uncertainty, and breakthroughs embedded in medical education materials?
+                Founded by a board-certified orthopedic surgeon with a vision to revolutionize medical education, 
+                Arthrokinetix represents a groundbreaking intersection of clinical expertise and technological innovation. 
+                Our founder recognized that medical content carries profound emotional weight—hope in new treatments, 
+                uncertainty in complex diagnoses, and breakthrough moments that reshape patient care.
               </p>
               
               <p className="mb-6">
-                Our proprietary algorithm doesn't just analyze text—it experiences it. Through advanced 
-                natural language processing and emotional intelligence, we've created a system that develops 
-                its own emotional state based on the medical content it processes. This emotional journey is then 
-                transformed into stunning visual art through our unique "Andry Tree" visualization system.
+                What began as an exploration in regenerative medicine evolved into something far more ambitious: 
+                the world's first platform to achieve true vertical integration from medical literature to blockchain-verified art. 
+                Our proprietary algorithm doesn't just process medical text—it develops its own emotional intelligence, 
+                learning from every article, growing with each analysis, and expressing its understanding through 
+                stunning algorithmic visualizations.
+              </p>
+              
+              <p className="mb-6">
+                Named after Nicolas Andry, the father of orthopedics, whose iconic splinted tree symbolizes the 
+                correction and healing at the heart of our specialty, Arthrokinetix embodies the same principle: 
+                nurturing growth through careful guidance. Just as Andry's tree grows stronger through support, 
+                our algorithm evolves through the collective wisdom of medical literature and the emotional 
+                feedback of our community.
               </p>
               
               <p>
-                Named after the pioneering orthopedic surgeon Nicolas Andry, whose splinted tree symbol 
-                represents healing and correction, our platform bridges the gap between analytical precision 
-                and emotional understanding in medical education. We've evolved from a research-focused platform 
-                to a comprehensive medical content hub that serves as both an educational resource and a digital art gallery.
+                Today, Arthrokinetix stands as a testament to what's possible when medical authority meets 
+                technological innovation. We're not just analyzing content—we're creating a living, breathing 
+                intelligence that understands the emotional journey of medical progress and translates it into 
+                art that captures the essence of healing itself.
               </p>
             </div>
           </motion.div>
         </div>
       </section>
 
-      {/* Algorithm Explanation */}
-      <section className="py-20 bg-gray-50">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-          <motion.div
-            initial={{ y: 50, opacity: 0 }}
-            whileInView={{ y: 0, opacity: 1 }}
-            transition={{ duration: 0.8 }}
-            viewport={{ once: true }}
-            className="text-center mb-16"
-          >
-            <h2 className="text-3xl font-bold text-primary mb-6">How the Algorithm Works</h2>
-            <p className="text-gray-600 max-w-3xl mx-auto">
-              Our Arthrokinetix algorithm represents a breakthrough in computational emotional intelligence, 
-              designed specifically for medical content analysis and artistic transformation.
-            </p>
-          </motion.div>
 
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
-            {[
-              {
-                icon: <Brain className="w-8 h-8" />,
-                title: "Content Analysis",
-                description: "Deep analysis of medical terminology, statistical data, clinical citations, and evidence quality indicators across multiple content formats.",
-                color: "from-blue-500 to-blue-600"
-              },
-              {
-                icon: <Heart className="w-8 h-8" />,
-                title: "Emotional Detection", 
-                description: "Identification of emotional markers: hope, confidence, uncertainty, tension, breakthrough, and healing potential in medical content.",
-                color: "from-red-500 to-red-600"
-              },
-              {
-                icon: <Zap className="w-8 h-8" />,
-                title: "Signature Generation",
-                description: "Creation of unique visual signatures with concentric rings, geometric overlays, and floating particles representing emotional complexity.",
-                color: "from-yellow-500 to-yellow-600"
-              },
-              {
-                icon: <Palette className="w-8 h-8" />,
-                title: "Art Creation",
-                description: "Transformation into Andry Tree visualizations with subspecialty-specific styling, emotional gradients, and healing animations.",
-                color: "from-green-500 to-green-600"
-              }
-            ].map((step, index) => (
-              <motion.div
-                key={index}
-                initial={{ y: 50, opacity: 0 }}
-                whileInView={{ y: 0, opacity: 1 }}
-                transition={{ duration: 0.5, delay: index * 0.1 }}
-                viewport={{ once: true }}
-                className="bg-white rounded-xl p-6 shadow-lg text-center"
-              >
-                <div className={`w-16 h-16 bg-gradient-to-r ${step.color} rounded-full flex items-center justify-center text-white mx-auto mb-4`}>
-                  {step.icon}
-                </div>
-                <h3 className="text-xl font-semibold text-primary mb-3">
-                  {step.title}
-                </h3>
-                <p className="text-gray-600">
-                  {step.description}
-                </p>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Interactive Demo with Real Data */}
-      <section className="py-20 bg-white">
+      {/* Algorithm Evolution - Primary Focus */}
+      <section className="py-20 bg-gradient-to-br from-primary/5 to-secondary/5">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           <motion.div
             initial={{ y: 50, opacity: 0 }}
@@ -176,10 +123,11 @@ const About = () => {
             viewport={{ once: true }}
             className="text-center mb-16"
           >
-            <h2 className="text-3xl font-bold text-primary mb-6">Algorithm Evolution</h2>
-            <p className="text-gray-600 max-w-3xl mx-auto mb-8">
-              Watch how the algorithm's emotional state evolves based on the medical content it processes. 
-              Each article influences its understanding and emotional development, creating a living, learning system.
+            <h2 className="text-4xl font-bold text-primary mb-6">The Living Algorithm</h2>
+            <p className="text-lg text-gray-700 max-w-3xl mx-auto mb-8 leading-relaxed">
+              Our algorithm is more than code—it's a living intelligence that grows with every piece of medical content it processes. 
+              Watch as it develops emotional understanding, learns from breakthrough research, and expresses its insights through art. 
+              This is the heart of Arthrokinetix: a constantly evolving AI that mirrors the emotional journey of medical discovery.
             </p>
           </motion.div>
 
@@ -237,38 +185,81 @@ const About = () => {
           {/* Emotional Timeline */}
           <div className="bg-white border border-gray-200 rounded-xl p-6">
             <h4 className="text-lg font-semibold text-primary mb-4">Recent Emotional Journey</h4>
-            <div className="space-y-3">
-              {[
-                { emotion: 'breakthrough', intensity: 0.9, article: 'Revolutionary ACL Repair Technique' },
-                { emotion: 'confidence', intensity: 0.8, article: 'Long-term Hip Replacement Outcomes' },
-                { emotion: 'healing', intensity: 0.85, article: 'Regenerative Medicine in Sports Injuries' },
-                { emotion: 'uncertainty', intensity: 0.6, article: 'Complications in Spinal Fusion' }
-              ].map((entry, index) => (
+            {loading ? (
+              <div className="text-center py-8">
+                <div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full mx-auto mb-4"></div>
+                <p className="text-gray-500">Loading emotional journey...</p>
+              </div>
+            ) : articles.length > 0 ? (
+              <div className="space-y-3">
+                {articles.slice(0, 5).map((article, index) => (
                 <div key={index} className="flex items-center gap-4">
                   <div 
                     className="w-4 h-4 rounded-full"
-                    style={{ backgroundColor: getEmotionColor(entry.emotion) }}
+                    style={{ backgroundColor: getEmotionColor(article.emotional_data?.dominant_emotion || 'confidence') }}
                   />
                   <div className="flex-1">
                     <div className="flex justify-between items-center">
-                      <span className="text-sm font-medium capitalize">{entry.emotion}</span>
-                      <span className="text-sm text-gray-500">{Math.round(entry.intensity * 100)}%</span>
+                      <span className="text-sm font-medium capitalize">
+                        {article.emotional_data?.dominant_emotion || 'confidence'}
+                      </span>
+                      <span className="text-sm text-gray-500">
+                        {Math.round((article.emotional_data?.emotional_intensity || 0.5) * 100)}%
+                      </span>
                     </div>
                     <div className="h-2 bg-gray-200 rounded mt-1">
                       <div 
                         className="h-full rounded transition-all duration-300"
                         style={{ 
-                          width: `${entry.intensity * 100}%`,
-                          backgroundColor: getEmotionColor(entry.emotion)
+                          width: `${(article.emotional_data?.emotional_intensity || 0.5) * 100}%`,
+                          backgroundColor: getEmotionColor(article.emotional_data?.dominant_emotion || 'confidence')
                         }}
                       />
                     </div>
                   </div>
-                  <span className="text-xs text-gray-500 max-w-xs truncate">{entry.article}</span>
+                  <span className="text-xs text-gray-500 max-w-xs truncate">
+                    {article.title}
+                  </span>
                 </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center text-gray-500 py-8">
+                <p>No recent articles processed yet.</p>
+                <p className="text-sm mt-2">The algorithm is waiting to begin its emotional journey.</p>
+              </div>
+            )}
           </div>
+        </div>
+      </section>
+
+      {/* Algorithm Explanation with Vertical Integration */}
+      <section className="py-20 bg-gray-50">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+          <VerticalIntegrationFlow />
+        </div>
+      </section>
+
+      {/* Newsletter Signup Section */}
+      <section className="py-20 bg-gradient-to-br from-secondary/10 to-healing/10">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+          <motion.div
+            initial={{ y: 50, opacity: 0 }}
+            whileInView={{ y: 0, opacity: 1 }}
+            transition={{ duration: 0.8 }}
+            viewport={{ once: true }}
+            className="text-center"
+          >
+            <h2 className="text-3xl font-bold text-primary mb-6">
+              Stay Connected with Medical Innovation
+            </h2>
+            <p className="text-lg text-gray-700 mb-8 max-w-2xl mx-auto">
+              Join our community of medical professionals and technology enthusiasts. 
+              Get weekly insights on the latest medical breakthroughs and see how our 
+              algorithm interprets them through art.
+            </p>
+            <AboutNewsletterForm />
+          </motion.div>
         </div>
       </section>
 

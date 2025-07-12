@@ -14,6 +14,7 @@
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-helmet-async": "^2.0.5",
+    "react-icons": "^5.5.0",
     "react-router-dom": "^6.20.1",
     "viem": "^1.21.4",
     "wagmi": "^1.4.13",
@@ -21,7 +22,7 @@
   },
   "scripts": {
     "start": "react-app-rewired start",
-    "build": "CI=false react-app-rewired build", 
+    "build": "CI=false react-app-rewired build",
     "test": "react-app-rewired test",
     "eject": "react-scripts eject"
   },

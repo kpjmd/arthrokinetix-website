@@ -7,6 +7,8 @@ import ShareButtons from '../components/ShareButtons';
 import { HeroNewsletterForm } from '../components/NewsletterForms';
 import SEOHead from '../components/SEOHead';
 import RealArthrokinetixArtwork from '../components/RealArthrokinetixArtwork';
+import SocialMediaBar from '../components/SocialMediaBar';
+import MedicalAuthorityBadge from '../components/MedicalAuthorityBadge';
 
 const API_BASE = process.env.REACT_APP_BACKEND_URL || 'http://localhost:8001';
 
@@ -122,8 +124,8 @@ const Homepage = ({ algorithmState, onStateUpdate }) => {
         artworks: artworksData.artworks?.length || 0
       });
       
-      const fetchedArticles = articlesData.articles?.slice(0, 4) || [];
-      const fetchedArtworks = artworksData.artworks?.slice(0, 4) || [];
+      const fetchedArticles = articlesData.articles?.slice(0, 2) || [];
+      const fetchedArtworks = artworksData.artworks?.slice(0, 2) || [];
       
       // Debug logging for artwork data
       console.log('🎨 Homepage Artwork Data:', {
@@ -240,8 +242,8 @@ const Homepage = ({ algorithmState, onStateUpdate }) => {
               Medical Content
             </h1>
             <p className="text-xl text-blue-100 mb-8 leading-relaxed">
-              Explore curated medical content in orthopedic surgery and sports medicine, 
-              enhanced with emotional intelligence and algorithmic art generation.
+              Pioneering regenerative medicine and advanced orthopedic techniques through 
+              evidence-based content enhanced with emotional intelligence and algorithmic art.
             </p>
             <Link 
               to="/articles"
@@ -250,6 +252,9 @@ const Homepage = ({ algorithmState, onStateUpdate }) => {
               <BookOpen className="w-5 h-5 mr-2" />
               Explore Content
             </Link>
+            
+            {/* Social Media Bar */}
+            <SocialMediaBar variant="hero" className="mt-6" />
           </div>
         </motion.div>
 
@@ -281,21 +286,27 @@ const Homepage = ({ algorithmState, onStateUpdate }) => {
           </div>
         </motion.div>
 
+        {/* Medical Authority Badge - Top Center */}
+        <div className="absolute top-8 left-1/2 transform -translate-x-1/2 z-20">
+          <MedicalAuthorityBadge variant="hero" />
+        </div>
+
         {/* Algorithm State Display - Perfectly Centered */}
         {algorithmState && (
           <div className="absolute bottom-8 left-0 right-0 pointer-events-none z-10">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
               <div className="text-center">
                 <motion.div 
-                  className="inline-block bg-white/15 backdrop-blur-lg rounded-xl p-6 border border-white/30 pointer-events-auto shadow-2xl"
+                  className="inline-block bg-white/20 backdrop-blur-xl rounded-2xl p-8 border-2 border-white/40 pointer-events-auto shadow-2xl"
                   initial={{ scale: 0, opacity: 0 }}
                   animate={{ scale: 1, opacity: 1 }}
                   transition={{ duration: 0.8, delay: 0.5 }}
+                  whileHover={{ scale: 1.05 }}
                 >
                   <div className="text-center text-white">
-                    <h3 className="font-semibold mb-3 text-lg">Algorithm State</h3>
+                    <h3 className="font-bold mb-4 text-xl">Living Algorithm State</h3>
                     <motion.div 
-                      className="w-16 h-16 mx-auto mb-3 rounded-full border-4 flex items-center justify-center"
+                      className="w-20 h-20 mx-auto mb-4 rounded-full border-4 flex items-center justify-center shadow-lg"
                       style={{ 
                         borderColor: algorithmState.visual_representation?.color,
                         backgroundColor: `${algorithmState.visual_representation?.color}20`
@@ -310,11 +321,11 @@ const Homepage = ({ algorithmState, onStateUpdate }) => {
                         ease: "easeInOut"
                       }}
                     >
-                      <span className="text-xl font-bold">
+                      <span className="text-2xl font-bold">
                         {getEmotionSymbol(algorithmState.emotional_state?.dominant_emotion)}
                       </span>
                     </motion.div>
-                    <p className="text-base capitalize font-medium mb-2">
+                    <p className="text-lg capitalize font-bold mb-2">
                       {algorithmState.emotional_state?.dominant_emotion}
                     </p>
                     <p className="text-sm opacity-90 mb-2">
@@ -388,13 +399,13 @@ const Homepage = ({ algorithmState, onStateUpdate }) => {
           </motion.div>
 
           {loading ? (
-            <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
-              {Array.from({ length: 4 }).map((_, index) => (
+            <div className="grid md:grid-cols-2 gap-8">
+              {Array.from({ length: 2 }).map((_, index) => (
                 <div key={index} className="loading-skeleton h-64 rounded-lg" />
               ))}
             </div>
           ) : (
-            <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
+            <div className="grid md:grid-cols-2 gap-8">
               {articles.map((article, index) => (
                 <motion.div
                   key={article.id}
@@ -486,7 +497,7 @@ const Homepage = ({ algorithmState, onStateUpdate }) => {
 
           {loading ? (
             <div className="artwork-grid">
-              {Array.from({ length: 4 }).map((_, index) => (
+              {Array.from({ length: 2 }).map((_, index) => (
                 <div key={index} className="loading-skeleton h-80 rounded-lg" />
               ))}
             </div>

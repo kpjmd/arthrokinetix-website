@@ -129,7 +129,7 @@ const ArticlesHub = () => {
         .subspecialty-gradient-undefined { background: linear-gradient(135deg, #6b7280, #4b5563); }
       `}</style>
       {/* Professional Header */}
-      <section className="bg-gradient-to-r from-slate-50 to-blue-50 border-b py-16">
+      <section className="bg-gradient-to-r from-primary to-secondary text-white py-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <motion.div
             initial={{ y: 50, opacity: 0 }}
@@ -137,25 +137,22 @@ const ArticlesHub = () => {
             transition={{ duration: 0.8 }}
             className="text-center"
           >
-            <div className="flex items-center justify-center mb-4">
-              <Shield className="w-8 h-8 text-blue-600 mr-3" />
-              <h1 className="text-4xl font-bold text-gray-900">Medical Literature Library</h1>
-            </div>
-            <p className="text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed">
+            <h1 className="text-4xl font-bold mb-6">Medical Literature Library</h1>
+            <p className="text-xl text-blue-100 max-w-3xl mx-auto leading-relaxed mb-8">
               Access evidence-based clinical content in orthopedic surgery and sports medicine. 
               Our curated library provides peer-reviewed insights for medical professionals and researchers.
             </p>
-            <div className="mt-8 flex items-center justify-center space-x-6 text-sm text-gray-500">
-              <span className="flex items-center">
-                <CheckCircle className="w-4 h-4 mr-1 text-green-600" />
+            <div className="flex items-center justify-center space-x-6 text-sm">
+              <span className="flex items-center text-blue-100">
+                <CheckCircle className="w-4 h-4 mr-1" />
                 Evidence-Based Content
               </span>
-              <span className="flex items-center">
-                <FileText className="w-4 h-4 mr-1 text-blue-600" />
+              <span className="flex items-center text-blue-100">
+                <FileText className="w-4 h-4 mr-1" />
                 Clinical Perspectives
               </span>
-              <span className="flex items-center">
-                <Award className="w-4 h-4 mr-1 text-purple-600" />
+              <span className="flex items-center text-blue-100">
+                <Award className="w-4 h-4 mr-1" />
                 Research Quality
               </span>
             </div>
