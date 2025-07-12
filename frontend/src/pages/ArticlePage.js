@@ -788,7 +788,7 @@ const ArticlePage = ({ algorithmState, onStateUpdate }) => {
                     <div className="mb-2">
                       <EmotionalSignature 
                         signatureData={article.signature_data}
-                        emotionalData={emotionalData}
+                        emotionalData={article.emotional_data}
                         size={60}
                       />
                     </div>

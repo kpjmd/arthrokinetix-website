@@ -13,12 +13,21 @@ const EmotionalSignature = ({ signatureData, emotionalData, size = 80 }) => {
     breakthrough: 0.5
   };
 
-  // Provide safe defaults for all signature properties
+  // Provide safe defaults for all signature properties with robust fallbacks
+  const safeSignatureData = {
+    id: signatureData.id || `sig-${Date.now()}`,
+    rarity_score: signatureData.rarity_score || 0,
+    concentric_rings: signatureData.concentric_rings || { count: 3, thickness: 2, rotation_speed: 1 },
+    geometric_overlays: signatureData.geometric_overlays || { color: '#3498db', scale: 0.5, shape: 'circle' },
+    floating_particles: signatureData.floating_particles || { count: 8, color: '#3498db' },
+    ...signatureData
+  };
+
   const {
     concentric_rings = { count: 3, thickness: 2, rotation_speed: 1 },
     geometric_overlays = { color: '#3498db', scale: 0.5, shape: 'circle' },
     floating_particles = { count: 8, color: '#3498db' }
-  } = signatureData;
+  } = safeSignatureData;
   
   const dominantEmotion = safeEmotionalData.dominant_emotion || 'confidence';
 
@@ -109,12 +118,12 @@ const EmotionalSignature = ({ signatureData, emotionalData, size = 80 }) => {
       {/* Signature ID */}
       <div className="absolute -bottom-6 left-1/2 transform -translate-x-1/2">
         <span className="text-xs font-mono text-gray-500">
-          {signatureData.id}
+          {safeSignatureData.id}
         </span>
       </div>
 
       {/* Rarity Indicator */}
-      {signatureData.rarity_score > 0.7 && (
+      {safeSignatureData.rarity_score > 0.7 && (
         <motion.div
           className="absolute -top-2 -right-2 w-6 h-6 bg-innovation text-white text-xs rounded-full flex items-center justify-center"
           animate={{ rotate: 360 }}
