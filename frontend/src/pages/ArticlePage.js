@@ -27,6 +27,45 @@ const ArticlePage = ({ algorithmState, onStateUpdate }) => {
   console.log('🔍 Current URL:', window.location.pathname);
   console.log('🔍 URL params:', useParams());
 
+  const analyzeAlgorithmData = useCallback((artworkData) => {
+    const algorithmParams = artworkData.algorithm_parameters || {};
+    const emotionalData = artworkData.emotional_data || article?.emotional_data || {};
+    
+    // Check for manual algorithm indicators - check both algorithm_parameters and emotional_data
+    const hasEmotionalJourney = algorithmParams.emotional_journey && Object.keys(algorithmParams.emotional_journey).length > 0;
+    const hasEnhancedMedicalTerms = (algorithmParams.medical_terms && Object.keys(algorithmParams.medical_terms).length > 0) ||
+                                   (emotionalData.medical_terms && Object.keys(emotionalData.medical_terms).length > 0);
+    const hasStatisticalData = (algorithmParams.statistical_data && algorithmParams.statistical_data.length > 0) ||
+                              (emotionalData.statistical_data && emotionalData.statistical_data.length > 0);
+    const hasResearchCitations = (algorithmParams.research_citations && algorithmParams.research_citations.length > 0) ||
+                                (emotionalData.research_citations && emotionalData.research_citations.length > 0);
+    const algorithmVersion = algorithmParams.algorithm_version || 'unknown';
+    
+    // Calculate data completeness score
+    const dataComponents = [
+      hasEmotionalJourney,
+      hasEnhancedMedicalTerms,
+      hasStatisticalData,
+      hasResearchCitations
+    ];
+    const completenessScore = dataComponents.filter(Boolean).length;
+    
+    return {
+      isManualAlgorithm: hasEmotionalJourney && hasEnhancedMedicalTerms,
+      hasCompleteData: completenessScore >= 3,
+      completenessScore: completenessScore,
+      maxScore: 4,
+      algorithmVersion: algorithmVersion,
+      dataBreakdown: {
+        emotionalJourney: hasEmotionalJourney,
+        enhancedMedicalTerms: hasEnhancedMedicalTerms,
+        statisticalData: hasStatisticalData,
+        researchCitations: hasResearchCitations
+      },
+      dataQuality: completenessScore >= 3 ? 'high' : completenessScore >= 2 ? 'medium' : 'low'
+    };
+  }, [article]);
+
   const fetchArticle = useCallback(async () => {
     if (!id) {
       console.error('Cannot fetch article: id is undefined');
@@ -99,46 +138,11 @@ const ArticlePage = ({ algorithmState, onStateUpdate }) => {
       setError('Failed to load article. Please try again later.');
       setLoading(false);
     }
-  }, [id]);
+  }, [id, analyzeAlgorithmData]);
 
   useEffect(() => {
     fetchArticle();
   }, [fetchArticle]);
-
-  const analyzeAlgorithmData = (artworkData) => {
-    const algorithmParams = artworkData.algorithm_parameters || {};
-    
-    // Check for manual algorithm indicators
-    const hasEmotionalJourney = algorithmParams.emotional_journey && Object.keys(algorithmParams.emotional_journey).length > 0;
-    const hasEnhancedMedicalTerms = algorithmParams.medical_terms && Object.keys(algorithmParams.medical_terms).length > 0;
-    const hasStatisticalData = algorithmParams.statistical_data && algorithmParams.statistical_data.length > 0;
-    const hasResearchCitations = algorithmParams.research_citations && algorithmParams.research_citations.length > 0;
-    const algorithmVersion = algorithmParams.algorithm_version || 'unknown';
-    
-    // Calculate data completeness score
-    const dataComponents = [
-      hasEmotionalJourney,
-      hasEnhancedMedicalTerms,
-      hasStatisticalData,
-      hasResearchCitations
-    ];
-    const completenessScore = dataComponents.filter(Boolean).length;
-    
-    return {
-      isManualAlgorithm: hasEmotionalJourney && hasEnhancedMedicalTerms,
-      hasCompleteData: completenessScore >= 3,
-      completenessScore: completenessScore,
-      maxScore: 4,
-      algorithmVersion: algorithmVersion,
-      dataBreakdown: {
-        emotionalJourney: hasEmotionalJourney,
-        enhancedMedicalTerms: hasEnhancedMedicalTerms,
-        statisticalData: hasStatisticalData,
-        researchCitations: hasResearchCitations
-      },
-      dataQuality: completenessScore >= 3 ? 'high' : completenessScore >= 2 ? 'medium' : 'low'
-    };
-  };
 
   const getEmotionalDataToDisplay = () => {
     if (!article) return {};
@@ -366,9 +370,18 @@ const ArticlePage = ({ algorithmState, onStateUpdate }) => {
   };
 
   const renderTechnicalDetails = () => {
-    if (!algorithmDebug || !article.algorithm_parameters) return null;
+    if (!algorithmDebug) return null;
 
     const algorithmParams = artwork?.algorithm_parameters || article.algorithm_parameters || {};
+    const emotionalData = artwork?.emotional_data || article?.emotional_data || {};
+    
+    // Combine data from both sources, prioritizing algorithm_parameters
+    const combinedParams = {
+      ...algorithmParams,
+      statistical_data: algorithmParams.statistical_data || emotionalData.statistical_data,
+      research_citations: algorithmParams.research_citations || emotionalData.research_citations,
+      medical_terms: algorithmParams.medical_terms || emotionalData.medical_terms
+    };
 
     return (
       <div className="border border-gray-200 rounded-lg overflow-hidden">
@@ -405,14 +418,14 @@ const ArticlePage = ({ algorithmState, onStateUpdate }) => {
               
               <div className="text-center">
                 <div className="text-2xl font-bold text-gray-700">
-                  {algorithmParams.evidence_strength ? Math.round(algorithmParams.evidence_strength * 100) : 'N/A'}%
+                  {combinedParams.evidence_strength ? Math.round(combinedParams.evidence_strength * 100) : 'N/A'}%
                 </div>
                 <div className="text-sm text-gray-600">Evidence Strength</div>
               </div>
               
               <div className="text-center">
                 <div className="text-2xl font-bold text-gray-700">
-                  {algorithmParams.technical_density ? Math.round(algorithmParams.technical_density * 100) : 'N/A'}%
+                  {combinedParams.technical_density ? Math.round(combinedParams.technical_density * 100) : 'N/A'}%
                 </div>
                 <div className="text-sm text-gray-600">Technical Density</div>
               </div>
@@ -443,11 +456,11 @@ const ArticlePage = ({ algorithmState, onStateUpdate }) => {
             {/* Detailed Data Sections */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* Medical Terms Analysis */}
-              {algorithmParams.medical_terms && (
+              {combinedParams.medical_terms && (
                 <div className="bg-gray-50 rounded-lg p-4">
                   <h4 className="font-medium text-gray-900 mb-3">Medical Terminology Analysis</h4>
                   <div className="space-y-2">
-                    {Object.entries(algorithmParams.medical_terms).map(([category, terms]) => {
+                    {Object.entries(combinedParams.medical_terms).map(([category, terms]) => {
                       const termCount = Object.keys(terms || {}).length;
                       const totalSignificance = Object.values(terms || {}).reduce((sum, term) => 
                         sum + (term.significance || term.count || 0), 0
@@ -472,11 +485,11 @@ const ArticlePage = ({ algorithmState, onStateUpdate }) => {
               )}
 
               {/* Statistical Data */}
-              {algorithmParams.statistical_data && algorithmParams.statistical_data.length > 0 && (
+              {combinedParams.statistical_data && combinedParams.statistical_data.length > 0 && (
                 <div className="bg-gray-50 rounded-lg p-4">
                   <h4 className="font-medium text-gray-900 mb-3">Statistical Elements</h4>
                   <div className="space-y-2">
-                    {algorithmParams.statistical_data.slice(0, 5).map((stat, index) => (
+                    {combinedParams.statistical_data.slice(0, 5).map((stat, index) => (
                       <div key={index} className="flex justify-between items-center">
                         <span className="text-sm text-gray-600 capitalize">
                           {stat.type?.replace(/([A-Z])/g, ' $1')}
@@ -491,9 +504,9 @@ const ArticlePage = ({ algorithmState, onStateUpdate }) => {
                         </div>
                       </div>
                     ))}
-                    {algorithmParams.statistical_data.length > 5 && (
+                    {combinedParams.statistical_data.length > 5 && (
                       <div className="text-xs text-gray-500 text-center pt-2">
-                        +{algorithmParams.statistical_data.length - 5} more statistics
+                        +{combinedParams.statistical_data.length - 5} more statistics
                       </div>
                     )}
                   </div>
@@ -501,22 +514,22 @@ const ArticlePage = ({ algorithmState, onStateUpdate }) => {
               )}
 
               {/* Research Citations */}
-              {algorithmParams.research_citations && algorithmParams.research_citations.length > 0 && (
+              {combinedParams.research_citations && combinedParams.research_citations.length > 0 && (
                 <div className="bg-gray-50 rounded-lg p-4">
                   <h4 className="font-medium text-gray-900 mb-3">Research Citations</h4>
                   <div className="space-y-2">
                     <div className="flex justify-between items-center">
                       <span className="text-sm text-gray-600">Total Citations</span>
                       <span className="text-sm font-medium text-gray-900">
-                        {algorithmParams.research_citations.length}
+                        {combinedParams.research_citations.length}
                       </span>
                     </div>
                     <div className="flex justify-between items-center">
                       <span className="text-sm text-gray-600">Avg. Importance</span>
                       <span className="text-sm font-medium text-gray-900">
-                        {(algorithmParams.research_citations.reduce((sum, cit) => 
+                        {(combinedParams.research_citations.reduce((sum, cit) => 
                           sum + (cit.importance || 0), 0) / 
-                          algorithmParams.research_citations.length * 100
+                          combinedParams.research_citations.length * 100
                         ).toFixed(0)}%
                       </span>
                     </div>
@@ -531,22 +544,22 @@ const ArticlePage = ({ algorithmState, onStateUpdate }) => {
                   <div className="flex justify-between">
                     <span className="text-gray-600">Algorithm Version</span>
                     <span className="font-medium text-gray-900">
-                      {algorithmParams.algorithm_version || 'Unknown'}
+                      {combinedParams.algorithm_version || 'Unknown'}
                     </span>
                   </div>
-                  {algorithmParams.processing_timestamp && (
+                  {combinedParams.processing_timestamp && (
                     <div className="flex justify-between">
                       <span className="text-gray-600">Processed</span>
                       <span className="font-medium text-gray-900">
-                        {new Date(algorithmParams.processing_timestamp).toLocaleDateString()}
+                        {new Date(combinedParams.processing_timestamp).toLocaleDateString()}
                       </span>
                     </div>
                   )}
-                  {algorithmParams.article_word_count && (
+                  {combinedParams.article_word_count && (
                     <div className="flex justify-between">
                       <span className="text-gray-600">Word Count</span>
                       <span className="font-medium text-gray-900">
-                        {algorithmParams.article_word_count.toLocaleString()}
+                        {combinedParams.article_word_count.toLocaleString()}
                       </span>
                     </div>
                   )}
@@ -555,11 +568,11 @@ const ArticlePage = ({ algorithmState, onStateUpdate }) => {
             </div>
 
             {/* Emotional Journey Raw Data (if available) */}
-            {algorithmDebug.isManualAlgorithm && algorithmParams.emotional_journey && (
+            {algorithmDebug.isManualAlgorithm && combinedParams.emotional_journey && (
               <div className="mt-6 pt-6 border-t border-gray-200">
                 <h4 className="text-sm font-medium text-gray-800 mb-3">Emotional Journey Analysis (Raw Values)</h4>
                 <div className="grid grid-cols-2 md:grid-cols-5 gap-3 text-xs">
-                  {Object.entries(algorithmParams.emotional_journey).map(([key, value]) => (
+                  {Object.entries(combinedParams.emotional_journey).map(([key, value]) => (
                     key !== 'dominantEmotion' && (
                       <div key={key} className="bg-white border border-gray-200 p-2 rounded">
                         <div className="font-medium text-gray-700">{key.replace(/([A-Z])/g, ' $1')}</div>
