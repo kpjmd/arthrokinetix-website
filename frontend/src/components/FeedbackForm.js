@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Heart, ThumbsUp, Zap, HelpCircle, AlertTriangle, Sparkles } from 'lucide-react';
 import { useUser } from '../hooks/useAuth';
+import { emotionOptions } from '../constants/emotions';
 
 const API_BASE = process.env.REACT_APP_BACKEND_URL || 'http://localhost:8001';
 
@@ -11,50 +12,15 @@ const FeedbackForm = ({ articleId, onFeedbackSubmitted }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
 
-  const emotionOptions = [
-    { 
-      key: 'hope', 
-      label: 'Hope', 
-      icon: Sparkles, 
-      color: '#27ae60',
-      description: 'This content gives me hope for medical advancement'
-    },
-    { 
-      key: 'confidence', 
-      label: 'Confidence', 
-      icon: ThumbsUp, 
-      color: '#3498db',
-      description: 'I feel confident about these medical findings'
-    },
-    { 
-      key: 'breakthrough', 
-      label: 'Breakthrough', 
-      icon: Zap, 
-      color: '#f39c12',
-      description: 'This feels like a significant medical breakthrough'
-    },
-    { 
-      key: 'healing', 
-      label: 'Healing', 
-      icon: Heart, 
-      color: '#16a085',
-      description: 'This content emphasizes healing and recovery'
-    },
-    { 
-      key: 'tension', 
-      label: 'Tension', 
-      icon: AlertTriangle, 
-      color: '#e74c3c',
-      description: 'I sense complexity or challenges in this content'
-    },
-    { 
-      key: 'uncertainty', 
-      label: 'Uncertainty', 
-      icon: HelpCircle, 
-      color: '#95a5a6',
-      description: 'This content raises questions that need more research'
-    }
-  ];
+  // Map icons to emotion options
+  const iconMap = {
+    hope: Sparkles,
+    confidence: ThumbsUp,
+    breakthrough: Zap,
+    healing: Heart,
+    tension: AlertTriangle,
+    uncertainty: HelpCircle
+  };
 
   const handleSubmit = async (emotion) => {
     if (!user) return;
@@ -106,7 +72,7 @@ const FeedbackForm = ({ articleId, onFeedbackSubmitted }) => {
 
   if (submitted) {
     const selectedEmotionData = emotionOptions.find(e => e.key === selectedEmotion);
-    const IconComponent = selectedEmotionData?.icon || Heart;
+    const IconComponent = iconMap[selectedEmotion] || Heart;
     
     return (
       <motion.div
@@ -163,7 +129,7 @@ const FeedbackForm = ({ articleId, onFeedbackSubmitted }) => {
 
       <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
         {emotionOptions.map((emotion) => {
-          const IconComponent = emotion.icon;
+          const IconComponent = iconMap[emotion.key] || Heart;
           return (
             <motion.button
               key={emotion.key}
