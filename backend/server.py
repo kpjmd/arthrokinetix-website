@@ -1,6 +1,6 @@
 from fastapi import FastAPI, HTTPException, File, UploadFile, Form
 from fastapi.middleware.cors import CORSMiddleware
-from pymongo import MongoClient
+from pymongo import MongoClient, errors
 from arthrokinetix_algorithm import process_article_with_manual_algorithm, process_content_with_adapters
 
 # Import content adapters
@@ -243,21 +243,51 @@ async def startup_event():
         def init_database_async():
             try:
                 print("[STARTUP] Creating database indexes...")
-                # Create indexes
-                db.articles.create_index("id", unique=True)
-                db.artworks.create_index("id", unique=True)
-                db.algorithm_states.create_index("timestamp")
-                db.newsletter_subscribers.create_index("email", unique=True)
-                db.feedback.create_index("article_id")
-                db.images.create_index("id", unique=True)
-                db.images.create_index("article_id")
+                
+                # Helper function to safely create unique index
+                def create_unique_index(collection, field, index_name=None):
+                    try:
+                        # Get existing indexes
+                        indexes = list(collection.list_indexes())
+                        field_key = f"{field}_1"
+                        
+                        # Check if a non-unique index exists with the same field
+                        for idx in indexes:
+                            if field_key in idx.get('name', '') and not idx.get('unique', False):
+                                print(f"[STARTUP] Dropping non-unique index {idx['name']} on {collection.name}")
+                                collection.drop_index(idx['name'])
+                        
+                        # Create the unique index
+                        collection.create_index(field, unique=True, name=index_name or f"{field}_unique")
+                        print(f"[STARTUP] Created unique index on {collection.name}.{field}")
+                    except errors.DuplicateKeyError as e:
+                        print(f"[STARTUP] Unique index on {collection.name}.{field} already exists")
+                    except Exception as e:
+                        print(f"[STARTUP] Warning: Could not create index on {collection.name}.{field}: {e}")
+                
+                # Create unique indexes with error handling
+                create_unique_index(db.articles, "id")
+                create_unique_index(db.artworks, "id")
+                create_unique_index(db.images, "id")
+                create_unique_index(db.newsletter_subscribers, "email")
+                
+                # Create non-unique indexes
+                try:
+                    db.algorithm_states.create_index("timestamp")
+                    db.feedback.create_index("article_id")
+                    db.images.create_index("article_id")
+                except Exception as e:
+                    print(f"[STARTUP] Warning: Some non-unique indexes may already exist: {e}")
                 
                 # Compound indexes
-                db.articles.create_index([("subspecialty", 1), ("published_date", -1)])
-                db.artworks.create_index([("subspecialty", 1), ("created_date", -1)])
-                db.artworks.create_index([("article_id", 1)])
-                db.algorithm_states.create_index([("timestamp", -1), ("articles_processed", 1)])
-                db.images.create_index([("article_id", 1), ("id", 1)])
+                try:
+                    db.articles.create_index([("subspecialty", 1), ("published_date", -1)])
+                    db.artworks.create_index([("subspecialty", 1), ("created_date", -1)])
+                    db.artworks.create_index([("article_id", 1)])
+                    db.algorithm_states.create_index([("timestamp", -1), ("articles_processed", 1)])
+                    db.images.create_index([("article_id", 1), ("id", 1)])
+                except Exception as e:
+                    print(f"[STARTUP] Warning: Some compound indexes may already exist: {e}")
                 
                 print("[STARTUP] Database indexes created successfully")
                 
