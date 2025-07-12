@@ -30,6 +30,8 @@ import threading
 from image_handler import ImageHandler
 from cloudinary_handler import CloudinaryImageHandler
 from bs4 import BeautifulSoup
+import cloudinary
+import cloudinary.uploader
 
 # Load environment variables - use default path for Railway
 load_dotenv()
@@ -490,9 +492,16 @@ async def create_article(
                 
                 # Store processed images metadata in database
                 if processed_image_data['images']:
+                    images_stored = 0
                     for img in processed_image_data['images']:
-                        images_collection.insert_one(img)
-                    print(f"💾 Stored {len(processed_image_data['images'])} images metadata in database")
+                        try:
+                            images_collection.insert_one(img)
+                            images_stored += 1
+                        except errors.DuplicateKeyError as e:
+                            print(f"⚠️ Duplicate key error for image {img.get('id', 'unknown')}: {e}")
+                            # Image already exists, which is fine for this endpoint
+                    if images_stored > 0:
+                        print(f"💾 Stored {images_stored} images metadata in database")
                 
                 # Analyze images for algorithm
                 image_analysis = cloudinary_handler.analyze_images_for_algorithm(extracted_images)
@@ -539,9 +548,16 @@ async def create_article(
                 
                 # Store processed images in separate collection
                 if processed_image_data['images']:
+                    images_stored = 0
                     for img in processed_image_data['images']:
-                        images_collection.insert_one(img)
-                    print(f"💾 Stored {len(processed_image_data['images'])} images in database")
+                        try:
+                            images_collection.insert_one(img)
+                            images_stored += 1
+                        except errors.DuplicateKeyError as e:
+                            print(f"⚠️ Duplicate key error for image {img.get('id', 'unknown')}: {e}")
+                            # Image already exists, which is fine for this endpoint
+                    if images_stored > 0:
+                        print(f"💾 Stored {images_stored} images in database")
                 
                 # Analyze images for algorithm
                 image_analysis = image_handler.analyze_images_for_algorithm(extracted_images)
@@ -782,13 +798,14 @@ async def create_article_multi_file(
                 
                 if existing_image:
                     print(f"♻️ Reusing existing image with hash: {image_hash}")
-                    # Create a reference to the existing image for this article
+                    # Use the existing image data without creating a new database record
                     cloudinary_result = existing_image.copy()
-                    cloudinary_result['_id'] = None  # Remove _id to create new document
-                    cloudinary_result['article_id'] = article_id
-                    cloudinary_result['original_filename'] = img_data['filename']
-                    cloudinary_result['alt'] = img.get('alt', '')
-                    cloudinary_result['title'] = img.get('title', '')
+                    # Update alt and title from current article if provided
+                    if img.get('alt'):
+                        cloudinary_result['alt'] = img.get('alt', '')
+                    if img.get('title'):
+                        cloudinary_result['title'] = img.get('title', '')
+                    # Don't insert again - just use the existing record
                 else:
                     # Generate unique image ID
                     image_id = f"img_{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}_{str(uuid.uuid4())[:8]}"
@@ -799,16 +816,27 @@ async def create_article_multi_file(
                         image_id, 
                         folder=f"articles/{article_id}"
                     )
+                    
+                    if cloudinary_result:
+                        # Add metadata
+                        cloudinary_result['article_id'] = article_id
+                        cloudinary_result['original_filename'] = img_data['filename']
+                        cloudinary_result['alt'] = img.get('alt', '')
+                        cloudinary_result['title'] = img.get('title', '')
+                        
+                        # Store in database only for new images
+                        try:
+                            images_collection.insert_one(cloudinary_result)
+                            print(f"✅ Inserted new image {image_id} into database")
+                        except errors.DuplicateKeyError as e:
+                            print(f"⚠️ Duplicate key error for image {image_id}: {e}")
+                            # Try to find and use the existing image
+                            existing = images_collection.find_one({'id': image_id})
+                            if existing:
+                                cloudinary_result = existing
+                                print(f"♻️ Using existing image record for {image_id}")
                 
                 if cloudinary_result:
-                    # Add metadata
-                    cloudinary_result['article_id'] = article_id
-                    cloudinary_result['original_filename'] = img_data['filename']
-                    cloudinary_result['alt'] = img.get('alt', '')
-                    cloudinary_result['title'] = img.get('title', '')
-                    
-                    # Store in database (metadata only, not image data)
-                    images_collection.insert_one(cloudinary_result)
                     processed_images.append(cloudinary_result)
                     
                     # Update HTML with Cloudinary URL
@@ -833,12 +861,10 @@ async def create_article_multi_file(
                 
                 if existing_image:
                     print(f"♻️ Reusing existing orphaned image with hash: {image_hash}")
-                    # Create a reference to the existing image for this article
+                    # Use the existing image data without creating a new database record
                     cloudinary_result = existing_image.copy()
-                    cloudinary_result['_id'] = None  # Remove _id to create new document
-                    cloudinary_result['article_id'] = article_id
-                    cloudinary_result['original_filename'] = img_data['filename']
                     cloudinary_result['orphaned'] = True
+                    # Don't insert again - just use the existing record
                 else:
                     # Generate unique image ID for orphaned image
                     image_id = f"img_{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}_{str(uuid.uuid4())[:8]}"
@@ -849,12 +875,25 @@ async def create_article_multi_file(
                         image_id, 
                         folder=f"articles/{article_id}/orphaned"
                     )
+                    
+                    if cloudinary_result:
+                        cloudinary_result['article_id'] = article_id
+                        cloudinary_result['original_filename'] = img_data['filename']
+                        cloudinary_result['orphaned'] = True
+                        
+                        # Store in database only for new images
+                        try:
+                            images_collection.insert_one(cloudinary_result)
+                            print(f"✅ Inserted new orphaned image {image_id} into database")
+                        except errors.DuplicateKeyError as e:
+                            print(f"⚠️ Duplicate key error for orphaned image {image_id}: {e}")
+                            # Try to find and use the existing image
+                            existing = images_collection.find_one({'id': image_id})
+                            if existing:
+                                cloudinary_result = existing
+                                print(f"♻️ Using existing orphaned image record for {image_id}")
                 
                 if cloudinary_result:
-                    cloudinary_result['article_id'] = article_id
-                    cloudinary_result['original_filename'] = img_data['filename']
-                    cloudinary_result['orphaned'] = True
-                    images_collection.insert_one(cloudinary_result)
                     orphaned_images.append(cloudinary_result)
         
         # Get updated HTML
@@ -1747,6 +1786,32 @@ async def delete_article(article_id: str):
         if not article:
             raise HTTPException(status_code=404, detail="Article not found")
         
+        # Delete associated images from Cloudinary and database
+        print(f"🗑️ Cleaning up images for article {article_id}")
+        article_images = images_collection.find({"article_id": article_id})
+        images_deleted = 0
+        cloudinary_errors = []
+        
+        for image in article_images:
+            try:
+                # Delete from Cloudinary if public_id exists
+                if 'cloudinary_data' in image and 'public_id' in image['cloudinary_data']:
+                    public_id = image['cloudinary_data']['public_id']
+                    print(f"🗑️ Deleting Cloudinary image: {public_id}")
+                    cloudinary.uploader.destroy(public_id)
+                elif 'public_id' in image:
+                    # Fallback for older format
+                    print(f"🗑️ Deleting Cloudinary image: {image['public_id']}")
+                    cloudinary.uploader.destroy(image['public_id'])
+                images_deleted += 1
+            except Exception as e:
+                cloudinary_errors.append(f"Failed to delete {image.get('id', 'unknown')}: {str(e)}")
+                print(f"⚠️ Cloudinary deletion error: {e}")
+        
+        # Delete all images from database (even if Cloudinary deletion failed)
+        images_result = images_collection.delete_many({"article_id": article_id})
+        print(f"✅ Deleted {images_result.deleted_count} images from database")
+        
         # Delete associated artwork
         artworks_collection.delete_many({"article_id": article_id})
         
@@ -1756,9 +1821,15 @@ async def delete_article(article_id: str):
         # Delete associated feedback
         feedback_collection.delete_many({"article_id": article_id})
         
+        response_message = f"Article {article_id} and associated content deleted successfully"
+        if cloudinary_errors:
+            response_message += f". Warning: {len(cloudinary_errors)} Cloudinary deletion errors occurred"
+        
         return {
             "success": True,
-            "message": f"Article {article_id} and associated content deleted successfully"
+            "message": response_message,
+            "images_deleted": images_deleted,
+            "cloudinary_errors": cloudinary_errors if cloudinary_errors else None
         }
         
     except HTTPException:
