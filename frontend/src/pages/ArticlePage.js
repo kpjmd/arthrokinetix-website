@@ -666,9 +666,12 @@ const ArticlePage = ({ algorithmState, onStateUpdate }) => {
   
   return (
     <>
-      <div className="min-h-screen bg-gray-50 pt-16">
+      <div className="min-h-screen bg-gray-50">
         <style jsx>{`
           .article-html-content {
+            contain: layout style;
+            isolation: isolate;
+            overflow-wrap: break-word;
             line-height: 1.7;
           }
           .article-html-content h1,
@@ -710,6 +713,8 @@ const ArticlePage = ({ algorithmState, onStateUpdate }) => {
             font-weight: 600;
           }
           .infographic-content {
+            contain: layout style;
+            isolation: isolate;
             max-width: 100%;
             overflow-x: auto;
           }
@@ -746,7 +751,9 @@ const ArticlePage = ({ algorithmState, onStateUpdate }) => {
           </div>
         </div>
 
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Main content with proper spacing structure */}
+        <main className="py-16">
+          <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="bg-white rounded-xl shadow-sm overflow-hidden">
             {/* Professional Article Header */}
             <div className="px-8 py-6 border-b border-gray-200">
@@ -878,7 +885,8 @@ const ArticlePage = ({ algorithmState, onStateUpdate }) => {
               </div>
             )}
           </div>
-        </div>
+          </div>
+        </main>
       </div>
 
       {/* Auth Modal */}

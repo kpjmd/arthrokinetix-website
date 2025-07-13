@@ -288,7 +288,7 @@ const Homepage = ({ algorithmState, onStateUpdate }) => {
 
         {/* Algorithm State Display - Centered but Lower */}
         {algorithmState && (
-          <div className="absolute bottom-16 left-0 right-0 pointer-events-none z-10">
+          <div className="absolute bottom-24 left-0 right-0 pointer-events-none z-10">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
               <div className="text-center">
                 <motion.div 
