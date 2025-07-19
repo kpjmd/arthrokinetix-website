@@ -71,7 +71,7 @@ const Footer = () => {
 
   return (
     <footer className="bg-gradient-to-br from-primary-dark via-primary to-secondary text-white mt-16">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="w-full px-4 sm:px-6 lg:px-8">
         
         {/* Main Footer Content */}
         <div className="py-12">

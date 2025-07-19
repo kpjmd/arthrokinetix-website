@@ -75,6 +75,13 @@ const ClerkProvider = ({ children }) => {
         publishableKey={CLERK_PUBLISHABLE_KEY}
         afterSignInUrl="/"
         afterSignUpUrl="/"
+        appearance={{
+          elements: {
+            socialButtonsBlockButton: 'border border-gray-300 hover:bg-gray-50',
+            dividerRow: 'my-4',
+            formButtonPrimary: 'bg-blue-600 hover:bg-blue-700 text-white'
+          }
+        }}
       >
         {children}
       </ClerkAuthProvider>

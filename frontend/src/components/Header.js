@@ -3,11 +3,11 @@ import { Link, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import EnhancedWeb3Integration from './EnhancedWeb3Integration';
 import { AuthModal, EnhancedUserButton } from './AuthComponents';
-import { useUser, SignedIn, SignedOut } from '../hooks/useAuth';
+import { useAuthenticationAccess, SignedIn, SignedOut } from '../hooks/useAuth';
 
 const Header = () => {
   const location = useLocation();
-  const { isSignedIn } = useUser();
+  const { hasAnyAccess } = useAuthenticationAccess();
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [authMode, setAuthMode] = useState('sign-in');
 
@@ -35,7 +35,7 @@ const Header = () => {
         animate={{ y: 0 }}
         className="bg-white/90 backdrop-blur-lg border-b border-gray-200 sticky top-0 z-50"
       >
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="w-full px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             {/* Logo */}
             <Link to="/" className="flex items-center space-x-3">

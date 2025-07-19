@@ -1,13 +1,19 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Heart, ThumbsUp, Zap, HelpCircle, AlertTriangle, Sparkles } from 'lucide-react';
-import { useUser } from '../hooks/useAuth';
+import { useAuthenticationAccess } from '../hooks/useAuth';
 import { emotionOptions } from '../constants/emotions';
 
 const API_BASE = process.env.REACT_APP_BACKEND_URL || 'http://localhost:8001';
 
 const FeedbackForm = ({ articleId, onFeedbackSubmitted }) => {
-  const { user } = useUser();
+  const { 
+    hasAnyAccess, 
+    clerkUser, 
+    walletAddress, 
+    authenticationMethods,
+    hasNFTAccess 
+  } = useAuthenticationAccess();
   const [selectedEmotion, setSelectedEmotion] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
@@ -23,10 +29,14 @@ const FeedbackForm = ({ articleId, onFeedbackSubmitted }) => {
   };
 
   const handleSubmit = async (emotion) => {
-    if (!user) return;
+    if (!hasAnyAccess) return;
 
     setIsSubmitting(true);
     try {
+      // Determine access type and user identifier
+      const accessType = hasNFTAccess ? 'nft_verified' : 'email_verified';
+      const userIdentifier = clerkUser?.emailAddresses?.[0]?.emailAddress || walletAddress;
+      
       const response = await fetch(`${API_BASE}/api/feedback`, {
         method: 'POST',
         headers: {
@@ -35,9 +45,11 @@ const FeedbackForm = ({ articleId, onFeedbackSubmitted }) => {
         body: JSON.stringify({
           article_id: articleId,
           emotion: emotion,
-          user_email: user.emailAddresses[0].emailAddress,
-          clerk_user_id: user.id,
-          access_type: 'email_verified'
+          user_email: clerkUser?.emailAddresses?.[0]?.emailAddress,
+          wallet_address: walletAddress,
+          clerk_user_id: clerkUser?.id,
+          access_type: accessType,
+          nft_verified: hasNFTAccess
         })
       });
 
@@ -66,7 +78,7 @@ const FeedbackForm = ({ articleId, onFeedbackSubmitted }) => {
     }
   };
 
-  if (!user) {
+  if (!hasAnyAccess) {
     return null; // This should be handled by AccessGate
   }
 
@@ -180,9 +192,17 @@ const FeedbackForm = ({ articleId, onFeedbackSubmitted }) => {
       </div>
 
       <div className="mt-4 text-center text-xs text-gray-500">
-        <p>
-          ✓ Signed in as {user.firstName || user.emailAddresses[0].emailAddress}
-        </p>
+        <div className="space-y-1">
+          {authenticationMethods.email && (
+            <p>✓ Email verified: {clerkUser?.firstName || clerkUser?.emailAddresses?.[0]?.emailAddress}</p>
+          )}
+          {authenticationMethods.web3 && (
+            <p>✓ NFT verified: {walletAddress?.slice(0, 6)}...{walletAddress?.slice(-4)}</p>
+          )}
+          {hasNFTAccess && (
+            <p className="text-purple-600 font-medium">🎨 Premium NFT Holder - Enhanced Algorithm Influence</p>
+          )}
+        </div>
       </div>
     </div>
   );

@@ -1,45 +1,49 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { User, Mail, Award, Archive, BarChart3, Settings, Download, Shield } from 'lucide-react';
+import { User, Mail, Award, Archive, BarChart3, Settings, Download, Shield, Wallet, ExternalLink } from 'lucide-react';
+import { useAuthenticationAccess } from '../hooks/useAuth';
 import SignatureCollection from '../components/SignatureCollection';
 import Web3Integration from '../components/Web3Integration';
+import { AuthModal } from '../components/AuthComponents';
 
 const API_BASE = process.env.REACT_APP_BACKEND_URL || 'http://localhost:8001';
 
 const UserProfile = () => {
-  const [user, setUser] = useState(null);
+  const { 
+    hasEmailAccess, 
+    hasNFTAccess, 
+    hasAnyAccess, 
+    clerkUser, 
+    walletAddress, 
+    walletConnected, 
+    nftVerification, 
+    authenticationMethods,
+    isLoaded 
+  } = useAuthenticationAccess();
+  
   const [activeTab, setActiveTab] = useState('profile');
   const [subscriptionStatus, setSubscriptionStatus] = useState(null);
   const [userStats, setUserStats] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [showAuthModal, setShowAuthModal] = useState(false);
+  const [authMode, setAuthMode] = useState('sign-up');
 
   const tabs = [
     { id: 'profile', label: 'Profile', icon: User },
     { id: 'collection', label: 'Signature Collection', icon: Archive },
     { id: 'stats', label: 'Statistics', icon: BarChart3 },
-    { id: 'settings', label: 'Settings', icon: Settings }
+    { id: 'settings', label: 'Settings', icon: Settings },
+    { id: 'wallets', label: 'Connected Wallets', icon: Wallet }
   ];
 
   useEffect(() => {
-    // Check if user is logged in (newsletter subscriber or wallet connected)
-    const subscriberEmail = localStorage.getItem('newsletter_email');
-    const walletConnected = localStorage.getItem('wallet_connected');
-    
-    if (subscriberEmail || walletConnected) {
-      setUser({
-        email: subscriberEmail,
-        walletConnected: walletConnected === 'true',
-        joinDate: localStorage.getItem('join_date') || new Date().toISOString()
-      });
-      
-      if (subscriberEmail) {
-        checkSubscriptionStatus(subscriberEmail);
-        fetchUserStats(subscriberEmail);
+    if (isLoaded && hasEmailAccess && clerkUser) {
+      const userEmail = clerkUser.emailAddresses?.[0]?.emailAddress;
+      if (userEmail) {
+        checkSubscriptionStatus(userEmail);
+        fetchUserStats(userEmail);
       }
     }
-    
-    setLoading(false);
-  }, []);
+  }, [isLoaded, hasEmailAccess, clerkUser]);
 
   const checkSubscriptionStatus = async (email) => {
     try {
@@ -69,29 +73,17 @@ const UserProfile = () => {
     }
   };
 
-  const handleNewsletterSignup = async (email) => {
-    try {
-      const response = await fetch(`${API_BASE}/api/newsletter/subscribe`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ email })
-      });
-
-      if (response.ok) {
-        localStorage.setItem('newsletter_email', email);
-        localStorage.setItem('join_date', new Date().toISOString());
-        setUser({ ...user, email });
-        checkSubscriptionStatus(email);
-        fetchUserStats(email);
-      }
-    } catch (error) {
-      console.error('Newsletter signup error:', error);
-    }
+  const handleSignUp = () => {
+    setAuthMode('sign-up');
+    setShowAuthModal(true);
+  };
+  
+  const handleSignIn = () => {
+    setAuthMode('sign-in');
+    setShowAuthModal(true);
   };
 
-  if (loading) {
+  if (!isLoaded) {
     return (
       <div className="min-h-screen bg-gray-50 pt-16 flex items-center justify-center">
         <motion.div
@@ -103,7 +95,7 @@ const UserProfile = () => {
     );
   }
 
-  if (!user) {
+  if (!hasAnyAccess) {
     return (
       <div className="min-h-screen bg-gray-50 pt-16">
         <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
@@ -133,7 +125,12 @@ const UserProfile = () => {
                   <p className="text-gray-600 mb-4">
                     Subscribe to unlock signature collection and feedback features.
                   </p>
-                  <NewsletterSignupForm onSignup={handleNewsletterSignup} />
+                  <button
+                    onClick={handleSignUp}
+                    className="w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors"
+                  >
+                    Sign Up with Email
+                  </button>
                 </div>
 
                 {/* Web3 Connection */}
@@ -171,27 +168,27 @@ const UserProfile = () => {
             </div>
             
             <h1 className="text-3xl font-bold mb-2">
-              {user.email ? user.email.split('@')[0] : 'Arthrokinetix User'}
+              {clerkUser?.firstName || clerkUser?.emailAddresses?.[0]?.emailAddress?.split('@')[0] || 'Arthrokinetix User'}
             </h1>
             
             <div className="flex items-center justify-center gap-6 text-blue-100">
-              {subscriptionStatus?.subscribed && (
+              {authenticationMethods.email && (
                 <div className="flex items-center">
                   <Mail className="w-5 h-5 mr-2" />
-                  Newsletter Subscriber
+                  Email Verified
                 </div>
               )}
               
-              {user.walletConnected && (
+              {authenticationMethods.web3 && (
                 <div className="flex items-center">
-                  <Shield className="w-5 h-5 mr-2" />
-                  Wallet Connected
+                  <Wallet className="w-5 h-5 mr-2" />
+                  NFT Holder
                 </div>
               )}
               
               <div className="flex items-center">
                 <Award className="w-5 h-5 mr-2" />
-                Member since {formatDate(user.joinDate)}
+                {authenticationMethods.email ? 'Email Member' : 'Web3 Member'}
               </div>
             </div>
           </motion.div>
@@ -234,30 +231,38 @@ const UserProfile = () => {
               <div className="grid md:grid-cols-2 gap-6">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
-                  <div className="text-gray-900">{user.email || 'Not provided'}</div>
+                  <div className="text-gray-900">{clerkUser?.emailAddresses?.[0]?.emailAddress || 'Not provided'}</div>
                 </div>
                 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Member Since</label>
-                  <div className="text-gray-900">{formatDate(user.joinDate)}</div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Wallet Address</label>
+                  <div className="text-gray-900">
+                    {walletAddress ? `${walletAddress.slice(0, 6)}...${walletAddress.slice(-4)}` : 'Not connected'}
+                  </div>
                 </div>
                 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Subscription Status</label>
-                  <div className={`inline-flex px-3 py-1 rounded-full text-sm font-medium ${
-                    subscriptionStatus?.subscribed 
-                      ? 'bg-green-100 text-green-800' 
-                      : 'bg-gray-100 text-gray-800'
-                  }`}>
-                    {subscriptionStatus?.subscribed ? 'Active Subscriber' : 'Not Subscribed'}
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Authentication Methods</label>
+                  <div className="flex gap-2">
+                    {authenticationMethods.email && (
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                        Email
+                      </span>
+                    )}
+                    {authenticationMethods.web3 && (
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
+                        Web3
+                      </span>
+                    )}
                   </div>
                 </div>
                 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Access Level</label>
                   <div className="text-gray-900">
-                    {user.walletConnected && subscriptionStatus?.subscribed ? 'Premium' : 
-                     subscriptionStatus?.subscribed ? 'Subscriber' : 'Basic'}
+                    {hasNFTAccess && hasEmailAccess ? 'Premium (Email + NFT)' : 
+                     hasNFTAccess ? 'NFT Holder' : 
+                     hasEmailAccess ? 'Email Verified' : 'Basic'}
                   </div>
                 </div>
               </div>
@@ -269,36 +274,36 @@ const UserProfile = () => {
               
               <div className="grid md:grid-cols-2 gap-6">
                 <div className={`p-4 rounded-lg border-2 ${
-                  subscriptionStatus?.subscribed ? 'border-green-200 bg-green-50' : 'border-gray-200 bg-gray-50'
+                  hasAnyAccess ? 'border-green-200 bg-green-50' : 'border-gray-200 bg-gray-50'
                 }`}>
                   <div className="flex items-center mb-3">
                     <Archive className="w-6 h-6 mr-3 text-secondary" />
-                    <h4 className="font-semibold">Signature Collection</h4>
+                    <h4 className="font-semibold">Emotional Feedback</h4>
                   </div>
                   <p className="text-sm text-gray-600 mb-3">
-                    Collect and trade unique emotional signatures from research articles.
+                    Provide feedback that influences the algorithm's emotional understanding.
                   </p>
                   <div className={`text-sm font-medium ${
-                    subscriptionStatus?.subscribed ? 'text-green-600' : 'text-gray-500'
+                    hasAnyAccess ? 'text-green-600' : 'text-gray-500'
                   }`}>
-                    {subscriptionStatus?.subscribed ? '✓ Unlocked' : '✗ Requires Subscription'}
+                    {hasAnyAccess ? '✓ Unlocked' : '✗ Requires Authentication'}
                   </div>
                 </div>
 
                 <div className={`p-4 rounded-lg border-2 ${
-                  subscriptionStatus?.subscribed ? 'border-green-200 bg-green-50' : 'border-gray-200 bg-gray-50'
+                  hasNFTAccess ? 'border-purple-200 bg-purple-50' : 'border-gray-200 bg-gray-50'
                 }`}>
                   <div className="flex items-center mb-3">
                     <BarChart3 className="w-6 h-6 mr-3 text-innovation" />
-                    <h4 className="font-semibold">Algorithm Influence</h4>
+                    <h4 className="font-semibold">Premium Algorithm Influence</h4>
                   </div>
                   <p className="text-sm text-gray-600 mb-3">
-                    Submit feedback that influences the algorithm's emotional development.
+                    Enhanced feedback weight and exclusive algorithm features for NFT holders.
                   </p>
                   <div className={`text-sm font-medium ${
-                    subscriptionStatus?.subscribed ? 'text-green-600' : 'text-gray-500'
+                    hasNFTAccess ? 'text-purple-600' : 'text-gray-500'
                   }`}>
-                    {subscriptionStatus?.subscribed ? '✓ Unlocked' : '✗ Requires Subscription'}
+                    {hasNFTAccess ? '✓ NFT Premium Access' : '✗ Requires NFT Ownership'}
                   </div>
                 </div>
               </div>
@@ -309,8 +314,8 @@ const UserProfile = () => {
         {/* Collection Tab */}
         {activeTab === 'collection' && (
           <SignatureCollection 
-            userEmail={user.email}
-            isSubscriber={subscriptionStatus?.subscribed}
+            userEmail={clerkUser?.emailAddresses?.[0]?.emailAddress}
+            isSubscriber={hasAnyAccess}
           />
         )}
 
@@ -389,6 +394,76 @@ const UserProfile = () => {
           </div>
         )}
 
+        {/* Connected Wallets Tab */}
+        {activeTab === 'wallets' && (
+          <div className="space-y-8">
+            <div className="bg-white rounded-xl p-6 shadow-lg">
+              <h3 className="text-xl font-bold text-primary mb-6">Connected Wallets</h3>
+              
+              {walletConnected ? (
+                <div className="space-y-4">
+                  <div className="border border-gray-200 rounded-lg p-4">
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="flex items-center">
+                        <div className="w-3 h-3 bg-green-500 rounded-full mr-3"></div>
+                        <h4 className="font-medium">Connected Wallet</h4>
+                      </div>
+                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                        nftVerification?.verified ? 'bg-purple-100 text-purple-800' : 'bg-gray-100 text-gray-800'
+                      }`}>
+                        {nftVerification?.verified ? 'NFT Verified' : 'No NFTs'}
+                      </span>
+                    </div>
+                    
+                    <div className="space-y-2 text-sm text-gray-600">
+                      <div>
+                        <span className="font-medium">Address:</span> {walletAddress}
+                      </div>
+                      
+                      {nftVerification?.verified && (
+                        <div className="bg-purple-50 rounded-lg p-3 mt-3">
+                          <h5 className="font-medium text-purple-900 mb-2">Your NFTs:</h5>
+                          <ul className="space-y-1 text-purple-800">
+                            {nftVerification.erc721_balance > 0 && (
+                              <li>• ERC721 Tokens: {nftVerification.erc721_balance}</li>
+                            )}
+                            {nftVerification.erc1155_balance > 0 && (
+                              <li>• ERC1155 Tokens: {nftVerification.erc1155_balance}</li>
+                            )}
+                          </ul>
+                        </div>
+                      )}
+                      
+                      <div className="flex items-center justify-between pt-3">
+                        <a
+                          href={`https://basescan.org/address/${walletAddress}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-blue-600 hover:text-blue-700 text-sm flex items-center"
+                        >
+                          View on BaseScan <ExternalLink className="w-4 h-4 ml-1" />
+                        </a>
+                        <button className="text-red-600 hover:text-red-700 text-sm">
+                          Disconnect
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="text-center py-8">
+                  <Wallet className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                  <h4 className="text-lg font-medium text-gray-600 mb-2">No Wallets Connected</h4>
+                  <p className="text-gray-500 mb-6">
+                    Connect your wallet to verify NFT ownership and access premium features.
+                  </p>
+                  <Web3Integration />
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+        
         {/* Settings Tab */}
         {activeTab === 'settings' && (
           <div className="space-y-8">
@@ -396,32 +471,51 @@ const UserProfile = () => {
               <h3 className="text-xl font-bold text-primary mb-6">Account Settings</h3>
               
               <div className="space-y-6">
-                {/* Newsletter Preferences */}
-                {subscriptionStatus?.subscribed && (
-                  <div>
-                    <h4 className="font-medium text-gray-700 mb-3">Newsletter Preferences</h4>
-                    <div className="space-y-3">
-                      <label className="flex items-center">
-                        <input type="checkbox" defaultChecked className="mr-3" />
-                        Algorithm updates and evolution reports
-                      </label>
-                      <label className="flex items-center">
-                        <input type="checkbox" defaultChecked className="mr-3" />
-                        New article notifications
-                      </label>
-                      <label className="flex items-center">
-                        <input type="checkbox" defaultChecked className="mr-3" />
-                        Rare signature alerts
-                      </label>
+                {/* Authentication Methods */}
+                <div>
+                  <h4 className="font-medium text-gray-700 mb-3">Authentication Methods</h4>
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between p-3 border border-gray-200 rounded-lg">
+                      <div className="flex items-center">
+                        <Mail className="w-5 h-5 text-blue-600 mr-3" />
+                        <div>
+                          <p className="font-medium">Email Authentication</p>
+                          <p className="text-sm text-gray-600">
+                            {clerkUser?.emailAddresses?.[0]?.emailAddress || 'Not connected'}
+                          </p>
+                        </div>
+                      </div>
+                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                        authenticationMethods.email ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
+                      }`}>
+                        {authenticationMethods.email ? 'Connected' : 'Not Connected'}
+                      </span>
+                    </div>
+                    
+                    <div className="flex items-center justify-between p-3 border border-gray-200 rounded-lg">
+                      <div className="flex items-center">
+                        <Wallet className="w-5 h-5 text-purple-600 mr-3" />
+                        <div>
+                          <p className="font-medium">Web3 Authentication</p>
+                          <p className="text-sm text-gray-600">
+                            {walletAddress ? `${walletAddress.slice(0, 6)}...${walletAddress.slice(-4)}` : 'Not connected'}
+                          </p>
+                        </div>
+                      </div>
+                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                        authenticationMethods.web3 ? 'bg-purple-100 text-purple-800' : 'bg-gray-100 text-gray-800'
+                      }`}>
+                        {authenticationMethods.web3 ? 'NFT Verified' : 'Not Verified'}
+                      </span>
                     </div>
                   </div>
-                )}
+                </div>
 
                 {/* Data Export */}
                 <div>
                   <h4 className="font-medium text-gray-700 mb-3">Data Export</h4>
                   <p className="text-sm text-gray-600 mb-4">
-                    Download your collected signatures and interaction history.
+                    Download your feedback history and interaction data.
                   </p>
                   <button className="btn-secondary">
                     <Download className="w-4 h-4 mr-2" />
@@ -439,7 +533,7 @@ const UserProfile = () => {
                     </label>
                     <label className="flex items-center">
                       <input type="checkbox" className="mr-3" />
-                      Public signature collection display
+                      Share feedback data for research
                     </label>
                   </div>
                 </div>
@@ -448,44 +542,17 @@ const UserProfile = () => {
           </div>
         )}
       </section>
+      
+      {/* Authentication Modal */}
+      <AuthModal 
+        isOpen={showAuthModal}
+        onClose={() => setShowAuthModal(false)}
+        mode={authMode}
+      />
     </div>
   );
 };
 
-// Newsletter Signup Component
-const NewsletterSignupForm = ({ onSignup }) => {
-  const [email, setEmail] = useState('');
-  const [loading, setLoading] = useState(false);
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (!email) return;
-
-    setLoading(true);
-    await onSignup(email);
-    setLoading(false);
-  };
-
-  return (
-    <form onSubmit={handleSubmit} className="flex gap-3">
-      <input
-        type="email"
-        placeholder="Enter your email"
-        value={email}
-        onChange={(e) => setEmail(e.target.value)}
-        className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-secondary focus:border-transparent"
-        required
-      />
-      <button
-        type="submit"
-        disabled={loading}
-        className="btn-primary"
-      >
-        {loading ? 'Joining...' : 'Join'}
-      </button>
-    </form>
-  );
-};
 
 // Helper functions
 const formatDate = (dateString) => {
