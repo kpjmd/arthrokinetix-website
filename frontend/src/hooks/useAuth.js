@@ -19,36 +19,52 @@ try {
 export const useUser = () => {
   console.log('🔍 [useAuth] useUser called, using:', realClerkHooks ? 'REAL CLERK' : 'MOCK');
   
+  // Always call mock hook (consistent hook order)
+  const mockUser = useMockUser();
+  
+  // Always call real hook if available (consistent hook order)
+  let realUser = null;
   if (realClerkHooks?.useUser) {
-    // Use real Clerk when available
-    const realUser = realClerkHooks.useUser();
+    realUser = realClerkHooks.useUser();
     console.log('🔍 [useAuth] Real Clerk user state:', {
       isSignedIn: realUser.isSignedIn,
       isLoaded: realUser.isLoaded,
       userId: realUser.user?.id,
       firstName: realUser.user?.firstName
     });
-    return realUser;
   }
   
-  // Fallback to mock
-  console.log('🔍 [useAuth] Using mock user');
-  return useMockUser();
+  // Return appropriate result based on availability
+  if (realUser) {
+    console.log('🔍 [useAuth] Using real Clerk user');
+    return realUser;
+  } else {
+    console.log('🔍 [useAuth] Using mock user');
+    return mockUser;
+  }
 };
 
 export const useClerk = () => {
   console.log('🔍 [useAuth] useClerk called, using:', realClerkHooks ? 'REAL CLERK' : 'MOCK');
   
+  // Always call mock hook (consistent hook order)
+  const mockClerk = useMockClerk();
+  
+  // Always call real hook if available (consistent hook order)
+  let realClerk = null;
   if (realClerkHooks?.useClerk) {
-    // Use real Clerk when available
-    const realClerk = realClerkHooks.useClerk();
+    realClerk = realClerkHooks.useClerk();
     console.log('🔍 [useAuth] Real Clerk loaded:', Boolean(realClerk.loaded));
-    return realClerk;
   }
   
-  // Fallback to mock
-  console.log('🔍 [useAuth] Using mock clerk');
-  return useMockClerk();
+  // Return appropriate result based on availability
+  if (realClerk) {
+    console.log('🔍 [useAuth] Using real Clerk');
+    return realClerk;
+  } else {
+    console.log('🔍 [useAuth] Using mock clerk');
+    return mockClerk;
+  }
 };
 
 // Enhanced authentication access hook
@@ -126,15 +142,17 @@ export const useAuthenticationAccess = () => {
 export const SignedIn = ({ children }) => {
   console.log('🔍 [useAuth] SignedIn component called');
   
+  // Always call useAuthenticationAccess to ensure consistent hook order
+  const { hasAnyAccess, isLoaded } = useAuthenticationAccess();
+  
   if (realClerkHooks?.SignedIn) {
     console.log('🔍 [useAuth] Using real Clerk SignedIn');
     const ClerkSignedIn = realClerkHooks.SignedIn;
     return <ClerkSignedIn>{children}</ClerkSignedIn>;
   }
   
-  // Fallback to custom logic
+  // Fallback to custom logic using the hook data we already called
   console.log('🔍 [useAuth] Using custom SignedIn logic');
-  const { hasAnyAccess, isLoaded } = useAuthenticationAccess();
   
   if (!isLoaded) return null;
   if (!hasAnyAccess) return null;
@@ -145,15 +163,17 @@ export const SignedIn = ({ children }) => {
 export const SignedOut = ({ children }) => {
   console.log('🔍 [useAuth] SignedOut component called');
   
+  // Always call useAuthenticationAccess to ensure consistent hook order
+  const { hasAnyAccess, isLoaded } = useAuthenticationAccess();
+  
   if (realClerkHooks?.SignedOut) {
     console.log('🔍 [useAuth] Using real Clerk SignedOut');
     const ClerkSignedOut = realClerkHooks.SignedOut;
     return <ClerkSignedOut>{children}</ClerkSignedOut>;
   }
   
-  // Fallback to custom logic
+  // Fallback to custom logic using the hook data we already called
   console.log('🔍 [useAuth] Using custom SignedOut logic');
-  const { hasAnyAccess, isLoaded } = useAuthenticationAccess();
   
   if (!isLoaded) return null;
   if (hasAnyAccess) return null;
