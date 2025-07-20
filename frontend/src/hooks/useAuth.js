@@ -2,22 +2,22 @@ import { useMockUser, useMockClerk } from '../components/ClerkProvider';
 import { useAccount } from 'wagmi';
 import { useState, useEffect, useMemo } from 'react';
 
-const CLERK_PUBLISHABLE_KEY = process.env.REACT_APP_CLERK_PUBLISHABLE_KEY || process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY;
+// const CLERK_PUBLISHABLE_KEY = process.env.REACT_APP_CLERK_PUBLISHABLE_KEY;
 const API_BASE = process.env.REACT_APP_BACKEND_URL || 'http://localhost:8001';
 
 export const useUser = () => {
   const mockUser = useMockUser();
   
-  // Always return mock for now to avoid conditional hook calls
-  // In production, this would be properly set up with ClerkProvider
+  // For now, always use mock to avoid conditional hook call issues
+  // In production with proper Clerk setup, this would be replaced
   return mockUser;
 };
 
 export const useClerk = () => {
   const mockClerk = useMockClerk();
   
-  // Always return mock for now to avoid conditional hook calls
-  // In production, this would be properly set up with ClerkProvider
+  // For now, always use mock to avoid conditional hook call issues
+  // In production with proper Clerk setup, this would be replaced
   return mockClerk;
 };
 
@@ -62,7 +62,7 @@ export const useAuthenticationAccess = () => {
     } else {
       setNftVerification(null);
     }
-  }, [address, walletConnected, isVerifying]);
+  }, [address, walletConnected]);
 
   const authData = useMemo(() => ({
     // Email authentication - currently using mock, in production would use real Clerk
@@ -76,8 +76,8 @@ export const useAuthenticationAccess = () => {
     nftVerification,
     isVerifyingNFT: isVerifying,
     
-    // Combined access - for demo, allow Web3 access only
-    hasAnyAccess: walletConnected && nftVerification?.verified,
+    // Combined access - both email and Web3 authentication
+    hasAnyAccess: (emailSignedIn && isLoaded) || (walletConnected && nftVerification?.verified),
     
     // Authentication methods info
     authenticationMethods: {

@@ -1,11 +1,10 @@
 import React, { createContext, useContext } from 'react';
 
-const CLERK_PUBLISHABLE_KEY = process.env.REACT_APP_CLERK_PUBLISHABLE_KEY || process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY;
+const CLERK_PUBLISHABLE_KEY = process.env.REACT_APP_CLERK_PUBLISHABLE_KEY;
 
 // Debug logging
 console.log('ClerkProvider Debug:', {
   REACT_APP_KEY: process.env.REACT_APP_CLERK_PUBLISHABLE_KEY,
-  NEXT_PUBLIC_KEY: process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY,
   FINAL_KEY: CLERK_PUBLISHABLE_KEY,
   KEY_EXISTS: Boolean(CLERK_PUBLISHABLE_KEY),
   IS_DEV_KEY: CLERK_PUBLISHABLE_KEY?.includes('test')
@@ -73,8 +72,6 @@ const ClerkProvider = ({ children }) => {
     return (
       <ClerkAuthProvider 
         publishableKey={CLERK_PUBLISHABLE_KEY}
-        afterSignInUrl="/"
-        afterSignUpUrl="/"
         appearance={{
           elements: {
             socialButtonsBlockButton: 'border border-gray-300 hover:bg-gray-50',

@@ -1,10 +1,21 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Mail, User, LogOut, Settings } from 'lucide-react';
-import { useUser, useClerk, useAuthenticationAccess, SignedIn, SignedOut } from '../hooks/useAuth';
+import { useClerk, useAuthenticationAccess, SignedIn, SignedOut } from '../hooks/useAuth';
 
 // Check if Clerk is available
-const CLERK_PUBLISHABLE_KEY = process.env.REACT_APP_CLERK_PUBLISHABLE_KEY || process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY;
+const CLERK_PUBLISHABLE_KEY = process.env.REACT_APP_CLERK_PUBLISHABLE_KEY;
+
+// Import Clerk components at module level to prevent re-renders
+let SignIn, SignUp, SignInWithMetamaskButton;
+try {
+  const clerkComponents = require('@clerk/clerk-react');
+  SignIn = clerkComponents.SignIn;
+  SignUp = clerkComponents.SignUp;
+  SignInWithMetamaskButton = clerkComponents.SignInWithMetamaskButton;
+} catch (error) {
+  console.warn('Clerk components not available:', error.message);
+}
 
 // Auth Modal Component
 export const AuthModal = ({ isOpen, onClose, mode = 'sign-in' }) => {
@@ -48,9 +59,11 @@ export const AuthModal = ({ isOpen, onClose, mode = 'sign-in' }) => {
     );
   }
 
-  // Try to load Clerk components dynamically
-  try {
-    const { SignIn, SignUp, SignInWithMetamaskButton } = require('@clerk/clerk-react');
+  // Check if Clerk components are available
+  if (!SignIn || !SignUp || !SignInWithMetamaskButton) {
+    console.warn('Clerk components not available, modal will not render');
+    return null;
+  }
     
     return (
       <AnimatePresence>
@@ -106,7 +119,7 @@ export const AuthModal = ({ isOpen, onClose, mode = 'sign-in' }) => {
                 {/* Web3 Authentication Button */}
                 <div className="mb-4">
                   <SignInWithMetamaskButton
-                    redirectUrl="/articles"
+                    fallbackRedirectUrl="/articles"
                     className="w-full"
                   >
                     <button className="w-full bg-gradient-to-r from-purple-600 to-blue-600 text-white py-3 px-4 rounded-lg hover:from-purple-700 hover:to-blue-700 transition-colors font-medium flex items-center justify-center">
@@ -141,7 +154,7 @@ export const AuthModal = ({ isOpen, onClose, mode = 'sign-in' }) => {
                       dividerRow: 'hidden'
                     }
                   }}
-                  redirectUrl="/articles"
+                  fallbackRedirectUrl="/articles"
                   signUpUrl="#"
                 />
               ) : (
@@ -156,7 +169,7 @@ export const AuthModal = ({ isOpen, onClose, mode = 'sign-in' }) => {
                       dividerRow: 'hidden'
                     }
                   }}
-                  redirectUrl="/articles"
+                  fallbackRedirectUrl="/articles"
                   signInUrl="#"
                 />
               )}
@@ -165,10 +178,6 @@ export const AuthModal = ({ isOpen, onClose, mode = 'sign-in' }) => {
         </div>
       </AnimatePresence>
     );
-  } catch (error) {
-    console.warn('Failed to load Clerk components:', error.message);
-    return null;
-  }
 };
 
 // Sign Up Prompt Component
@@ -368,7 +377,8 @@ export const AccessGate = ({ onSignUp, onSignIn }) => {
 
 // Web3 Connection Modal Component
 export const Web3ConnectionModal = ({ isOpen, onClose }) => {
-  const { useConnect } = require('wagmi') || { useConnect: () => ({ connect: () => {}, connectors: [], isPending: false }) };
+  const wagmi = require('wagmi') || {};
+  const { useConnect = () => ({ connect: () => {}, connectors: [], isPending: false }) } = wagmi;
   const { connect, connectors, isPending } = useConnect();
   const { walletConnected, isVerifyingNFT, nftVerification } = useAuthenticationAccess();
   

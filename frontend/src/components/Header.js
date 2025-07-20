@@ -1,13 +1,11 @@
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import EnhancedWeb3Integration from './EnhancedWeb3Integration';
 import { AuthModal, EnhancedUserButton } from './AuthComponents';
 import { useAuthenticationAccess, SignedIn, SignedOut } from '../hooks/useAuth';
 
 const Header = () => {
   const location = useLocation();
-  const { hasAnyAccess } = useAuthenticationAccess();
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [authMode, setAuthMode] = useState('sign-in');
 
