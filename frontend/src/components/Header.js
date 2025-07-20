@@ -3,12 +3,34 @@ import { Link, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { AuthModal, EnhancedUserButton } from './AuthComponents';
 import { DebugAuthModal } from './DebugAuthModal';
-import { useAuthenticationAccess, SignedIn, SignedOut } from '../hooks/useAuth';
+import { useAuthenticationAccess, SignedIn, SignedOut, useUser, useClerk } from '../hooks/useAuth';
+
+// Try to import Clerk UserButton
+let UserButton = null;
+try {
+  const clerkComponents = require('@clerk/clerk-react');
+  UserButton = clerkComponents.UserButton;
+} catch (error) {
+  console.warn('Clerk UserButton not available:', error.message);
+}
 
 const Header = () => {
   const location = useLocation();
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [authMode, setAuthMode] = useState('sign-in');
+  
+  // Get authentication state
+  const { isSignedIn, user, isLoaded } = useUser();
+  const { signOut } = useClerk();
+  
+  // Debug authentication state
+  console.log('🔍 [Header] Authentication state:', {
+    isSignedIn,
+    isLoaded,
+    user: user ? { id: user.id, firstName: user.firstName, lastName: user.lastName } : null,
+    hasUserButton: Boolean(UserButton),
+    timestamp: new Date().toISOString()
+  });
 
   // Debug logging for state changes
   useEffect(() => {
@@ -122,7 +144,15 @@ const Header = () => {
               
               {/* Authentication Section */}
               <div className="flex items-center space-x-4">
+                {/* Debug Authentication State */}
+                {process.env.NODE_ENV === 'development' && (
+                  <div className="text-xs bg-gray-100 px-2 py-1 rounded">
+                    {isLoaded ? (isSignedIn ? `✅ ${user?.firstName || 'User'}` : '❌ Not signed in') : '⏳ Loading...'}
+                  </div>
+                )}
+                
                 <SignedOut>
+                  {console.log('🔍 [Header] Rendering SignedOut section')}
                   <div className="flex items-center space-x-3">
                     <button
                       onClick={handleSignIn}
@@ -140,7 +170,41 @@ const Header = () => {
                 </SignedOut>
 
                 <SignedIn>
-                  <EnhancedUserButton />
+                  {console.log('🔍 [Header] Rendering SignedIn section')}
+                  <div className="flex items-center space-x-3">
+                    {/* Use Clerk UserButton if available */}
+                    {UserButton ? (
+                      <>
+                        <span className="text-sm text-gray-700">
+                          Welcome, {user?.firstName || 'User'}!
+                        </span>
+                        <UserButton 
+                          appearance={{
+                            elements: {
+                              avatarBox: "w-8 h-8"
+                            }
+                          }}
+                          showName={false}
+                        />
+                      </>
+                    ) : (
+                      <>
+                        {/* Fallback to custom user display */}
+                        <span className="text-sm text-gray-700">
+                          Welcome, {user?.firstName || 'User'}!
+                        </span>
+                        <button
+                          onClick={() => {
+                            console.log('🔍 [Header] Sign out clicked');
+                            signOut();
+                          }}
+                          className="text-gray-700 hover:text-red-600 text-sm font-medium transition-colors"
+                        >
+                          Sign Out
+                        </button>
+                      </>
+                    )}
+                  </div>
                 </SignedIn>
 
                 {/* Web3 Integration - Temporarily disabled */}
@@ -149,15 +213,38 @@ const Header = () => {
             </div>
 
             {/* Mobile menu button */}
-            <div className="md:hidden">
+            <div className="md:hidden flex items-center space-x-2">
               <SignedOut>
                 <button 
                   onClick={handleSignUp}
-                  className="bg-primary text-white px-3 py-2 rounded-lg text-sm font-medium hover:bg-primary/90 transition-colors mr-2"
+                  className="bg-primary text-white px-3 py-2 rounded-lg text-sm font-medium hover:bg-primary/90 transition-colors"
                 >
                   Sign Up
                 </button>
               </SignedOut>
+              
+              <SignedIn>
+                {UserButton ? (
+                  <UserButton 
+                    appearance={{
+                      elements: {
+                        avatarBox: "w-8 h-8"
+                      }
+                    }}
+                    showName={false}
+                  />
+                ) : (
+                  <button
+                    onClick={() => {
+                      console.log('🔍 [Header] Mobile sign out clicked');
+                      signOut();
+                    }}
+                    className="text-gray-700 hover:text-red-600 text-sm font-medium"
+                  >
+                    Sign Out
+                  </button>
+                )}
+              </SignedIn>
               
               <button className="p-2 text-gray-600 hover:text-secondary">
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -169,20 +256,23 @@ const Header = () => {
         </div>
       </motion.header>
 
-      {/* Debug Auth Modal - Temporarily replacing AuthModal */}
-      <DebugAuthModal
+      {/* Auth Modal - Restored now that authentication state is fixed */}
+      <AuthModal
         isOpen={showAuthModal}
         onClose={() => {
-          console.log('🔧 [Header] Debug modal close called');
+          console.log('🔍 [Header] Auth modal closed');
           setShowAuthModal(false);
         }}
         mode={authMode}
       />
       
-      {/* Original Auth Modal - Temporarily disabled 
-      <AuthModal
-        isOpen={showAuthModal}
-        onClose={() => setShowAuthModal(false)}
+      {/* Debug Auth Modal - Keep for debugging if needed
+      <DebugAuthModal
+        isOpen={false}
+        onClose={() => {
+          console.log('🔧 [Header] Debug modal close called');
+          setShowAuthModal(false);
+        }}
         mode={authMode}
       />
       */}

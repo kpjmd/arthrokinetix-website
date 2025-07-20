@@ -145,6 +145,7 @@ export const AuthModal = ({ isOpen, onClose, mode = 'sign-in' }) => {
                 {/* Web3 Authentication Button */}
                 <div className="mb-4">
                   <SignInWithMetamaskButton
+                    fallbackRedirectUrl="/articles"
                     className="w-full"
                   >
                     <button className="w-full bg-gradient-to-r from-purple-600 to-blue-600 text-white py-3 px-4 rounded-lg hover:from-purple-700 hover:to-blue-700 transition-colors font-medium flex items-center justify-center">
@@ -181,6 +182,7 @@ export const AuthModal = ({ isOpen, onClose, mode = 'sign-in' }) => {
                         dividerRow: 'hidden'
                       }
                     }}
+                    fallbackRedirectUrl="/articles"
                   />
                 </>
               ) : (
@@ -197,6 +199,7 @@ export const AuthModal = ({ isOpen, onClose, mode = 'sign-in' }) => {
                         dividerRow: 'hidden'
                       }
                     }}
+                    fallbackRedirectUrl="/articles"
                   />
                 </>
               )}
