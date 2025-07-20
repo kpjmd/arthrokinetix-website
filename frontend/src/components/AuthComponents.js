@@ -155,7 +155,6 @@ export const AuthModal = ({ isOpen, onClose, mode = 'sign-in' }) => {
                     }
                   }}
                   fallbackRedirectUrl="/articles"
-                  signUpUrl="#"
                 />
               ) : (
                 <SignUp 
@@ -170,7 +169,6 @@ export const AuthModal = ({ isOpen, onClose, mode = 'sign-in' }) => {
                     }
                   }}
                   fallbackRedirectUrl="/articles"
-                  signInUrl="#"
                 />
               )}
             </div>
