@@ -48,6 +48,52 @@ function AppContent() {
   const [algorithmState, setAlgorithmState] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  // Add navigation event logging
+  useEffect(() => {
+    console.log('🔍 [App] AppContent mounted');
+    
+    // Log navigation events
+    const handlePopState = (event) => {
+      console.log('🔍 [App] PopState event:', { 
+        state: event.state, 
+        url: window.location.href,
+        timestamp: new Date().toISOString()
+      });
+    };
+
+    const handleBeforeUnload = (event) => {
+      console.log('🔍 [App] Before unload event:', { 
+        url: window.location.href,
+        timestamp: new Date().toISOString()
+      });
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    window.addEventListener('beforeunload', handleBeforeUnload);
+
+    // Override history methods to log navigation
+    const originalPushState = history.pushState;
+    const originalReplaceState = history.replaceState;
+
+    history.pushState = function(...args) {
+      console.log('🔍 [App] History pushState called:', args);
+      return originalPushState.apply(this, args);
+    };
+
+    history.replaceState = function(...args) {
+      console.log('🔍 [App] History replaceState called:', args);
+      return originalReplaceState.apply(this, args);
+    };
+
+    return () => {
+      console.log('🔍 [App] AppContent unmounting');
+      window.removeEventListener('popstate', handlePopState);
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+      history.pushState = originalPushState;
+      history.replaceState = originalReplaceState;
+    };
+  }, []);
+
   // Fetch algorithm state on mount
   useEffect(() => {
     fetchAlgorithmState();

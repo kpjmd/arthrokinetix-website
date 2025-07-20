@@ -1,13 +1,32 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { AuthModal, EnhancedUserButton } from './AuthComponents';
+import { DebugAuthModal } from './DebugAuthModal';
 import { useAuthenticationAccess, SignedIn, SignedOut } from '../hooks/useAuth';
 
 const Header = () => {
   const location = useLocation();
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [authMode, setAuthMode] = useState('sign-in');
+
+  // Debug logging for state changes
+  useEffect(() => {
+    console.log('🔍 [Header] Modal state changed:', { 
+      showAuthModal, 
+      authMode, 
+      timestamp: new Date().toISOString(),
+      location: location.pathname 
+    });
+  }, [showAuthModal, authMode, location.pathname]);
+
+  // Component mount/unmount logging
+  useEffect(() => {
+    console.log('🔍 [Header] Header component mounted');
+    return () => {
+      console.log('🔍 [Header] Header component unmounting');
+    };
+  }, []);
 
   const navItems = [
     { path: '/', label: 'Home' },
@@ -16,14 +35,50 @@ const Header = () => {
     { path: '/about', label: 'About' }
   ];
 
-  const handleSignIn = () => {
+  const handleSignIn = (e) => {
+    console.log('🔍 [Header] Sign-in button clicked', { 
+      timestamp: new Date().toISOString(),
+      event: e,
+      currentModal: showAuthModal,
+      currentMode: authMode 
+    });
+    
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+      console.log('🔍 [Header] Event prevented and stopped');
+    }
+    
+    console.log('🔍 [Header] Setting auth mode to sign-in');
     setAuthMode('sign-in');
+    
+    console.log('🔍 [Header] Setting modal to open');
     setShowAuthModal(true);
+    
+    console.log('🔍 [Header] Sign-in handler completed');
   };
 
-  const handleSignUp = () => {
+  const handleSignUp = (e) => {
+    console.log('🔍 [Header] Sign-up button clicked', { 
+      timestamp: new Date().toISOString(),
+      event: e,
+      currentModal: showAuthModal,
+      currentMode: authMode 
+    });
+    
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+      console.log('🔍 [Header] Event prevented and stopped');
+    }
+    
+    console.log('🔍 [Header] Setting auth mode to sign-up');
     setAuthMode('sign-up');
+    
+    console.log('🔍 [Header] Setting modal to open');
     setShowAuthModal(true);
+    
+    console.log('🔍 [Header] Sign-up handler completed');
   };
 
   return (
@@ -114,12 +169,23 @@ const Header = () => {
         </div>
       </motion.header>
 
-      {/* Auth Modal */}
+      {/* Debug Auth Modal - Temporarily replacing AuthModal */}
+      <DebugAuthModal
+        isOpen={showAuthModal}
+        onClose={() => {
+          console.log('🔧 [Header] Debug modal close called');
+          setShowAuthModal(false);
+        }}
+        mode={authMode}
+      />
+      
+      {/* Original Auth Modal - Temporarily disabled 
       <AuthModal
         isOpen={showAuthModal}
         onClose={() => setShowAuthModal(false)}
         mode={authMode}
       />
+      */}
     </>
   );
 };

@@ -59,16 +59,24 @@ export const useMockClerk = () => {
 };
 
 const ClerkProvider = ({ children }) => {
+  console.log('🔍 [ClerkProvider] Initializing ClerkProvider', {
+    hasKey: Boolean(CLERK_PUBLISHABLE_KEY),
+    keyLength: CLERK_PUBLISHABLE_KEY?.length,
+    timestamp: new Date().toISOString()
+  });
+
   // If no Clerk key, use mock system
   if (!CLERK_PUBLISHABLE_KEY) {
-    console.warn("Clerk publishable key not found. Using mock authentication system.");
+    console.warn("🔍 [ClerkProvider] Clerk publishable key not found. Using mock authentication system.");
     return <MockClerkProvider>{children}</MockClerkProvider>;
   }
 
   // Try to use real Clerk with better error handling
   try {
+    console.log('🔍 [ClerkProvider] Attempting to load real Clerk components');
     const { ClerkProvider: ClerkAuthProvider } = require('@clerk/clerk-react');
     
+    console.log('🔍 [ClerkProvider] Real Clerk loaded successfully, returning ClerkAuthProvider');
     return (
       <ClerkAuthProvider 
         publishableKey={CLERK_PUBLISHABLE_KEY}
@@ -84,8 +92,8 @@ const ClerkProvider = ({ children }) => {
       </ClerkAuthProvider>
     );
   } catch (error) {
-    console.error('Failed to initialize Clerk:', error);
-    console.warn('Falling back to mock authentication system.');
+    console.error('🔍 [ClerkProvider] Failed to initialize Clerk:', error);
+    console.warn('🔍 [ClerkProvider] Falling back to mock authentication system.');
     return <MockClerkProvider>{children}</MockClerkProvider>;
   }
 };

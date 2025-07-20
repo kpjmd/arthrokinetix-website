@@ -19,7 +19,33 @@ try {
 
 // Auth Modal Component
 export const AuthModal = ({ isOpen, onClose, mode = 'sign-in' }) => {
-  if (!isOpen) return null;
+  console.log('🔍 [AuthModal] Component render:', { 
+    isOpen, 
+    mode, 
+    timestamp: new Date().toISOString() 
+  });
+
+  // Component mount/unmount logging
+  useEffect(() => {
+    console.log('🔍 [AuthModal] Component mounted/props changed:', { isOpen, mode });
+    return () => {
+      console.log('🔍 [AuthModal] Component unmounting or props changing');
+    };
+  }, [isOpen, mode]);
+
+  // Modal state logging
+  useEffect(() => {
+    if (isOpen) {
+      console.log('🔍 [AuthModal] Modal opened with mode:', mode);
+    } else {
+      console.log('🔍 [AuthModal] Modal closed');
+    }
+  }, [isOpen, mode]);
+
+  if (!isOpen) {
+    console.log('🔍 [AuthModal] Returning null - modal not open');
+    return null;
+  }
 
   // If Clerk is not available, show a message
   if (!CLERK_PUBLISHABLE_KEY) {
@@ -119,7 +145,6 @@ export const AuthModal = ({ isOpen, onClose, mode = 'sign-in' }) => {
                 {/* Web3 Authentication Button */}
                 <div className="mb-4">
                   <SignInWithMetamaskButton
-                    fallbackRedirectUrl="/articles"
                     className="w-full"
                   >
                     <button className="w-full bg-gradient-to-r from-purple-600 to-blue-600 text-white py-3 px-4 rounded-lg hover:from-purple-700 hover:to-blue-700 transition-colors font-medium flex items-center justify-center">
@@ -143,33 +168,37 @@ export const AuthModal = ({ isOpen, onClose, mode = 'sign-in' }) => {
               
               {/* Standard Email Authentication */}
               {mode === 'sign-in' ? (
-                <SignIn 
-                  appearance={{
-                    elements: {
-                      formButtonPrimary: 'bg-blue-600 hover:bg-blue-700',
-                      card: 'shadow-none',
-                      headerTitle: 'hidden',
-                      headerSubtitle: 'hidden',
-                      socialButtonsBlockButton: 'hidden',
-                      dividerRow: 'hidden'
-                    }
-                  }}
-                  fallbackRedirectUrl="/articles"
-                />
+                <>
+                  {console.log('🔍 [AuthModal] Rendering SignIn component')}
+                  <SignIn 
+                    appearance={{
+                      elements: {
+                        formButtonPrimary: 'bg-blue-600 hover:bg-blue-700',
+                        card: 'shadow-none',
+                        headerTitle: 'hidden',
+                        headerSubtitle: 'hidden',
+                        socialButtonsBlockButton: 'hidden',
+                        dividerRow: 'hidden'
+                      }
+                    }}
+                  />
+                </>
               ) : (
-                <SignUp 
-                  appearance={{
-                    elements: {
-                      formButtonPrimary: 'bg-blue-600 hover:bg-blue-700',
-                      card: 'shadow-none',
-                      headerTitle: 'hidden',
-                      headerSubtitle: 'hidden',
-                      socialButtonsBlockButton: 'hidden',
-                      dividerRow: 'hidden'
-                    }
-                  }}
-                  fallbackRedirectUrl="/articles"
-                />
+                <>
+                  {console.log('🔍 [AuthModal] Rendering SignUp component')}
+                  <SignUp 
+                    appearance={{
+                      elements: {
+                        formButtonPrimary: 'bg-blue-600 hover:bg-blue-700',
+                        card: 'shadow-none',
+                        headerTitle: 'hidden',
+                        headerSubtitle: 'hidden',
+                        socialButtonsBlockButton: 'hidden',
+                        dividerRow: 'hidden'
+                      }
+                    }}
+                  />
+                </>
               )}
             </div>
           </motion.div>
