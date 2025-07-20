@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Heart, ThumbsUp, Zap, HelpCircle, AlertTriangle, Sparkles } from 'lucide-react';
 import { useAuthenticationAccess } from '../hooks/useAuth';
@@ -17,6 +17,10 @@ const FeedbackForm = ({ articleId, onFeedbackSubmitted }) => {
   const [selectedEmotion, setSelectedEmotion] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [isCheckingDuplicate, setIsCheckingDuplicate] = useState(false);
+  const [alreadySubmitted, setAlreadySubmitted] = useState(false);
+  const [previousFeedback, setPreviousFeedback] = useState(null);
+  const [responseDebugData, setResponseDebugData] = useState(null);
 
   // Map icons to emotion options
   const iconMap = {
@@ -28,14 +32,55 @@ const FeedbackForm = ({ articleId, onFeedbackSubmitted }) => {
     uncertainty: HelpCircle
   };
 
+  // Get user identifier for duplicate checking
+  const getUserIdentifier = () => {
+    return clerkUser?.id || clerkUser?.emailAddresses?.[0]?.emailAddress || walletAddress;
+  };
+
+  // Check for existing feedback on mount
+  useEffect(() => {
+    const checkExistingFeedback = async () => {
+      if (!hasAnyAccess || !articleId) return;
+      
+      const userIdentifier = getUserIdentifier();
+      if (!userIdentifier) return;
+
+      setIsCheckingDuplicate(true);
+      try {
+        const response = await fetch(`${API_BASE}/api/feedback/check?article_id=${articleId}&user_id=${encodeURIComponent(userIdentifier)}`);
+        
+        if (response.ok) {
+          const data = await response.json();
+          console.log('Duplicate check response:', data);
+          
+          if (data.has_submitted && data.feedback) {
+            setAlreadySubmitted(true);
+            setPreviousFeedback(data.feedback);
+            setSelectedEmotion(data.feedback.emotion);
+          }
+        } else {
+          console.log('Duplicate check failed:', response.status, response.statusText);
+        }
+      } catch (error) {
+        console.error('Error checking existing feedback:', error);
+      } finally {
+        setIsCheckingDuplicate(false);
+      }
+    };
+
+    checkExistingFeedback();
+  }, [articleId, hasAnyAccess, clerkUser, walletAddress]);
+
   const handleSubmit = async (emotion) => {
-    if (!hasAnyAccess) return;
+    if (!hasAnyAccess || alreadySubmitted) return;
 
     setIsSubmitting(true);
     try {
       // Determine access type and user identifier
       const accessType = hasNFTAccess ? 'nft_verified' : 'email_verified';
       const userIdentifier = clerkUser?.emailAddresses?.[0]?.emailAddress || walletAddress;
+      
+      console.log('Submitting feedback:', { articleId, emotion, userIdentifier, accessType });
       
       const response = await fetch(`${API_BASE}/api/feedback`, {
         method: 'POST',
@@ -53,9 +98,41 @@ const FeedbackForm = ({ articleId, onFeedbackSubmitted }) => {
         })
       });
 
-      const data = await response.json();
+      let data;
+      let responseText = '';
+      
+      try {
+        responseText = await response.text();
+        console.log('Raw response:', responseText);
+        data = JSON.parse(responseText);
+      } catch (parseError) {
+        console.log('Response is not valid JSON, treating as string:', responseText);
+        data = { message: responseText };
+      }
+      
+      // Store debug data for display
+      setResponseDebugData({ 
+        status: response.status, 
+        ok: response.ok, 
+        data: data,
+        rawResponse: responseText 
+      });
 
-      if (response.ok && data.success) {
+      // Improved success condition: HTTP 200 AND (data.success === true OR response contains "successfully")
+      const isSuccess = response.ok && (
+        data.success === true || 
+        (typeof data.message === 'string' && data.message.toLowerCase().includes('successfully')) ||
+        (typeof responseText === 'string' && responseText.toLowerCase().includes('successfully'))
+      );
+
+      console.log('Success check:', { 
+        responseOk: response.ok, 
+        dataSuccess: data.success, 
+        messageIncludes: data.message?.toLowerCase().includes('successfully'),
+        finalSuccess: isSuccess 
+      });
+
+      if (isSuccess) {
         setSubmitted(true);
         setSelectedEmotion(emotion);
         
@@ -63,16 +140,23 @@ const FeedbackForm = ({ articleId, onFeedbackSubmitted }) => {
         if (onFeedbackSubmitted) {
           onFeedbackSubmitted({
             emotion,
-            algorithmInfluenced: data.algorithm_influenced,
-            influenceWeight: data.influence_weight,
-            accessType: data.access_type
+            algorithmInfluenced: data.algorithm_influenced || true,
+            influenceWeight: data.influence_weight || 1.0,
+            accessType: data.access_type || accessType
           });
         }
+        
+        console.log('Feedback submitted successfully!');
       } else {
-        console.error('Failed to submit feedback:', data.message || 'Unknown error');
+        console.error('Failed to submit feedback:', {
+          status: response.status,
+          message: data.message || 'Unknown error',
+          data: data
+        });
       }
     } catch (error) {
       console.error('Error submitting feedback:', error);
+      setResponseDebugData({ error: error.message });
     } finally {
       setIsSubmitting(false);
     }
@@ -80,6 +164,69 @@ const FeedbackForm = ({ articleId, onFeedbackSubmitted }) => {
 
   if (!hasAnyAccess) {
     return null; // This should be handled by AccessGate
+  }
+
+  // Show loading state while checking for duplicates
+  if (isCheckingDuplicate) {
+    return (
+      <div className="bg-gray-50 border border-gray-200 rounded-lg p-6 text-center">
+        <motion.div
+          className="w-6 h-6 mx-auto mb-3 border-2 border-primary border-t-transparent rounded-full"
+          animate={{ rotate: 360 }}
+          transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+        />
+        <p className="text-gray-600">Checking your previous feedback...</p>
+      </div>
+    );
+  }
+
+  // Show already submitted state
+  if (alreadySubmitted && previousFeedback) {
+    const selectedEmotionData = emotionOptions.find(e => e.key === previousFeedback.emotion);
+    const IconComponent = iconMap[previousFeedback.emotion] || Heart;
+    
+    return (
+      <motion.div
+        initial={{ opacity: 0, scale: 0.9 }}
+        animate={{ opacity: 1, scale: 1 }}
+        className="bg-gradient-to-r from-blue-50 to-purple-50 border border-blue-200 rounded-lg p-6 text-center"
+      >
+        <motion.div
+          initial={{ scale: 0 }}
+          animate={{ scale: 1 }}
+          transition={{ delay: 0.2, type: "spring" }}
+          className="w-16 h-16 mx-auto mb-4 rounded-full flex items-center justify-center"
+          style={{ backgroundColor: `${selectedEmotionData?.color}20` }}
+        >
+          <IconComponent 
+            className="w-8 h-8" 
+            style={{ color: selectedEmotionData?.color }}
+          />
+        </motion.div>
+        
+        <div className="text-4xl mb-3">💭</div>
+        <h3 className="text-xl font-bold text-gray-800 mb-2">
+          You've Already Shared Your Thoughts
+        </h3>
+        <p className="text-gray-600 mb-4">
+          You previously responded with <span className="font-semibold capitalize">{previousFeedback.emotion}</span> 
+          {previousFeedback.timestamp && (
+            <span className="text-sm text-gray-500 block mt-1">
+              on {new Date(previousFeedback.timestamp).toLocaleDateString()}
+            </span>
+          )}
+        </p>
+        <div className="bg-white rounded-lg p-3 inline-block">
+          <p className="text-sm text-gray-500">
+            🧠 Your feedback has already influenced the algorithm
+          </p>
+        </div>
+        <div className="mt-4 text-sm text-blue-600">
+          <p>✓ One emotional response per article ensures authentic feedback</p>
+          <p>✓ Your influence contributes to the algorithm's evolution</p>
+        </div>
+      </motion.div>
+    );
   }
 
   if (submitted) {
@@ -123,6 +270,16 @@ const FeedbackForm = ({ articleId, onFeedbackSubmitted }) => {
           <p>✓ Algorithm state updated in real-time</p>
           <p>✓ Your influence will shape future art generation</p>
         </div>
+        
+        {/* Debug section for response data */}
+        {responseDebugData && (
+          <details className="mt-4 text-xs text-gray-400">
+            <summary className="cursor-pointer">Debug Response Data</summary>
+            <pre className="mt-2 p-2 bg-gray-50 rounded text-left overflow-auto max-h-32">
+              {JSON.stringify(responseDebugData, null, 2)}
+            </pre>
+          </details>
+        )}
       </motion.div>
     );
   }

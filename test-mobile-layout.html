@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mobile Layout Testing - Arthrokinetix</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        
+        .test-container {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        
+        .test-section {
+            margin-bottom: 30px;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 20px;
+        }
+        
+        .test-header {
+            color: #2c3e50;
+            margin-bottom: 15px;
+            font-size: 1.25em;
+            font-weight: 600;
+        }
+        
+        .device-frame {
+            border: 3px solid #333;
+            border-radius: 25px;
+            padding: 20px 10px;
+            background: #000;
+            margin: 20px auto;
+            position: relative;
+        }
+        
+        .mobile-frame {
+            width: 375px;
+            height: 600px;
+        }
+        
+        .tablet-frame {
+            width: 768px;
+            height: 500px;
+        }
+        
+        .desktop-frame {
+            width: 1024px;
+            height: 400px;
+        }
+        
+        .viewport {
+            width: 100%;
+            height: 100%;
+            border: 1px solid #ddd;
+            background: white;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        
+        .test-content {
+            padding: 15px;
+            height: calc(100% - 30px);
+            overflow-y: auto;
+        }
+        
+        /* Responsive Typography Test */
+        .responsive-text {
+            font-size: 18px;
+            line-height: 1.7;
+            margin-bottom: 1.5rem;
+        }
+        
+        @media (min-width: 768px) {
+            .responsive-text {
+                font-size: 16px;
+                line-height: 1.6;
+            }
+        }
+        
+        .responsive-heading {
+            font-size: 2rem;
+            line-height: 1.2;
+            margin-bottom: 1rem;
+            color: #2c3e50;
+        }
+        
+        @media (min-width: 768px) {
+            .responsive-heading {
+                font-size: 2.5rem;
+            }
+        }
+        
+        /* Container Test */
+        .responsive-container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+        
+        /* Table Test */
+        .responsive-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1.5rem 0;
+            font-size: 0.95em;
+        }
+        
+        @media (max-width: 767px) {
+            .responsive-table {
+                display: block;
+                overflow-x: auto;
+                white-space: nowrap;
+                font-size: 14px;
+            }
+        }
+        
+        .responsive-table th,
+        .responsive-table td {
+            border: 1px solid #ddd;
+            padding: 0.75rem;
+            text-align: left;
+        }
+        
+        @media (max-width: 767px) {
+            .responsive-table th,
+            .responsive-table td {
+                padding: 0.5rem;
+                min-width: 120px;
+            }
+        }
+        
+        .responsive-table th {
+            background-color: #f8f9fa;
+            font-weight: 600;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+        
+        /* Image Test */
+        .responsive-image {
+            max-width: 100%;
+            height: auto;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            transition: transform 0.2s ease;
+            margin: 1.5rem 0;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+        
+        .responsive-image:hover {
+            transform: scale(1.02);
+        }
+        
+        @media (max-width: 767px) {
+            .responsive-image {
+                margin: 1rem 0;
+                border-radius: 0.375rem;
+            }
+        }
+        
+        /* Back to Top Button */
+        .back-to-top {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            z-index: 50;
+            background: #3498db;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 3rem;
+            height: 3rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            transition: all 0.3s ease;
+            opacity: 1;
+        }
+        
+        .back-to-top:hover {
+            background: #2980b9;
+            transform: translateY(-2px);
+        }
+        
+        @media (max-width: 767px) {
+            .back-to-top {
+                bottom: 1.5rem;
+                right: 1.5rem;
+                width: 2.5rem;
+                height: 2.5rem;
+            }
+        }
+        
+        .status {
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+            font-weight: 500;
+        }
+        
+        .status.pass {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        
+        .status.fail {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        
+        .status.test {
+            background: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeaa7;
+        }
+        
+        .link-button {
+            display: inline-block;
+            padding: 10px 20px;
+            background: #3498db;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            margin: 10px 5px;
+            transition: background 0.3s ease;
+        }
+        
+        .link-button:hover {
+            background: #2980b9;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>Enhanced Article Layout - Mobile Testing Suite</h1>
+        <p>This page tests the responsive article container implementation across different devices and use cases.</p>
+        
+        <div class="status test">
+            <strong>Testing Status:</strong> Ready to test responsive layout with real articles
+        </div>
+        
+        <div class="test-section">
+            <div class="test-header">1. Quick Navigation to Test Articles</div>
+            <p>Use these links to test the enhanced mobile layout with real content:</p>
+            <a href="http://localhost:3000/articles/f6c5adba-d874-418b-8be0-d2259cb480cb" class="link-button" target="_blank">
+                📱 Biceps Article (Complex HTML + Images)
+            </a>
+            <a href="http://localhost:3000/articles/0e06467e-288b-4d77-9818-f716e8bd634f" class="link-button" target="_blank">
+                📊 Clavicle Article (Long Content - 50K chars)
+            </a>
+            <a href="http://localhost:3000/articles/f235803b-b43d-4974-88b9-0546c846d60d" class="link-button" target="_blank">
+                🔬 Spine Article (Complex Medical Terms)
+            </a>
+        </div>
+        
+        <div class="test-section">
+            <div class="test-header">2. Mobile Typography Test (375px width)</div>
+            <div class="device-frame mobile-frame">
+                <div class="viewport">
+                    <div class="test-content">
+                        <div class="responsive-container">
+                            <h1 class="responsive-heading">Enhanced Mobile Typography</h1>
+                            <p class="responsive-text">
+                                This paragraph tests the 18px base font size with 1.7 line height on mobile devices. 
+                                Medical terminology should be clearly readable: arthroscopy, anterolateral portal, 
+                                biceps tenotomy, glenohumeral joint stability, rotator cuff repair integrity.
+                            </p>
+                            <p class="responsive-text">
+                                Enhanced paragraph spacing provides better readability for complex medical content. 
+                                Statistical data like p&lt;0.05, 95% CI, and sample sizes (n=150) should remain legible.
+                            </p>
+                            <h2>Subheading Test (1.75rem mobile)</h2>
+                            <p class="responsive-text">
+                                Mobile-first typography optimization ensures optimal reading experience 
+                                for medical professionals reviewing complex clinical content.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="status test">
+                <strong>Test Instructions:</strong> 
+                1. Open dev tools to 375px width<br>
+                2. Verify 18px font renders clearly<br>
+                3. Check 1.7 line height improves readability<br>
+                4. Confirm headings scale properly (h1: 2rem, h2: 1.75rem)
+            </div>
+        </div>
+        
+        <div class="test-section">
+            <div class="test-header">3. Responsive Table Test</div>
+            <div class="responsive-container">
+                <table class="responsive-table">
+                    <thead>
+                        <tr>
+                            <th>Procedure</th>
+                            <th>Patient Satisfaction</th>
+                            <th>Popeye Deformity</th>
+                            <th>Return to Activity</th>
+                            <th>Complication Rate</th>
+                            <th>Cost Effectiveness</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Biceps Tenotomy</td>
+                            <td>91% (CI: 87-95%)</td>
+                            <td>43-47%</td>
+                            <td>2-4 weeks</td>
+                            <td>3.2%</td>
+                            <td>$2,800 avg</td>
+                        </tr>
+                        <tr>
+                            <td>Biceps Tenodesis</td>
+                            <td>96% (CI: 93-99%)</td>
+                            <td>9-33%</td>
+                            <td>3-6 months</td>
+                            <td>5.7%</td>
+                            <td>$4,200 avg</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="status test">
+                <strong>Mobile Test:</strong> On narrow screens (&lt;767px), table should scroll horizontally with sticky headers
+            </div>
+        </div>
+        
+        <div class="test-section">
+            <div class="test-header">4. Responsive Image Test</div>
+            <div class="responsive-container">
+                <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='600' height='300' viewBox='0 0 600 300'%3E%3Crect width='600' height='300' fill='%23f8f9fa'/%3E%3Ctext x='300' y='150' text-anchor='middle' dy='0.3em' font-family='Arial, sans-serif' font-size='24' fill='%23666'%3EMedical Diagram Placeholder%3C/text%3E%3Ctext x='300' y='180' text-anchor='middle' dy='0.3em' font-family='Arial, sans-serif' font-size='16' fill='%23888'%3EClick to Enlarge (Mobile Touch)%3C/text%3E%3C/svg%3E" 
+                     class="responsive-image" 
+                     alt="Medical diagram test image">
+                <div style="text-align: center; font-style: italic; color: #666; font-size: 0.875rem; margin-top: 0.75rem;">
+                    Figure: Test medical diagram with click-to-enlarge functionality
+                </div>
+            </div>
+            <div class="status test">
+                <strong>Test Instructions:</strong> 
+                1. Click/tap image to test enlargement<br>
+                2. Verify hover effects work properly<br>
+                3. Check responsive sizing at different breakpoints
+            </div>
+        </div>
+        
+        <div class="test-section">
+            <div class="test-header">5. Container Width Test</div>
+            <div style="background: #e3f2fd; padding: 20px; margin: 20px 0;">
+                <div class="responsive-container" style="background: #fff; padding: 20px; border-radius: 8px;">
+                    <p><strong>900px Max Width Container Test</strong></p>
+                    <p>This content is constrained to 900px max width with 20px side padding on mobile. The container should:</p>
+                    <ul>
+                        <li>✅ Center content on larger screens</li>
+                        <li>✅ Provide full width on mobile with proper padding</li>
+                        <li>✅ Maintain optimal reading line length</li>
+                        <li>✅ Not interfere with header/footer width</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        
+        <div class="test-section">
+            <div class="test-header">6. Algorithm Compatibility Check</div>
+            <div class="status test">
+                <strong>Critical Test:</strong> Navigate to articles above and verify:
+                <ol>
+                    <li>🔬 Algorithm processing still extracts medical terms correctly</li>
+                    <li>📊 Statistical data parsing works (p-values, percentages, sample sizes)</li>
+                    <li>🎨 Artwork generation displays properly with all visual elements</li>
+                    <li>📈 Emotional journey analysis functions correctly</li>
+                    <li>🏥 Subspecialty detection accuracy maintained</li>
+                </ol>
+            </div>
+        </div>
+        
+        <div class="test-section">
+            <div class="test-header">7. Performance Testing</div>
+            <div class="status test">
+                <strong>Performance Metrics to Check:</strong>
+                <ul>
+                    <li>📱 Page load time on mobile vs previous version</li>
+                    <li>🖼️ Image loading efficiency with responsive sizing</li>
+                    <li>📜 Smooth scrolling performance on long articles</li>
+                    <li>⬆️ Back-to-top button responsiveness</li>
+                    <li>💾 Memory usage during image enlargement</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Back to Top Button Test -->
+    <button class="back-to-top" onclick="window.scrollTo({top: 0, behavior: 'smooth'})">
+        <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 10l7-7m0 0l7 7m-7-7v18"/>
+        </svg>
+    </button>
+    
+    <div class="test-container">
+        <h2>Testing Completion Checklist</h2>
+        <div class="status test">
+            <strong>Mark as complete when verified:</strong>
+            <ul style="list-style: none; padding-left: 0;">
+                <li>☐ Mobile typography (18px, 1.7 line height) improves readability</li>
+                <li>☐ Tables scroll horizontally on narrow screens</li>
+                <li>☐ Images click-to-enlarge works on touch devices</li>
+                <li>☐ Back-to-top button appears and functions smoothly</li>
+                <li>☐ Algorithm processing maintains 100% accuracy</li>
+                <li>☐ Generated artworks display correctly</li>
+                <li>☐ Performance is maintained or improved</li>
+                <li>☐ All responsive breakpoints work properly</li>
+            </ul>
+        </div>
+    </div>
+    
+    <script>
+        // Add some interactive testing capabilities
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('🧪 Mobile Layout Testing Suite Loaded');
+            console.log('📱 Current viewport width:', window.innerWidth);
+            console.log('📊 Device pixel ratio:', window.devicePixelRatio);
+            
+            // Test responsive typography
+            const textElements = document.querySelectorAll('.responsive-text');
+            textElements.forEach(el => {
+                const styles = window.getComputedStyle(el);
+                console.log('📝 Font size:', styles.fontSize, 'Line height:', styles.lineHeight);
+            });
+            
+            // Test container width
+            const container = document.querySelector('.responsive-container');
+            if (container) {
+                const containerStyles = window.getComputedStyle(container);
+                console.log('📦 Container max-width:', containerStyles.maxWidth);
+                console.log('📏 Container padding:', containerStyles.paddingLeft, containerStyles.paddingRight);
+            }
+        });
+        
+        // Window resize testing
+        window.addEventListener('resize', function() {
+            console.log('📱 Viewport resized to:', window.innerWidth + 'x' + window.innerHeight);
+        });
+    </script>
+</body>
+</html>

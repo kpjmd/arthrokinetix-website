@@ -21,6 +21,7 @@ const ArticlePage = ({ algorithmState, onStateUpdate }) => {
   const [authMode, setAuthMode] = useState('sign-up');
   const [algorithmDebug, setAlgorithmDebug] = useState(null);
   const [showTechnicalDetails, setShowTechnicalDetails] = useState(false);
+  const [showBackToTop, setShowBackToTop] = useState(false);
   
   // Debug logging
   console.log('🔍 ArticlePage mounted with id:', id);
@@ -139,6 +140,24 @@ const ArticlePage = ({ algorithmState, onStateUpdate }) => {
     fetchArticle();
   }, [fetchArticle]);
 
+  // Back to top scroll tracking
+  useEffect(() => {
+    const handleScroll = () => {
+      const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+      setShowBackToTop(scrollTop > 500);
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  const scrollToTop = () => {
+    window.scrollTo({
+      top: 0,
+      behavior: 'smooth'
+    });
+  };
+
   // Separate useEffect for algorithm analysis to prevent circular dependencies
   useEffect(() => {
     if (artwork && (artwork.algorithm_parameters || artwork.emotional_data)) {
@@ -183,10 +202,23 @@ const ArticlePage = ({ algorithmState, onStateUpdate }) => {
     return articleEmotional;
   };
 
-  const handleFeedbackSubmitted = async (emotion) => {
+  const handleFeedbackSubmitted = async (feedbackData) => {
     try {
+      console.log('🔍 Feedback submitted:', feedbackData);
+      
+      // Update algorithm state from server
       const stateResponse = await fetch(`${API_BASE}/api/algorithm-state`);
       const newState = await stateResponse.json();
+      
+      // Log algorithm influence details
+      if (feedbackData.algorithmInfluenced) {
+        console.log('✅ Algorithm influenced:', {
+          emotion: feedbackData.emotion,
+          influenceWeight: feedbackData.influenceWeight,
+          accessType: feedbackData.accessType
+        });
+      }
+      
       if (onStateUpdate) {
         onStateUpdate(newState);
       }
@@ -206,12 +238,12 @@ const ArticlePage = ({ algorithmState, onStateUpdate }) => {
   };
 
   const processHtmlWithImages = (htmlContent) => {
-    if (!htmlContent || !article.has_images) return htmlContent;
+    if (!htmlContent) return htmlContent;
     
-    // This is a simple implementation - in production you might want to use a proper HTML parser
+    // Enhanced image processing for medical content
     let processedHtml = htmlContent;
     
-    // Add responsive image styles
+    // Add responsive image styles with medical content enhancements
     const imageStyles = `
       <style>
         .article-html-content img {
@@ -220,6 +252,12 @@ const ArticlePage = ({ algorithmState, onStateUpdate }) => {
           border-radius: 0.5rem;
           margin: 1.5rem 0;
           box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+          cursor: pointer;
+          transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        .article-html-content img:hover {
+          transform: scale(1.02);
+          box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
         }
         .article-html-content figure {
           margin: 2rem 0;
@@ -230,11 +268,56 @@ const ArticlePage = ({ algorithmState, onStateUpdate }) => {
           font-size: 0.875rem;
           color: #6b7280;
           font-style: italic;
+          line-height: 1.5;
+        }
+        @media (max-width: 767px) {
+          .article-html-content img {
+            margin: 1rem 0;
+            border-radius: 0.375rem;
+          }
+          .article-html-content figcaption {
+            font-size: 0.8rem;
+            padding: 0 0.5rem;
+          }
         }
       </style>
     `;
     
-    return imageStyles + processedHtml;
+    // Add click-to-enlarge functionality for medical diagrams
+    const addImageEnhancement = (html) => {
+      return html.replace(/<img([^>]+)>/g, (match, attributes) => {
+        const hasAlt = attributes.includes('alt=');
+        const isMedicalDiagram = hasAlt && (attributes.includes('diagram') || attributes.includes('chart') || attributes.includes('graph'));
+        const className = isMedicalDiagram ? 'medical-diagram' : '';
+        
+        if (className) {
+          return `<img${attributes} class="${className}" onclick="toggleImageSize(this)">`;
+        }
+        return match;
+      });
+    };
+    
+    processedHtml = addImageEnhancement(processedHtml);
+    
+    // Add image enlargement script
+    const enlargementScript = `
+      <script>
+        function toggleImageSize(img) {
+          if (img.classList.contains('enlarged')) {
+            img.classList.remove('enlarged');
+            document.querySelector('.diagram-overlay')?.remove();
+          } else {
+            const overlay = document.createElement('div');
+            overlay.className = 'diagram-overlay';
+            overlay.onclick = () => toggleImageSize(img);
+            document.body.appendChild(overlay);
+            img.classList.add('enlarged');
+          }
+        }
+      </script>
+    `;
+    
+    return imageStyles + processedHtml + enlargementScript;
   };
 
   const renderContent = () => {
@@ -673,6 +756,51 @@ const ArticlePage = ({ algorithmState, onStateUpdate }) => {
             isolation: isolate;
             overflow-wrap: break-word;
             line-height: 1.7;
+            font-size: 18px;
+          }
+          
+          /* Mobile-first responsive typography */
+          @media (min-width: 768px) {
+            .article-html-content {
+              font-size: 16px;
+              line-height: 1.6;
+            }
+          }
+          
+          /* Enhanced mobile readability */
+          @media (max-width: 767px) {
+            .article-html-content {
+              font-size: 18px;
+              line-height: 1.7;
+            }
+            .article-html-content h1 {
+              font-size: 2rem;
+              line-height: 1.2;
+            }
+            .article-html-content h2 {
+              font-size: 1.75rem;
+              line-height: 1.3;
+            }
+            .article-html-content h3 {
+              font-size: 1.5rem;
+              line-height: 1.3;
+            }
+          }
+          
+          /* Desktop enhanced typography */
+          @media (min-width: 768px) {
+            .article-html-content h1 {
+              font-size: 2.5rem;
+              line-height: 1.2;
+            }
+            .article-html-content h2 {
+              font-size: 2rem;
+              line-height: 1.3;
+            }
+            .article-html-content h3 {
+              font-size: 1.75rem;
+              line-height: 1.3;
+            }
           }
           .article-html-content h1,
           .article-html-content h2,
@@ -682,6 +810,11 @@ const ArticlePage = ({ algorithmState, onStateUpdate }) => {
           }
           .article-html-content p {
             margin-bottom: 1.5rem;
+          }
+          
+          /* Enhanced medical content spacing */
+          .article-html-content p + p {
+            margin-top: 1.25rem;
           }
           .article-html-content ul,
           .article-html-content ol {
@@ -701,16 +834,44 @@ const ArticlePage = ({ algorithmState, onStateUpdate }) => {
             width: 100%;
             border-collapse: collapse;
             margin: 1.5rem 0;
+            font-size: 0.95em;
           }
+          
+          /* Mobile table improvements */
+          @media (max-width: 767px) {
+            .article-html-content table {
+              display: block;
+              overflow-x: auto;
+              white-space: nowrap;
+              font-size: 14px;
+            }
+            .article-html-content table thead {
+              position: sticky;
+              left: 0;
+            }
+          }
+          
           .article-html-content th,
           .article-html-content td {
             border: 1px solid #ddd;
             padding: 0.75rem;
             text-align: left;
           }
+          
+          @media (max-width: 767px) {
+            .article-html-content th,
+            .article-html-content td {
+              padding: 0.5rem;
+              min-width: 120px;
+            }
+          }
+          
           .article-html-content th {
             background-color: #f8f9fa;
             font-weight: 600;
+            position: sticky;
+            top: 0;
+            z-index: 10;
           }
           .infographic-content {
             contain: layout style;
@@ -721,16 +882,145 @@ const ArticlePage = ({ algorithmState, onStateUpdate }) => {
           .infographic-content img {
             max-width: 100%;
             height: auto;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            transition: transform 0.2s ease;
           }
+          
+          .infographic-content img:hover {
+            transform: scale(1.02);
+          }
+          
           .infographic-content svg {
             max-width: 100%;
             height: auto;
+          }
+          
+          /* Medical diagram click-to-enlarge */
+          .medical-diagram {
+            cursor: zoom-in;
+          }
+          
+          .medical-diagram.enlarged {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 1000;
+            max-width: 90vw;
+            max-height: 90vh;
+            cursor: zoom-out;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+            border-radius: 0.75rem;
+          }
+          
+          .diagram-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.75);
+            z-index: 999;
+            cursor: pointer;
+          }
+          
+          /* Code blocks enhancement */
+          .article-html-content pre {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 0.5rem;
+            padding: 1rem;
+            overflow-x: auto;
+            font-size: 0.875rem;
+            line-height: 1.5;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+          }
+          
+          @media (max-width: 767px) {
+            .article-html-content pre {
+              font-size: 0.8rem;
+              padding: 0.75rem;
+              margin: 1rem -0.5rem;
+              border-radius: 0;
+              border-left: none;
+              border-right: none;
+            }
+          }
+          
+          .article-html-content code {
+            background: #f8f9fa;
+            padding: 0.125rem 0.25rem;
+            border-radius: 0.25rem;
+            font-size: 0.875em;
+            word-break: break-word;
+          }
+          
+          .article-html-content pre code {
+            background: none;
+            padding: 0;
+          }
+          
+          /* Back to top button */
+          .back-to-top {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            z-index: 50;
+            background: #3498db;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 3rem;
+            height: 3rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            transition: all 0.3s ease;
+            opacity: 0;
+            transform: translateY(20px);
+          }
+          
+          .back-to-top.visible {
+            opacity: 1;
+            transform: translateY(0);
+          }
+          
+          .back-to-top:hover {
+            background: #2980b9;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
+          }
+          
+          @media (max-width: 767px) {
+            .back-to-top {
+              bottom: 1.5rem;
+              right: 1.5rem;
+              width: 2.5rem;
+              height: 2.5rem;
+            }
+          }
+          
+          /* Enhanced responsive container */
+          .responsive-article-container {
+            max-width: 100%;
+            overflow-x: hidden;
+          }
+          
+          @media (max-width: 767px) {
+            .responsive-article-container {
+              margin: 0 -0.5rem;
+              padding: 0 0.5rem;
+            }
           }
         `}</style>
 
         {/* Professional Navigation Bar */}
         <div className="bg-white border-b">
-          <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+          <div className="max-w-[900px] mx-auto px-5 sm:px-6 lg:px-8 py-4">
             <div className="flex justify-between items-center">
               <Link 
                 to="/articles" 
@@ -751,12 +1041,12 @@ const ArticlePage = ({ algorithmState, onStateUpdate }) => {
           </div>
         </div>
 
-        {/* Main content with proper spacing structure */}
-        <main className="py-16">
-          <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+        {/* Main content with enhanced responsive structure */}
+        <main className="py-8 md:py-16">
+          <div className="max-w-[900px] mx-auto px-5 sm:px-6 lg:px-8">
           <div className="bg-white rounded-xl shadow-sm overflow-hidden">
             {/* Professional Article Header */}
-            <div className="px-8 py-6 border-b border-gray-200">
+            <div className="px-5 py-6 sm:px-8 border-b border-gray-200">
               <div className="flex justify-between items-start">
                 <div className="flex-1 pr-8">
                   <h1 className="text-3xl font-bold text-gray-900 mb-4">
@@ -816,12 +1106,14 @@ const ArticlePage = ({ algorithmState, onStateUpdate }) => {
             </div>
 
             {/* Main Article Content - Clean and Uninterrupted */}
-            <div className="px-8 py-8">
-              {renderContent()}
+            <div className="px-5 py-6 sm:px-8 sm:py-8">
+              <div className="responsive-article-container">
+                {renderContent()}
+              </div>
             </div>
 
             {/* Clinical Perspective Section (Feedback) */}
-            <div className="px-8 py-6 bg-gray-50 border-t border-gray-200">
+            <div className="px-5 py-6 sm:px-8 bg-gray-50 border-t border-gray-200">
               <div className="mb-6">
                 <h3 className="text-lg font-semibold text-gray-900 mb-2">
                   Share Your Clinical Perspective
@@ -888,6 +1180,27 @@ const ArticlePage = ({ algorithmState, onStateUpdate }) => {
           </div>
         </main>
       </div>
+
+      {/* Floating Back to Top Button */}
+      <button
+        onClick={scrollToTop}
+        className={`back-to-top ${showBackToTop ? 'visible' : ''}`}
+        aria-label="Back to top"
+      >
+        <svg 
+          className="w-5 h-5" 
+          fill="none" 
+          stroke="currentColor" 
+          viewBox="0 0 24 24"
+        >
+          <path 
+            strokeLinecap="round" 
+            strokeLinejoin="round" 
+            strokeWidth={2} 
+            d="M5 10l7-7m0 0l7 7m-7-7v18" 
+          />
+        </svg>
+      </button>
 
       {/* Auth Modal */}
       <AuthModal

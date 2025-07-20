@@ -1,13 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
-import { TrendingUp, BarChart3, Calendar, Users, Zap, Brain } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { TrendingUp, BarChart3, Calendar, Users, Zap, Brain, Maximize2, Minimize2 } from 'lucide-react';
 
 const API_BASE = process.env.REACT_APP_BACKEND_URL || 'http://localhost:8001';
 
-const AlgorithmEvolution = () => {
+const AlgorithmEvolution = ({ isFloating = false, className = '' }) => {
   const [evolutionData, setEvolutionData] = useState(null);
   const [timeRange, setTimeRange] = useState('7d');
   const [loading, setLoading] = useState(true);
+  const [isExpanded, setIsExpanded] = useState(false);
 
   const timeRanges = [
     { key: '24h', label: 'Last 24 Hours' },
@@ -56,6 +57,19 @@ const AlgorithmEvolution = () => {
   }
 
   if (!evolutionData) {
+    if (isFloating) {
+      return (
+        <div className={`fixed top-4 right-4 z-40 ${className} hidden sm:block`} style={{ marginRight: '120px' }}>
+          <div className="bg-white rounded-lg p-3 shadow-lg border animate-pulse">
+            <div className="flex items-center space-x-2">
+              <Brain className="w-5 h-5 text-gray-400" />
+              <span className="text-sm text-gray-500">Loading...</span>
+            </div>
+          </div>
+        </div>
+      );
+    }
+    
     return (
       <div className="bg-white rounded-xl p-6 shadow-lg text-center">
         <Brain className="w-16 h-16 text-gray-400 mx-auto mb-4" />
@@ -69,6 +83,104 @@ const AlgorithmEvolution = () => {
     );
   }
 
+  // Floating mode compact display
+  if (isFloating) {
+    const currentState = evolutionData.timeline[0]; // Most recent state
+    const dominantEmotion = currentState?.dominant_emotion || 'confidence';
+    const intensity = currentState?.intensity || 0.5;
+    
+    return (
+      <>
+        <div className={`fixed top-4 right-4 z-40 ${className} hidden sm:block`} style={{ marginRight: '120px' }}>
+          <motion.div
+            initial={{ scale: 0.8, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            className="bg-white rounded-lg shadow-lg border cursor-pointer hover:shadow-xl transition-shadow"
+            onClick={() => setIsExpanded(true)}
+          >
+            <div className="p-3">
+              <div className="flex items-center space-x-3">
+                <div 
+                  className="w-4 h-4 rounded-full animate-pulse"
+                  style={{ backgroundColor: getEmotionColor(dominantEmotion) }}
+                />
+                <div className="flex-1 min-w-0">
+                  <div className="text-sm font-medium text-gray-900 capitalize">
+                    {dominantEmotion}
+                  </div>
+                  <div className="text-xs text-gray-500">
+                    {Math.round(intensity * 100)}% intensity
+                  </div>
+                </div>
+                <Maximize2 className="w-4 h-4 text-gray-400" />
+              </div>
+              
+              <div className="mt-2 flex items-center justify-between text-xs text-gray-500">
+                <span>{evolutionData.total_state_changes} changes</span>
+                <span>{evolutionData.feedback_influences} feedback</span>
+              </div>
+            </div>
+          </motion.div>
+        </div>
+
+        {/* Expanded modal overlay */}
+        <AnimatePresence>
+          {isExpanded && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4"
+              onClick={() => setIsExpanded(false)}
+            >
+              <motion.div
+                initial={{ scale: 0.9, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.9, opacity: 0 }}
+                className="bg-white rounded-xl max-w-4xl max-h-[90vh] overflow-y-auto"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div className="sticky top-0 bg-white border-b p-4 flex items-center justify-between">
+                  <h2 className="text-xl font-bold text-primary">Algorithm Evolution</h2>
+                  <button
+                    onClick={() => setIsExpanded(false)}
+                    className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                  >
+                    <Minimize2 className="w-5 h-5 text-gray-600" />
+                  </button>
+                </div>
+                
+                <div className="p-6">
+                  {/* Render the full evolution display */}
+                  <AlgorithmEvolutionContent 
+                    evolutionData={evolutionData}
+                    timeRange={timeRange}
+                    setTimeRange={setTimeRange}
+                    timeRanges={timeRanges}
+                  />
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </>
+    );
+  }
+
+  return (
+    <div className={`space-y-6 ${className}`}>
+      <AlgorithmEvolutionContent 
+        evolutionData={evolutionData}
+        timeRange={timeRange}
+        setTimeRange={setTimeRange}
+        timeRanges={timeRanges}
+      />
+    </div>
+  );
+};
+
+// Extracted content component for reuse in both full and modal views
+const AlgorithmEvolutionContent = ({ evolutionData, timeRange, setTimeRange, timeRanges }) => {
   return (
     <div className="space-y-6">
       {/* Header */}

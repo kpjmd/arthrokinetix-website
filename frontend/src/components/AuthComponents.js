@@ -7,12 +7,12 @@ import { useClerk, useAuthenticationAccess, SignedIn, SignedOut } from '../hooks
 const CLERK_PUBLISHABLE_KEY = process.env.REACT_APP_CLERK_PUBLISHABLE_KEY;
 
 // Import Clerk components at module level to prevent re-renders
-let SignIn, SignUp, SignInWithMetamaskButton;
+let SignIn, SignUp, SignInButton;
 try {
   const clerkComponents = require('@clerk/clerk-react');
   SignIn = clerkComponents.SignIn;
   SignUp = clerkComponents.SignUp;
-  SignInWithMetamaskButton = clerkComponents.SignInWithMetamaskButton;
+  SignInButton = clerkComponents.SignInButton;
 } catch (error) {
   console.warn('Clerk components not available:', error.message);
 }
@@ -86,7 +86,7 @@ export const AuthModal = ({ isOpen, onClose, mode = 'sign-in' }) => {
   }
 
   // Check if Clerk components are available
-  if (!SignIn || !SignUp || !SignInWithMetamaskButton) {
+  if (!SignIn || !SignUp) {
     console.warn('Clerk components not available, modal will not render');
     return null;
   }
@@ -113,61 +113,7 @@ export const AuthModal = ({ isOpen, onClose, mode = 'sign-in' }) => {
             </div>
             
             <div className="p-6">
-              {/* Dual Authentication Options */}
-              <div className="mb-6">
-                <div className="text-center mb-4">
-                  <h3 className="font-medium text-gray-900 mb-2">
-                    Choose your authentication method
-                  </h3>
-                  <p className="text-sm text-gray-600">
-                    Medical professionals can use email, NFT holders can use Web3
-                  </p>
-                </div>
-                
-                <div className="grid grid-cols-2 gap-3 mb-4">
-                  {/* Email Tab */}
-                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-center">
-                    <Mail className="w-6 h-6 text-blue-600 mx-auto mb-2" />
-                    <span className="text-sm font-medium text-blue-900">Email</span>
-                    <p className="text-xs text-blue-700">Medical Professionals</p>
-                  </div>
-                  
-                  {/* Web3 Tab */}
-                  <div className="bg-purple-50 border border-purple-200 rounded-lg p-3 text-center">
-                    <div className="w-6 h-6 bg-gradient-to-r from-purple-500 to-blue-500 rounded mx-auto mb-2 flex items-center justify-center">
-                      <span className="text-white text-xs font-bold">W3</span>
-                    </div>
-                    <span className="text-sm font-medium text-purple-900">Web3</span>
-                    <p className="text-xs text-purple-700">NFT Holders</p>
-                  </div>
-                </div>
-                
-                {/* Web3 Authentication Button */}
-                <div className="mb-4">
-                  <SignInWithMetamaskButton
-                    fallbackRedirectUrl="/articles"
-                    className="w-full"
-                  >
-                    <button className="w-full bg-gradient-to-r from-purple-600 to-blue-600 text-white py-3 px-4 rounded-lg hover:from-purple-700 hover:to-blue-700 transition-colors font-medium flex items-center justify-center">
-                      <div className="w-5 h-5 bg-white rounded mr-2 flex items-center justify-center">
-                        <span className="text-purple-600 text-xs font-bold">M</span>
-                      </div>
-                      Sign {mode === 'sign-in' ? 'In' : 'Up'} with Metamask
-                    </button>
-                  </SignInWithMetamaskButton>
-                </div>
-                
-                <div className="relative">
-                  <div className="absolute inset-0 flex items-center">
-                    <div className="w-full border-t border-gray-300"></div>
-                  </div>
-                  <div className="relative flex justify-center text-sm">
-                    <span className="px-2 bg-white text-gray-500">or continue with email</span>
-                  </div>
-                </div>
-              </div>
-              
-              {/* Standard Email Authentication */}
+              {/* Clean Clerk Authentication */}
               {mode === 'sign-in' ? (
                 <>
                   {console.log('🔍 [AuthModal] Rendering SignIn component')}
@@ -177,9 +123,7 @@ export const AuthModal = ({ isOpen, onClose, mode = 'sign-in' }) => {
                         formButtonPrimary: 'bg-blue-600 hover:bg-blue-700',
                         card: 'shadow-none',
                         headerTitle: 'hidden',
-                        headerSubtitle: 'hidden',
-                        socialButtonsBlockButton: 'hidden',
-                        dividerRow: 'hidden'
+                        headerSubtitle: 'hidden'
                       }
                     }}
                     fallbackRedirectUrl="/articles"
@@ -194,9 +138,7 @@ export const AuthModal = ({ isOpen, onClose, mode = 'sign-in' }) => {
                         formButtonPrimary: 'bg-blue-600 hover:bg-blue-700',
                         card: 'shadow-none',
                         headerTitle: 'hidden',
-                        headerSubtitle: 'hidden',
-                        socialButtonsBlockButton: 'hidden',
-                        dividerRow: 'hidden'
+                        headerSubtitle: 'hidden'
                       }
                     }}
                     fallbackRedirectUrl="/articles"
@@ -347,48 +289,86 @@ export const AccessGate = ({ onSignUp, onSignIn }) => {
             Help the Algorithm Learn
           </h3>
           <p className="text-gray-600 mb-6">
-            Unlock emotional feedback by signing up for your account. Join our community 
-            and help shape the algorithm's understanding of medical content.
+            Sign in to share your emotional response and influence the algorithm's evolution. 
+            Join our community and help shape the algorithm's understanding of medical content.
           </p>
           
-          <div className="grid md:grid-cols-2 gap-4">
-            <div className="bg-white border border-gray-200 rounded-lg p-4">
-              <Mail className="w-8 h-8 text-blue-600 mx-auto mb-3" />
-              <h4 className="font-semibold mb-2">Email Verification</h4>
-              <p className="text-sm text-gray-600 mb-4">
-                Quick and secure email-based authentication for medical professionals
-              </p>
-              <button
-                onClick={onSignUp}
-                className="w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors"
-              >
-                Sign Up with Email
-              </button>
-            </div>
-            
-            <div className="bg-white border border-gray-200 rounded-lg p-4">
-              <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-blue-500 rounded-lg mx-auto mb-3 flex items-center justify-center">
-                <span className="text-white text-xs font-bold">W3</span>
+          {/* Unified Clerk Authentication */}
+          {CLERK_PUBLISHABLE_KEY && SignInButton ? (
+            <div className="bg-white border border-gray-200 rounded-lg p-6 mb-4">
+              <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <User className="w-6 h-6 text-blue-600" />
               </div>
-              <h4 className="font-semibold mb-2">Web3 Authentication</h4>
-              <p className="text-sm text-gray-600 mb-4">
-                Connect wallet & verify NFT ownership for premium access
+              <h4 className="text-lg font-semibold text-gray-900 mb-2">
+                Sign In to Influence Algorithm
+              </h4>
+              <p className="text-sm text-gray-600 mb-6">
+                Access secure authentication with email or Web3 wallet options
               </p>
-              <button
-                onClick={() => setShowWeb3Modal(true)}
-                className="w-full bg-gradient-to-r from-purple-600 to-blue-600 text-white py-2 px-4 rounded-lg hover:from-purple-700 hover:to-blue-700 transition-colors"
-              >
-                Connect Wallet
-              </button>
+              <SignInButton mode="modal" fallbackRedirectUrl="/articles">
+                <button className="w-full bg-blue-600 text-white py-3 px-6 rounded-lg hover:bg-blue-700 transition-colors font-medium">
+                  Sign In to Provide Feedback
+                </button>
+              </SignInButton>
             </div>
-          </div>
-          
-          <div className="mt-4">
+          ) : (
+            /* Fallback for when Clerk is not available */
+            <div className="grid md:grid-cols-2 gap-4">
+              <div className="bg-white border border-gray-200 rounded-lg p-4">
+                <Mail className="w-8 h-8 text-blue-600 mx-auto mb-3" />
+                <h4 className="font-semibold mb-2">Email Verification</h4>
+                <p className="text-sm text-gray-600 mb-4">
+                  Quick and secure email-based authentication for medical professionals
+                </p>
+                <button
+                  onClick={onSignUp}
+                  className="w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors"
+                >
+                  Sign Up with Email
+                </button>
+              </div>
+              
+              <div className="bg-white border border-gray-200 rounded-lg p-4">
+                <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-blue-500 rounded-lg mx-auto mb-3 flex items-center justify-center">
+                  <span className="text-white text-xs font-bold">W3</span>
+                </div>
+                <h4 className="font-semibold mb-2">Web3 Authentication</h4>
+                <p className="text-sm text-gray-600 mb-4">
+                  Connect wallet & verify NFT ownership for premium access
+                </p>
+                <button
+                  onClick={() => setShowWeb3Modal(true)}
+                  className="w-full bg-gradient-to-r from-purple-600 to-blue-600 text-white py-2 px-4 rounded-lg hover:from-purple-700 hover:to-blue-700 transition-colors"
+                >
+                  Connect Wallet
+                </button>
+              </div>
+              
+              <div className="md:col-span-2 mt-4">
+                <button
+                  onClick={onSignIn}
+                  className="text-blue-600 hover:text-blue-700 text-sm font-medium"
+                >
+                  Already have an account? Sign in
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Additional Web3 Option */}
+          <div className="bg-white border border-gray-200 rounded-lg p-4">
+            <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-blue-500 rounded-lg mx-auto mb-3 flex items-center justify-center">
+              <span className="text-white text-xs font-bold">W3</span>
+            </div>
+            <h4 className="font-semibold mb-2">Web3 Premium Access</h4>
+            <p className="text-sm text-gray-600 mb-4">
+              Connect wallet & verify NFT ownership for enhanced algorithm influence
+            </p>
             <button
-              onClick={onSignIn}
-              className="text-blue-600 hover:text-blue-700 text-sm font-medium"
+              onClick={() => setShowWeb3Modal(true)}
+              className="w-full bg-gradient-to-r from-purple-600 to-blue-600 text-white py-2 px-4 rounded-lg hover:from-purple-700 hover:to-blue-700 transition-colors"
             >
-              Already have an account? Sign in
+              Connect Wallet for Premium Access
             </button>
           </div>
         </div>

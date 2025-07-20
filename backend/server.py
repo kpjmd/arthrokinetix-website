@@ -15,7 +15,7 @@ except ImportError as e:
 import os
 from dotenv import load_dotenv
 import json
-from datetime import datetime
+from datetime import datetime, timedelta
 import uuid
 import hashlib
 from typing import List, Dict, Optional
@@ -288,6 +288,12 @@ async def startup_event():
                     db.artworks.create_index([("article_id", 1)])
                     db.algorithm_states.create_index([("timestamp", -1), ("articles_processed", 1)])
                     db.images.create_index([("article_id", 1), ("id", 1)])
+                    
+                    # Feedback duplicate prevention indexes
+                    db.feedback.create_index([("article_id", 1), ("clerk_user_id", 1)])
+                    db.feedback.create_index([("article_id", 1), ("user_email", 1)])
+                    db.feedback.create_index([("article_id", 1), ("wallet_address", 1)])
+                    print("[STARTUP] Created feedback duplicate prevention indexes")
                 except Exception as e:
                     print(f"[STARTUP] Warning: Some compound indexes may already exist: {e}")
                 
@@ -415,6 +421,66 @@ async def get_algorithm_state():
             "feedback_influences": [],
             "_id": "fallback_state"
         }
+
+@app.get("/api/algorithm/evolution")
+async def get_algorithm_evolution():
+    """Get algorithm evolution history for dashboard"""
+    try:
+        if algorithm_states_collection is None:
+            raise HTTPException(status_code=500, detail="Database not initialized")
+        
+        # Get recent algorithm states (last 30 days)
+        thirty_days_ago = datetime.utcnow() - timedelta(days=30)
+        
+        evolution_data = list(algorithm_states_collection.find(
+            {"timestamp": {"$gte": thirty_days_ago}},
+            sort=[("timestamp", 1)]
+        ))
+        
+        # Convert ObjectIds and timestamps for JSON serialization
+        for state in evolution_data:
+            state["_id"] = str(state["_id"])
+            if "timestamp" in state and hasattr(state["timestamp"], "isoformat"):
+                state["timestamp"] = state["timestamp"].isoformat()
+        
+        # Get feedback influence statistics
+        feedback_stats = {}
+        if feedback_collection is not None:
+            recent_feedback = list(feedback_collection.find(
+                {"timestamp": {"$gte": thirty_days_ago}},
+                {"emotion": 1, "influence_weight": 1, "access_type": 1, "timestamp": 1}
+            ))
+            
+            # Calculate emotion influence totals
+            emotion_influences = {}
+            access_type_stats = {}
+            
+            for feedback in recent_feedback:
+                emotion = feedback.get("emotion")
+                weight = feedback.get("influence_weight", 1.0)
+                access_type = feedback.get("access_type", "unknown")
+                
+                if emotion:
+                    emotion_influences[emotion] = emotion_influences.get(emotion, 0) + weight
+                
+                access_type_stats[access_type] = access_type_stats.get(access_type, 0) + 1
+            
+            feedback_stats = {
+                "total_feedback": len(recent_feedback),
+                "emotion_influences": emotion_influences,
+                "access_type_distribution": access_type_stats
+            }
+        
+        return {
+            "evolution_timeline": evolution_data,
+            "feedback_statistics": feedback_stats,
+            "time_period": "30_days",
+            "last_updated": datetime.utcnow().isoformat()
+        }
+        
+    except Exception as e:
+        print(f"Algorithm evolution error: {e}")
+        raise HTTPException(status_code=500, detail=f"Error retrieving algorithm evolution: {str(e)}")
 
 # Enhanced article creation with file upload support
 @app.post("/api/articles")
@@ -1972,50 +2038,176 @@ async def verify_nft_ownership(verification_data: dict):
 
 @app.post("/api/feedback")
 async def submit_feedback_enhanced(feedback_data: dict):
-    """Enhanced feedback submission with access control"""
+    """Enhanced feedback submission with access control and duplicate prevention"""
     try:
+        if feedback_collection is None:
+            raise HTTPException(status_code=500, detail="Database not initialized")
+            
         email = feedback_data.get("user_email")
+        clerk_user_id = feedback_data.get("clerk_user_id")
+        wallet_address = feedback_data.get("wallet_address")
+        nft_verified = feedback_data.get("nft_verified", False)
+        article_id = feedback_data.get("article_id")
+        emotion = feedback_data.get("emotion")
         
-        # Check if user has feedback access (newsletter subscriber or NFT holder)
-        has_access = False
-        access_type = "none"
-        
-        if email:
-            subscription = db.newsletter_subscribers.find_one({"email": email, "status": "active"})
-            if subscription:
-                has_access = True
-                access_type = "subscriber"
-        
-        # Also grant access to anonymous users for demo purposes
-        if not has_access:
-            has_access = True
+        # Determine access type and influence weight
+        if nft_verified:
+            access_type = "nft_verified"
+            influence_weight = 1.5
+        elif email:
+            access_type = "email_verified"
+            influence_weight = 1.0
+        else:
             access_type = "demo"
+            influence_weight = 0.3
         
-        if not has_access:
-            raise HTTPException(status_code=403, detail="Feedback access requires newsletter subscription or NFT ownership")
+        # Check for duplicate submission using same logic as check endpoint
+        user_identifiers = [clerk_user_id, email, wallet_address]
+        user_identifiers = [uid for uid in user_identifiers if uid]  # Remove None values
         
+        if user_identifiers:
+            duplicate_query = {
+                "article_id": article_id,
+                "$or": [
+                    {"clerk_user_id": {"$in": user_identifiers}},
+                    {"user_email": {"$in": user_identifiers}},
+                    {"wallet_address": {"$in": user_identifiers}}
+                ]
+            }
+            
+            existing_feedback = feedback_collection.find_one(duplicate_query)
+            
+            if existing_feedback:
+                # Convert timestamp for response
+                timestamp_iso = None
+                if "timestamp" in existing_feedback and hasattr(existing_feedback["timestamp"], "isoformat"):
+                    timestamp_iso = existing_feedback["timestamp"].isoformat()
+                
+                return {
+                    "success": False,
+                    "error": "duplicate_submission",
+                    "message": "You have already submitted feedback for this article",
+                    "existing_emotion": existing_feedback.get("emotion"),
+                    "existing_timestamp": timestamp_iso
+                }
+        
+        # Create new feedback document with all user identifiers
         feedback = {
             "id": str(uuid.uuid4()),
-            "article_id": feedback_data.get("article_id"),
-            "emotion": feedback_data.get("emotion"),
+            "article_id": article_id,
+            "emotion": emotion,
             "user_email": email,
+            "clerk_user_id": clerk_user_id,
+            "wallet_address": wallet_address,
             "access_type": access_type,
-            "timestamp": datetime.utcnow(),
-            "influence_weight": 1.0 if access_type == "subscriber" else 0.5
+            "nft_verified": nft_verified,
+            "influence_weight": influence_weight,
+            "timestamp": datetime.utcnow()
         }
         
-        feedback_collection.insert_one(feedback)
+        # Insert feedback
+        result = feedback_collection.insert_one(feedback)
+        feedback_id = str(result.inserted_id)
         
-        feedback["_id"] = str(feedback["_id"])
+        # Update algorithm state with feedback influence
+        algorithm_influenced = await update_algorithm_with_feedback(emotion, influence_weight, feedback_id)
+        
         return {
-            "feedback": feedback,
-            "message": f"Feedback submitted successfully ({access_type} access)"
+            "success": True,
+            "message": f"Feedback submitted successfully ({access_type} access)",
+            "algorithm_influenced": algorithm_influenced,
+            "influence_weight": influence_weight,
+            "access_type": access_type
         }
         
     except HTTPException:
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/api/feedback/check")
+async def check_existing_feedback(article_id: str, user_id: str):
+    """Check if user has already submitted feedback for this article"""
+    try:
+        if feedback_collection is None:
+            raise HTTPException(status_code=500, detail="Database not initialized")
+        
+        # Search for existing feedback using multiple user identifier fields
+        query = {
+            "article_id": article_id,
+            "$or": [
+                {"clerk_user_id": user_id},
+                {"user_email": user_id},
+                {"wallet_address": user_id}
+            ]
+        }
+        
+        existing_feedback = feedback_collection.find_one(query)
+        
+        if existing_feedback:
+            # Convert datetime to ISO format string if present
+            timestamp_iso = None
+            if "timestamp" in existing_feedback and hasattr(existing_feedback["timestamp"], "isoformat"):
+                timestamp_iso = existing_feedback["timestamp"].isoformat()
+            
+            return {
+                "has_submitted": True,
+                "emotion": existing_feedback.get("emotion"),
+                "timestamp": timestamp_iso
+            }
+        else:
+            return {
+                "has_submitted": False
+            }
+            
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Error checking existing feedback: {e}")
+        raise HTTPException(status_code=500, detail=f"Error checking feedback: {str(e)}")
+
+
+@app.get("/api/feedback/test")
+async def feedback_system_test():
+    """System status endpoint for feedback system debugging"""
+    try:
+        status = {
+            "database_initialized": database_initialized,
+            "feedback_collection_available": feedback_collection is not None,
+            "algorithm_states_collection_available": algorithm_states_collection is not None,
+            "system_status": "operational"
+        }
+        
+        if feedback_collection is not None:
+            # Get some stats
+            total_feedback = feedback_collection.count_documents({})
+            recent_feedback = feedback_collection.count_documents({
+                "timestamp": {"$gte": datetime.utcnow() - timedelta(days=7)}
+            })
+            
+            status.update({
+                "total_feedback_count": total_feedback,
+                "recent_feedback_count": recent_feedback,
+                "collections_tested": True
+            })
+        else:
+            status.update({
+                "total_feedback_count": 0,
+                "recent_feedback_count": 0,
+                "collections_tested": False,
+                "error": "Feedback collection not available"
+            })
+            
+        return status
+        
+    except Exception as e:
+        return {
+            "system_status": "error",
+            "error": str(e),
+            "database_initialized": database_initialized,
+            "feedback_collection_available": feedback_collection is not None
+        }
 
 
 async def update_algorithm_with_feedback(emotion: str, influence_weight: float, feedback_id: str) -> bool:
