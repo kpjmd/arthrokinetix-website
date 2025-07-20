@@ -72,15 +72,15 @@ function AppContent() {
     window.addEventListener('beforeunload', handleBeforeUnload);
 
     // Override history methods to log navigation
-    const originalPushState = history.pushState;
-    const originalReplaceState = history.replaceState;
+    const originalPushState = window.history.pushState;
+    const originalReplaceState = window.history.replaceState;
 
-    history.pushState = function(...args) {
+    window.history.pushState = function(...args) {
       console.log('🔍 [App] History pushState called:', args);
       return originalPushState.apply(this, args);
     };
 
-    history.replaceState = function(...args) {
+    window.history.replaceState = function(...args) {
       console.log('🔍 [App] History replaceState called:', args);
       return originalReplaceState.apply(this, args);
     };
@@ -89,8 +89,8 @@ function AppContent() {
       console.log('🔍 [App] AppContent unmounting');
       window.removeEventListener('popstate', handlePopState);
       window.removeEventListener('beforeunload', handleBeforeUnload);
-      history.pushState = originalPushState;
-      history.replaceState = originalReplaceState;
+      window.history.pushState = originalPushState;
+      window.history.replaceState = originalReplaceState;
     };
   }, []);
 

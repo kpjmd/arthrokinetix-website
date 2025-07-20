@@ -33,15 +33,15 @@ export const DebugAuthModal = ({ isOpen, onClose, mode = 'sign-in' }) => {
       console.log('🔧 [DebugAuthModal] Modal is opening');
       
       // Add event listeners to detect any navigation
-      const originalPushState = history.pushState;
-      const originalReplaceState = history.replaceState;
+      const originalPushState = window.history.pushState;
+      const originalReplaceState = window.history.replaceState;
       
-      history.pushState = function(...args) {
+      window.history.pushState = function(...args) {
         console.log('🔧 [DebugAuthModal] DETECTED pushState during modal open:', args);
         return originalPushState.apply(this, args);
       };
       
-      history.replaceState = function(...args) {
+      window.history.replaceState = function(...args) {
         console.log('🔧 [DebugAuthModal] DETECTED replaceState during modal open:', args);
         return originalReplaceState.apply(this, args);
       };
@@ -55,8 +55,8 @@ export const DebugAuthModal = ({ isOpen, onClose, mode = 'sign-in' }) => {
       
       return () => {
         console.log('🔧 [DebugAuthModal] Cleaning up event listeners');
-        history.pushState = originalPushState;
-        history.replaceState = originalReplaceState;
+        window.history.pushState = originalPushState;
+        window.history.replaceState = originalReplaceState;
         window.removeEventListener('popstate', handleLocationChange);
       };
     }
