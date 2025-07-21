@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException, File, UploadFile, Form
+from fastapi import FastAPI, HTTPException, File, UploadFile, Form, Request
 from fastapi.middleware.cors import CORSMiddleware
 from pymongo import MongoClient, errors
 from arthrokinetix_algorithm import process_article_with_manual_algorithm, process_content_with_adapters
@@ -32,6 +32,7 @@ from cloudinary_handler import CloudinaryImageHandler
 from bs4 import BeautifulSoup
 import cloudinary
 import cloudinary.uploader
+from clerk_auth import clerk_auth
 
 # Load environment variables - use default path for Railway
 load_dotenv()
@@ -278,6 +279,8 @@ async def startup_event():
                     db.algorithm_states.create_index("timestamp")
                     db.feedback.create_index("article_id")
                     db.images.create_index("article_id")
+                    db.users.create_index("clerk_user_id")
+                    db.users.create_index("email")
                 except Exception as e:
                     print(f"[STARTUP] Warning: Some non-unique indexes may already exist: {e}")
                 
@@ -2208,6 +2211,85 @@ async def feedback_system_test():
             "database_initialized": database_initialized,
             "feedback_collection_available": feedback_collection is not None
         }
+
+
+# ========== CLERK WEBHOOK ENDPOINTS ==========
+
+@app.post("/api/webhooks/clerk")
+async def clerk_webhook(request: Request):
+    """Handle Clerk webhook events for user management"""
+    try:
+        if db is None:
+            raise HTTPException(status_code=500, detail="Database not connected")
+
+        # Verify webhook (simplified for demo)
+        event_data = await clerk_auth.verify_webhook(request)
+        
+        if not event_data:
+            raise HTTPException(status_code=400, detail="Invalid webhook")
+
+        event_type = event_data.get('type')
+        user_data = event_data.get('data')
+
+        print(f"Received Clerk webhook: {event_type}")
+
+        if event_type == 'user.created':
+            # Create new user record
+            user_record = clerk_auth.create_user_from_clerk_data(user_data)
+            
+            # Check if user already exists
+            existing_user = users_collection.find_one({"clerk_user_id": user_data.get('id')})
+            if not existing_user:
+                users_collection.insert_one(user_record)
+                print(f"Created user record for {user_record.get('email')}")
+            
+            return {"success": True, "message": "User created successfully"}
+
+        elif event_type == 'user.updated':
+            # Update existing user record
+            user_record = clerk_auth.create_user_from_clerk_data(user_data)
+            
+            users_collection.update_one(
+                {"clerk_user_id": user_data.get('id')},
+                {
+                    "$set": {
+                        **user_record,
+                        "last_active": datetime.utcnow()
+                    }
+                },
+                upsert=True
+            )
+            print(f"Updated user record for {user_record.get('email')}")
+            
+            return {"success": True, "message": "User updated successfully"}
+
+        elif event_type == 'user.deleted':
+            # Handle user deletion
+            users_collection.delete_one({"clerk_user_id": user_data.get('id')})
+            print(f"Deleted user record for {user_data.get('id')}")
+            
+            return {"success": True, "message": "User deleted successfully"}
+
+        else:
+            print(f"Unhandled webhook event type: {event_type}")
+            return {"success": True, "message": f"Received {event_type} event"}
+
+    except Exception as e:
+        print(f"Clerk webhook error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/debug/webhooks")
+async def debug_webhooks():
+    """Debug endpoint to verify webhook endpoints are available"""
+    return {
+        "webhook_endpoints": [
+            "/api/webhooks/clerk"
+        ],
+        "clerk_auth_available": True,
+        "database_connected": db is not None,
+        "users_collection_available": users_collection is not None
+    }
 
 
 async def update_algorithm_with_feedback(emotion: str, influence_weight: float, feedback_id: str) -> bool:
