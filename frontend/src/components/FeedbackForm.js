@@ -80,7 +80,9 @@ const FeedbackForm = ({ articleId, onFeedbackSubmitted }) => {
       const accessType = hasNFTAccess ? 'nft_verified' : 'email_verified';
       const userIdentifier = clerkUser?.emailAddresses?.[0]?.emailAddress || walletAddress;
       
-      console.log('Submitting feedback:', { articleId, emotion, userIdentifier, accessType });
+      if (process.env.NODE_ENV === 'development') {
+        console.log('Submitting feedback:', { articleId, emotion, hasUser: Boolean(userIdentifier), accessType });
+      }
       
       const response = await fetch(`${API_BASE}/api/feedback`, {
         method: 'POST',
@@ -103,7 +105,9 @@ const FeedbackForm = ({ articleId, onFeedbackSubmitted }) => {
       
       try {
         responseText = await response.text();
-        console.log('Raw response:', responseText);
+        if (process.env.NODE_ENV === 'development') {
+          console.log('Raw response received');
+        }
         data = JSON.parse(responseText);
       } catch (parseError) {
         console.log('Response is not valid JSON, treating as string:', responseText);

@@ -10,14 +10,20 @@ let realClerkHooks = null;
 try {
   if (CLERK_PUBLISHABLE_KEY) {
     realClerkHooks = require('@clerk/clerk-react');
-    console.log('🔍 [useAuth] Real Clerk hooks loaded successfully');
+    if (process.env.NODE_ENV === 'development') {
+      console.log('🔍 [useAuth] Real Clerk hooks loaded successfully');
+    }
   }
 } catch (error) {
-  console.warn('🔍 [useAuth] Real Clerk hooks not available:', error.message);
+  if (process.env.NODE_ENV === 'development') {
+    console.warn('🔍 [useAuth] Real Clerk hooks not available:', error.message);
+  }
 }
 
 export const useUser = () => {
-  console.log('🔍 [useAuth] useUser called, using:', realClerkHooks ? 'REAL CLERK' : 'MOCK');
+  if (process.env.NODE_ENV === 'development') {
+    console.log('🔍 [useAuth] useUser called, using:', realClerkHooks ? 'REAL CLERK' : 'MOCK');
+  }
   
   // Always call mock hook (consistent hook order)
   const mockUser = useMockUser();
@@ -26,26 +32,34 @@ export const useUser = () => {
   let realUser = null;
   if (realClerkHooks?.useUser) {
     realUser = realClerkHooks.useUser();
-    console.log('🔍 [useAuth] Real Clerk user state:', {
-      isSignedIn: realUser.isSignedIn,
-      isLoaded: realUser.isLoaded,
-      userId: realUser.user?.id,
-      firstName: realUser.user?.firstName
-    });
+    if (process.env.NODE_ENV === 'development') {
+      console.log('🔍 [useAuth] Real Clerk user state:', {
+        isSignedIn: realUser.isSignedIn,
+        isLoaded: realUser.isLoaded,
+        hasUser: Boolean(realUser.user),
+        hasFirstName: Boolean(realUser.user?.firstName)
+      });
+    }
   }
   
   // Return appropriate result based on availability
   if (realUser) {
-    console.log('🔍 [useAuth] Using real Clerk user');
+    if (process.env.NODE_ENV === 'development') {
+      console.log('🔍 [useAuth] Using real Clerk user');
+    }
     return realUser;
   } else {
-    console.log('🔍 [useAuth] Using mock user');
+    if (process.env.NODE_ENV === 'development') {
+      console.log('🔍 [useAuth] Using mock user');
+    }
     return mockUser;
   }
 };
 
 export const useClerk = () => {
-  console.log('🔍 [useAuth] useClerk called, using:', realClerkHooks ? 'REAL CLERK' : 'MOCK');
+  if (process.env.NODE_ENV === 'development') {
+    console.log('🔍 [useAuth] useClerk called, using:', realClerkHooks ? 'REAL CLERK' : 'MOCK');
+  }
   
   // Always call mock hook (consistent hook order)
   const mockClerk = useMockClerk();
@@ -54,15 +68,21 @@ export const useClerk = () => {
   let realClerk = null;
   if (realClerkHooks?.useClerk) {
     realClerk = realClerkHooks.useClerk();
-    console.log('🔍 [useAuth] Real Clerk loaded:', Boolean(realClerk.loaded));
+    if (process.env.NODE_ENV === 'development') {
+      console.log('🔍 [useAuth] Real Clerk loaded:', Boolean(realClerk.loaded));
+    }
   }
   
   // Return appropriate result based on availability
   if (realClerk) {
-    console.log('🔍 [useAuth] Using real Clerk');
+    if (process.env.NODE_ENV === 'development') {
+      console.log('🔍 [useAuth] Using real Clerk');
+    }
     return realClerk;
   } else {
-    console.log('🔍 [useAuth] Using mock clerk');
+    if (process.env.NODE_ENV === 'development') {
+      console.log('🔍 [useAuth] Using mock clerk');
+    }
     return mockClerk;
   }
 };
@@ -140,19 +160,25 @@ export const useAuthenticationAccess = () => {
 
 // Export real Clerk SignedIn/SignedOut if available, otherwise custom ones
 export const SignedIn = ({ children }) => {
-  console.log('🔍 [useAuth] SignedIn component called');
+  if (process.env.NODE_ENV === 'development') {
+    console.log('🔍 [useAuth] SignedIn component called');
+  }
   
   // Always call useAuthenticationAccess to ensure consistent hook order
   const { hasAnyAccess, isLoaded } = useAuthenticationAccess();
   
   if (realClerkHooks?.SignedIn) {
-    console.log('🔍 [useAuth] Using real Clerk SignedIn');
+    if (process.env.NODE_ENV === 'development') {
+      console.log('🔍 [useAuth] Using real Clerk SignedIn');
+    }
     const ClerkSignedIn = realClerkHooks.SignedIn;
     return <ClerkSignedIn>{children}</ClerkSignedIn>;
   }
   
   // Fallback to custom logic using the hook data we already called
-  console.log('🔍 [useAuth] Using custom SignedIn logic');
+  if (process.env.NODE_ENV === 'development') {
+    console.log('🔍 [useAuth] Using custom SignedIn logic');
+  }
   
   if (!isLoaded) return null;
   if (!hasAnyAccess) return null;
@@ -161,19 +187,25 @@ export const SignedIn = ({ children }) => {
 };
 
 export const SignedOut = ({ children }) => {
-  console.log('🔍 [useAuth] SignedOut component called');
+  if (process.env.NODE_ENV === 'development') {
+    console.log('🔍 [useAuth] SignedOut component called');
+  }
   
   // Always call useAuthenticationAccess to ensure consistent hook order
   const { hasAnyAccess, isLoaded } = useAuthenticationAccess();
   
   if (realClerkHooks?.SignedOut) {
-    console.log('🔍 [useAuth] Using real Clerk SignedOut');
+    if (process.env.NODE_ENV === 'development') {
+      console.log('🔍 [useAuth] Using real Clerk SignedOut');
+    }
     const ClerkSignedOut = realClerkHooks.SignedOut;
     return <ClerkSignedOut>{children}</ClerkSignedOut>;
   }
   
   // Fallback to custom logic using the hook data we already called
-  console.log('🔍 [useAuth] Using custom SignedOut logic');
+  if (process.env.NODE_ENV === 'development') {
+    console.log('🔍 [useAuth] Using custom SignedOut logic');
+  }
   
   if (!isLoaded) return null;
   if (hasAnyAccess) return null;

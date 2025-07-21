@@ -19,31 +19,39 @@ try {
 
 // Auth Modal Component
 export const AuthModal = ({ isOpen, onClose, mode = 'sign-in' }) => {
-  console.log('🔍 [AuthModal] Component render:', { 
-    isOpen, 
-    mode, 
-    timestamp: new Date().toISOString() 
-  });
+  if (process.env.NODE_ENV === 'development') {
+    console.log('🔍 [AuthModal] Component render:', { 
+      isOpen, 
+      mode, 
+      timestamp: new Date().toISOString() 
+    });
+  }
 
   // Component mount/unmount logging
   useEffect(() => {
-    console.log('🔍 [AuthModal] Component mounted/props changed:', { isOpen, mode });
-    return () => {
-      console.log('🔍 [AuthModal] Component unmounting or props changing');
-    };
+    if (process.env.NODE_ENV === 'development') {
+      console.log('🔍 [AuthModal] Component mounted/props changed:', { isOpen, mode });
+      return () => {
+        console.log('🔍 [AuthModal] Component unmounting or props changing');
+      };
+    }
   }, [isOpen, mode]);
 
   // Modal state logging
   useEffect(() => {
-    if (isOpen) {
-      console.log('🔍 [AuthModal] Modal opened with mode:', mode);
-    } else {
-      console.log('🔍 [AuthModal] Modal closed');
+    if (process.env.NODE_ENV === 'development') {
+      if (isOpen) {
+        console.log('🔍 [AuthModal] Modal opened with mode:', mode);
+      } else {
+        console.log('🔍 [AuthModal] Modal closed');
+      }
     }
   }, [isOpen, mode]);
 
   if (!isOpen) {
-    console.log('🔍 [AuthModal] Returning null - modal not open');
+    if (process.env.NODE_ENV === 'development') {
+      console.log('🔍 [AuthModal] Returning null - modal not open');
+    }
     return null;
   }
 
@@ -87,7 +95,9 @@ export const AuthModal = ({ isOpen, onClose, mode = 'sign-in' }) => {
 
   // Check if Clerk components are available
   if (!SignIn || !SignUp) {
-    console.warn('Clerk components not available, modal will not render');
+    if (process.env.NODE_ENV === 'development') {
+      console.warn('Clerk components not available, modal will not render');
+    }
     return null;
   }
     
@@ -116,7 +126,7 @@ export const AuthModal = ({ isOpen, onClose, mode = 'sign-in' }) => {
               {/* Clean Clerk Authentication */}
               {mode === 'sign-in' ? (
                 <>
-                  {console.log('🔍 [AuthModal] Rendering SignIn component')}
+                  {process.env.NODE_ENV === 'development' && console.log('🔍 [AuthModal] Rendering SignIn component')}
                   <SignIn 
                     appearance={{
                       elements: {
@@ -131,7 +141,7 @@ export const AuthModal = ({ isOpen, onClose, mode = 'sign-in' }) => {
                 </>
               ) : (
                 <>
-                  {console.log('🔍 [AuthModal] Rendering SignUp component')}
+                  {process.env.NODE_ENV === 'development' && console.log('🔍 [AuthModal] Rendering SignUp component')}
                   <SignUp 
                     appearance={{
                       elements: {
@@ -313,64 +323,31 @@ export const AccessGate = ({ onSignUp, onSignIn }) => {
             </div>
           ) : (
             /* Fallback for when Clerk is not available */
-            <div className="grid md:grid-cols-2 gap-4">
-              <div className="bg-white border border-gray-200 rounded-lg p-4">
-                <Mail className="w-8 h-8 text-blue-600 mx-auto mb-3" />
-                <h4 className="font-semibold mb-2">Email Verification</h4>
-                <p className="text-sm text-gray-600 mb-4">
-                  Quick and secure email-based authentication for medical professionals
-                </p>
-                <button
-                  onClick={onSignUp}
-                  className="w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors"
-                >
-                  Sign Up with Email
-                </button>
+            <div className="bg-white border border-gray-200 rounded-lg p-6">
+              <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <User className="w-6 h-6 text-blue-600" />
               </div>
-              
-              <div className="bg-white border border-gray-200 rounded-lg p-4">
-                <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-blue-500 rounded-lg mx-auto mb-3 flex items-center justify-center">
-                  <span className="text-white text-xs font-bold">W3</span>
-                </div>
-                <h4 className="font-semibold mb-2">Web3 Authentication</h4>
-                <p className="text-sm text-gray-600 mb-4">
-                  Connect wallet & verify NFT ownership for premium access
-                </p>
-                <button
-                  onClick={() => setShowWeb3Modal(true)}
-                  className="w-full bg-gradient-to-r from-purple-600 to-blue-600 text-white py-2 px-4 rounded-lg hover:from-purple-700 hover:to-blue-700 transition-colors"
-                >
-                  Connect Wallet
-                </button>
-              </div>
-              
-              <div className="md:col-span-2 mt-4">
-                <button
-                  onClick={onSignIn}
-                  className="text-blue-600 hover:text-blue-700 text-sm font-medium"
-                >
-                  Already have an account? Sign in
-                </button>
-              </div>
+              <h4 className="text-lg font-semibold text-gray-900 mb-2">
+                Sign In to Influence Algorithm
+              </h4>
+              <p className="text-sm text-gray-600 mb-6">
+                Create an account or sign in to provide feedback and help shape the algorithm's understanding
+              </p>
+              <button
+                onClick={onSignUp}
+                className="w-full bg-blue-600 text-white py-3 px-6 rounded-lg hover:bg-blue-700 transition-colors font-medium mb-3"
+              >
+                Sign In to Provide Feedback
+              </button>
+              <button
+                onClick={() => setShowWeb3Modal(true)}
+                className="w-full text-purple-600 hover:text-purple-700 text-sm font-medium"
+              >
+                Or connect with Web3 wallet
+              </button>
             </div>
           )}
 
-          {/* Additional Web3 Option */}
-          <div className="bg-white border border-gray-200 rounded-lg p-4">
-            <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-blue-500 rounded-lg mx-auto mb-3 flex items-center justify-center">
-              <span className="text-white text-xs font-bold">W3</span>
-            </div>
-            <h4 className="font-semibold mb-2">Web3 Premium Access</h4>
-            <p className="text-sm text-gray-600 mb-4">
-              Connect wallet & verify NFT ownership for enhanced algorithm influence
-            </p>
-            <button
-              onClick={() => setShowWeb3Modal(true)}
-              className="w-full bg-gradient-to-r from-purple-600 to-blue-600 text-white py-2 px-4 rounded-lg hover:from-purple-700 hover:to-blue-700 transition-colors"
-            >
-              Connect Wallet for Premium Access
-            </button>
-          </div>
         </div>
       </div>
       

@@ -6,7 +6,11 @@ import { InjectedConnector } from 'wagmi/connectors/injected'
 import { CoinbaseWalletConnector } from 'wagmi/connectors/coinbaseWallet'
 
 // 1. Get projectId from environment
-const projectId = process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID || process.env.REACT_APP_WALLETCONNECT_PROJECT_ID || '09861ae0475dc4c586c66bbda1a5e918'
+const projectId = process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID || process.env.REACT_APP_WALLETCONNECT_PROJECT_ID
+
+if (!projectId && process.env.NODE_ENV === 'development') {
+  console.warn('WalletConnect Project ID not found. Web3 features may not work properly.');
+}
 
 // 2. Configure chains & providers
 const { chains, publicClient, webSocketPublicClient } = configureChains(

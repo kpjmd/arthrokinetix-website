@@ -24,13 +24,15 @@ const Header = () => {
   const { signOut } = useClerk();
   
   // Debug authentication state
-  console.log('🔍 [Header] Authentication state:', {
-    isSignedIn,
-    isLoaded,
-    user: user ? { id: user.id, firstName: user.firstName, lastName: user.lastName } : null,
-    hasUserButton: Boolean(UserButton),
-    timestamp: new Date().toISOString()
-  });
+  if (process.env.NODE_ENV === 'development') {
+    console.log('🔍 [Header] Authentication state:', {
+      isSignedIn,
+      isLoaded,
+      hasUser: Boolean(user),
+      hasUserButton: Boolean(UserButton),
+      timestamp: new Date().toISOString()
+    });
+  }
 
   // Debug logging for state changes
   useEffect(() => {

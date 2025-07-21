@@ -133,9 +133,8 @@ body {
 /* Algorithm Mood Indicator */
 .mood-indicator {
   position: fixed;
-  top: 20px;
+  top: 80px;
   right: 20px;
-  margin-right: 120px;
   z-index: 1000;
   width: 60px;
   height: 60px;
@@ -344,7 +343,7 @@ body {
   .mood-indicator {
     width: 50px;
     height: 50px;
-    top: 10px;
+    top: 70px;
     right: 10px;
   }
   

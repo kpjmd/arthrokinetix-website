@@ -59,7 +59,7 @@ const AlgorithmEvolution = ({ isFloating = false, className = '' }) => {
   if (!evolutionData) {
     if (isFloating) {
       return (
-        <div className={`fixed top-4 right-4 z-40 ${className} hidden sm:block`} style={{ marginRight: '120px' }}>
+        <div className={`fixed top-20 right-4 z-40 ${className} hidden sm:block`}>
           <div className="bg-white rounded-lg p-3 shadow-lg border animate-pulse">
             <div className="flex items-center space-x-2">
               <Brain className="w-5 h-5 text-gray-400" />
@@ -91,7 +91,7 @@ const AlgorithmEvolution = ({ isFloating = false, className = '' }) => {
     
     return (
       <>
-        <div className={`fixed top-4 right-4 z-40 ${className} hidden sm:block`} style={{ marginRight: '120px' }}>
+        <div className={`fixed top-20 right-4 z-40 ${className} hidden sm:block`}>
           <motion.div
             initial={{ scale: 0.8, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}

@@ -2,13 +2,13 @@ import React, { createContext, useContext } from 'react';
 
 const CLERK_PUBLISHABLE_KEY = process.env.REACT_APP_CLERK_PUBLISHABLE_KEY;
 
-// Debug logging
-console.log('ClerkProvider Debug:', {
-  REACT_APP_KEY: process.env.REACT_APP_CLERK_PUBLISHABLE_KEY,
-  FINAL_KEY: CLERK_PUBLISHABLE_KEY,
-  KEY_EXISTS: Boolean(CLERK_PUBLISHABLE_KEY),
-  IS_DEV_KEY: CLERK_PUBLISHABLE_KEY?.includes('test')
-});
+// Development-only debug logging (removed for security)
+if (process.env.NODE_ENV === 'development') {
+  console.log('ClerkProvider Debug:', {
+    KEY_EXISTS: Boolean(CLERK_PUBLISHABLE_KEY),
+    IS_DEV_KEY: CLERK_PUBLISHABLE_KEY?.includes('test')
+  });
+}
 
 // Mock Clerk context for when Clerk is not available
 const MockClerkContext = createContext({
@@ -59,24 +59,31 @@ export const useMockClerk = () => {
 };
 
 const ClerkProvider = ({ children }) => {
-  console.log('🔍 [ClerkProvider] Initializing ClerkProvider', {
-    hasKey: Boolean(CLERK_PUBLISHABLE_KEY),
-    keyLength: CLERK_PUBLISHABLE_KEY?.length,
-    timestamp: new Date().toISOString()
-  });
+  if (process.env.NODE_ENV === 'development') {
+    console.log('🔍 [ClerkProvider] Initializing ClerkProvider', {
+      hasKey: Boolean(CLERK_PUBLISHABLE_KEY),
+      timestamp: new Date().toISOString()
+    });
+  }
 
   // If no Clerk key, use mock system
   if (!CLERK_PUBLISHABLE_KEY) {
-    console.warn("🔍 [ClerkProvider] Clerk publishable key not found. Using mock authentication system.");
+    if (process.env.NODE_ENV === 'development') {
+      console.warn("🔍 [ClerkProvider] Clerk publishable key not found. Using mock authentication system.");
+    }
     return <MockClerkProvider>{children}</MockClerkProvider>;
   }
 
   // Try to use real Clerk with better error handling
   try {
-    console.log('🔍 [ClerkProvider] Attempting to load real Clerk components');
+    if (process.env.NODE_ENV === 'development') {
+      console.log('🔍 [ClerkProvider] Attempting to load real Clerk components');
+    }
     const { ClerkProvider: ClerkAuthProvider } = require('@clerk/clerk-react');
     
-    console.log('🔍 [ClerkProvider] Real Clerk loaded successfully, returning ClerkAuthProvider');
+    if (process.env.NODE_ENV === 'development') {
+      console.log('🔍 [ClerkProvider] Real Clerk loaded successfully, returning ClerkAuthProvider');
+    }
     return (
       <ClerkAuthProvider 
         publishableKey={CLERK_PUBLISHABLE_KEY}
@@ -92,8 +99,10 @@ const ClerkProvider = ({ children }) => {
       </ClerkAuthProvider>
     );
   } catch (error) {
-    console.error('🔍 [ClerkProvider] Failed to initialize Clerk:', error);
-    console.warn('🔍 [ClerkProvider] Falling back to mock authentication system.');
+    if (process.env.NODE_ENV === 'development') {
+      console.error('🔍 [ClerkProvider] Failed to initialize Clerk:', error);
+      console.warn('🔍 [ClerkProvider] Falling back to mock authentication system.');
+    }
     return <MockClerkProvider>{children}</MockClerkProvider>;
   }
 };
