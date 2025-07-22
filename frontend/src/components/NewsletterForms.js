@@ -197,14 +197,40 @@ export const ArticlesNewsletterForm = () => (
 
 // About Page Newsletter Form
 export const AboutNewsletterForm = () => (
-  <NewsletterSignup
-    title="Join the Arthrokinetix Community"
-    description="Connect with healthcare professionals, researchers, and digital art enthusiasts. Get platform updates and exclusive insights into our algorithm's evolution."
-    icon={Users}
-    iconColor="#059669"
-    bgGradient="from-emerald-50 to-teal-50"
-    borderColor="border-emerald-200"
-  />
+  <>
+    <SignedOut>
+      <NewsletterSignup
+        title="Join the Arthrokinetix Community"
+        description="Connect with healthcare professionals, researchers, and digital art enthusiasts. Get platform updates and exclusive insights into our algorithm's evolution."
+        icon={Users}
+        iconColor="#059669"
+        bgGradient="from-emerald-50 to-teal-50"
+        borderColor="border-emerald-200"
+      />
+    </SignedOut>
+    
+    <SignedIn>
+      <motion.div
+        initial={{ opacity: 0, scale: 0.9 }}
+        animate={{ opacity: 1, scale: 1 }}
+        className="bg-gradient-to-r from-emerald-50 to-teal-50 border border-emerald-200 rounded-xl p-8 text-center"
+      >
+        <div className="w-12 h-12 mx-auto mb-4 rounded-full flex items-center justify-center bg-emerald-100">
+          <CheckCircle className="w-6 h-6 text-emerald-600" />
+        </div>
+        <h3 className="text-xl font-bold text-emerald-800 mb-3">You're already connected!</h3>
+        <p className="text-emerald-700 mb-4">
+          Welcome to the Arthrokinetix community! You have full access to provide feedback 
+          that influences our algorithm's evolution and helps shape the future of medical art.
+        </p>
+        <div className="text-sm text-emerald-600 space-y-1">
+          <p>✓ Algorithm feedback influence</p>
+          <p>✓ Community member access</p>
+          <p>✓ Platform updates included</p>
+        </div>
+      </motion.div>
+    </SignedIn>
+  </>
 );
 
 // Compact Newsletter Form (for sidebars, etc.)

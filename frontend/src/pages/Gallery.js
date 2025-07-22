@@ -153,12 +153,6 @@ const ArtworkCard = React.memo(({ artwork, index, dataQuality }) => {
             type="artwork"
             className="text-sm py-2 px-3 border border-gray-300"
           />
-          
-          <NFTMintButton 
-            artwork={artwork}
-            size="small"
-            className="text-sm py-2 px-3"
-          />
         </div>
       </div>
     </motion.div>
