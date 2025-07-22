@@ -53,10 +53,13 @@ const FeedbackForm = ({ articleId, onFeedbackSubmitted }) => {
           const data = await response.json();
           console.log('Duplicate check response:', data);
           
-          if (data.has_submitted && data.feedback) {
+          if (data.has_submitted) {
             setAlreadySubmitted(true);
-            setPreviousFeedback(data.feedback);
-            setSelectedEmotion(data.feedback.emotion);
+            setPreviousFeedback({
+              emotion: data.emotion,
+              timestamp: data.timestamp
+            });
+            setSelectedEmotion(data.emotion);
           }
         } else {
           console.log('Duplicate check failed:', response.status, response.statusText);
@@ -122,6 +125,18 @@ const FeedbackForm = ({ articleId, onFeedbackSubmitted }) => {
         rawResponse: responseText 
       });
 
+      // Handle duplicate submission response
+      if (response.ok && data.error === 'duplicate_submission') {
+        setAlreadySubmitted(true);
+        setPreviousFeedback({
+          emotion: data.existing_emotion,
+          timestamp: data.existing_timestamp
+        });
+        setSelectedEmotion(data.existing_emotion);
+        setIsSubmitting(false);
+        return;
+      }
+      
       // Improved success condition: HTTP 200 AND (data.success === true OR response contains "successfully")
       const isSuccess = response.ok && (
         data.success === true || 
@@ -213,12 +228,19 @@ const FeedbackForm = ({ articleId, onFeedbackSubmitted }) => {
           You've Already Shared Your Thoughts
         </h3>
         <p className="text-gray-600 mb-4">
-          You previously responded with <span className="font-semibold capitalize">{previousFeedback.emotion}</span> 
+          You already rated this article as <span className="font-semibold capitalize" style={{ color: selectedEmotionData?.color }}>{previousFeedback.emotion}</span>
           {previousFeedback.timestamp && (
             <span className="text-sm text-gray-500 block mt-1">
-              on {new Date(previousFeedback.timestamp).toLocaleDateString()}
+              on {new Date(previousFeedback.timestamp).toLocaleDateString('en-US', { 
+                year: 'numeric', 
+                month: 'long', 
+                day: 'numeric' 
+              })}
             </span>
           )}
+        </p>
+        <p className="text-lg font-medium text-gray-700 mb-4">
+          Thanks for your feedback! 🙏
         </p>
         <div className="bg-white rounded-lg p-3 inline-block">
           <p className="text-sm text-gray-500">
@@ -275,8 +297,8 @@ const FeedbackForm = ({ articleId, onFeedbackSubmitted }) => {
           <p>✓ Your influence will shape future art generation</p>
         </div>
         
-        {/* Debug section for response data */}
-        {responseDebugData && (
+        {/* Debug section for response data - only show in development */}
+        {process.env.NODE_ENV === 'development' && responseDebugData && (
           <details className="mt-4 text-xs text-gray-400">
             <summary className="cursor-pointer">Debug Response Data</summary>
             <pre className="mt-2 p-2 bg-gray-50 rounded text-left overflow-auto max-h-32">
