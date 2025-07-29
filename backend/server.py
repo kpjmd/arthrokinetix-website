@@ -860,15 +860,65 @@ async def create_article_multi_file(
             if src.startswith(('http://', 'https://', 'data:')):
                 continue
             
-            # Extract filename from path (handle relative paths)
-            filename = src.split('/')[-1].lower()
+            # Extract and normalize filename from path
+            def normalize_filename(src_path):
+                """Normalize filename for matching"""
+                import urllib.parse
+                
+                # Handle both forward and backward slashes
+                filename = src_path.replace('\\', '/').split('/')[-1]
+                
+                # Remove query parameters and fragments
+                if '?' in filename:
+                    filename = filename.split('?')[0]
+                if '#' in filename:
+                    filename = filename.split('#')[0]
+                
+                # URL decode the filename
+                try:
+                    filename = urllib.parse.unquote(filename)
+                except:
+                    pass  # If decode fails, use original
+                
+                # Normalize to lowercase
+                return filename.lower().strip()
             
-            print(f"🔎 Looking for image: {src} -> {filename}")
+            filename = normalize_filename(src)
+            
+            print(f"🔎 Looking for image: {src} -> normalized: {filename}")
             
             # Try to find matching uploaded file
+            matched_file = None
             if filename in image_files:
-                print(f"✅ Matched: {filename}")
-                img_data = image_files[filename]
+                matched_file = image_files[filename]
+                print(f"✅ Direct match: {filename}")
+            else:
+                # Try fuzzy matching for common variations
+                print(f"🔍 Direct match failed, trying fuzzy matching...")
+                print(f"📁 Available files: {list(image_files.keys())}")
+                
+                # Try without extension and match by base name
+                base_name = filename.rsplit('.', 1)[0] if '.' in filename else filename
+                for available_filename, file_data in image_files.items():
+                    available_base = available_filename.rsplit('.', 1)[0] if '.' in available_filename else available_filename
+                    
+                    # Check exact base name match
+                    if base_name == available_base:
+                        matched_file = file_data
+                        print(f"✅ Fuzzy match by base name: {available_filename}")
+                        break
+                    
+                    # Check with common substitutions (spaces, underscores, hyphens)
+                    normalized_base = base_name.replace(' ', '_').replace('-', '_')
+                    normalized_available = available_base.replace(' ', '_').replace('-', '_')
+                    if normalized_base == normalized_available:
+                        matched_file = file_data
+                        print(f"✅ Fuzzy match with normalization: {available_filename}")
+                        break
+            
+            if matched_file:
+                print(f"✅ Matched: {matched_file['filename']}")
+                img_data = matched_file
                 
                 # Calculate image hash to check for duplicates
                 image_hash = hashlib.md5(img_data['content']).hexdigest()
@@ -919,8 +969,14 @@ async def create_article_multi_file(
                             if existing:
                                 cloudinary_result = existing
                                 print(f"♻️ Using existing image record for {image_id}")
+                        except Exception as e:
+                            print(f"❌ Database error inserting image {image_id}: {e}")
+                            # Continue processing even if database insert fails
                     else:
                         print(f"❌ Failed to upload {img_data['filename']} to Cloudinary")
+                        print(f"🔍 Image data size: {len(img_data['content']) if img_data.get('content') else 'No content'} bytes")
+                        print(f"🔍 Content type: {img_data.get('content_type', 'Unknown')}")
+                        # Skip this image but continue processing others
                         continue
                 
                 if cloudinary_result:
@@ -931,7 +987,8 @@ async def create_article_multi_file(
                     img['data-original-src'] = src
                     img['data-image-id'] = cloudinary_result['id']
             else:
-                print(f"⚠️ Unmatched reference: {src}")
+                print(f"⚠️ Unmatched reference: {src} (normalized: {filename})")
+                print(f"📁 Available uploaded files: {list(image_files.keys())}")
                 unmatched_references.append(src)
         
         # Process any orphaned images (uploaded but not referenced)
@@ -985,6 +1042,17 @@ async def create_article_multi_file(
         
         # Get updated HTML
         updated_html = str(soup)
+        
+        # Print image processing summary
+        print(f"\n📊 Image Processing Summary:")
+        print(f"   • Total files uploaded: {len(image_files)}")
+        print(f"   • HTML img tags found: {len(img_tags)}")
+        print(f"   • Images successfully processed: {len(processed_images)}")
+        print(f"   • Orphaned images processed: {len(orphaned_images)}")
+        print(f"   • Unmatched references: {len(unmatched_references)}")
+        if unmatched_references:
+            print(f"     - {unmatched_references}")
+        print(f"   • Total images in database: {len(processed_images) + len(orphaned_images)}")
         
         # Extract text content for processing
         processed_content = re.sub('<[^<]+?>', '', updated_html)
@@ -1935,6 +2003,65 @@ async def delete_article(article_id: str):
         
     except HTTPException:
         raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.delete("/api/admin/cleanup-orphaned-images")
+async def cleanup_orphaned_images():
+    """Clean up images that don't have corresponding articles"""
+    try:
+        # Get all article IDs
+        article_ids = set(article['id'] for article in articles_collection.find({}, {'id': 1}))
+        print(f"🔍 Found {len(article_ids)} articles")
+        
+        # Find images without valid article_id
+        orphaned_images = list(images_collection.find({
+            "$or": [
+                {"article_id": {"$nin": list(article_ids)}},
+                {"article_id": {"$exists": False}}
+            ]
+        }))
+        
+        print(f"🗑️ Found {len(orphaned_images)} orphaned images")
+        
+        # Delete orphaned images from Cloudinary
+        cloudinary_errors = []
+        for image in orphaned_images:
+            try:
+                # Try to delete from Cloudinary
+                public_id = None
+                if 'cloudinary_data' in image and 'public_id' in image['cloudinary_data']:
+                    public_id = image['cloudinary_data']['public_id']
+                elif 'public_id' in image:
+                    public_id = image['public_id']
+                
+                if public_id:
+                    result = cloudinary.uploader.destroy(public_id)
+                    print(f"🗑️ Deleted from Cloudinary: {public_id} - {result}")
+                else:
+                    print(f"⚠️ No public_id for orphaned image: {image.get('id', 'unknown')}")
+                    
+            except Exception as e:
+                error_msg = f"Failed to delete {image.get('id', 'unknown')} from Cloudinary: {str(e)}"
+                cloudinary_errors.append(error_msg)
+                print(f"⚠️ {error_msg}")
+        
+        # Delete orphaned images from database
+        delete_result = images_collection.delete_many({
+            "$or": [
+                {"article_id": {"$nin": list(article_ids)}},
+                {"article_id": {"$exists": False}}
+            ]
+        })
+        
+        return {
+            "success": True,
+            "message": f"Cleaned up {delete_result.deleted_count} orphaned images",
+            "orphaned_count": len(orphaned_images),
+            "deleted_from_db": delete_result.deleted_count,
+            "cloudinary_errors": cloudinary_errors if cloudinary_errors else None
+        }
+        
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
