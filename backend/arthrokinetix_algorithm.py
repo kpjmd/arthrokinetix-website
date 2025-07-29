@@ -1031,7 +1031,34 @@ class ArthrokinetixArtGenerator:
     # Add placeholder methods for missing functions
     def calculate_readability(self, element): return 0.5
     def calculate_technical_density(self, element): return 0.5
-    def assess_evidence_strength(self, element): return 0.5
+    def assess_evidence_strength(self, element):
+        """Assess evidence strength - EXACT JavaScript equivalent"""
+        text = element.text_content.lower() if element.text_content else ''
+        strength = 0.5  # Base strength
+        
+        # Evidence markers
+        strong_evidence = ['randomized', 'meta-analysis', 'systematic review', 'significant']
+        moderate_evidence = ['study', 'trial', 'evidence', 'research']
+        
+        # Check for strong evidence markers
+        for term in strong_evidence:
+            if term in text:
+                strength += 0.1
+        
+        # Check for moderate evidence markers  
+        for term in moderate_evidence:
+            if term in text:
+                strength += 0.05
+        
+        # Check for statistics using existing extract_statistics method
+        try:
+            stats = self.extract_statistics(element)
+            strength += min(0.3, len(stats) * 0.02)
+        except:
+            # If statistics extraction fails, continue without statistical boost
+            pass
+        
+        return min(1.0, strength)
     def assess_certainty_level(self, element): return 0.5
     
     def analyze_argument_flow(self, element): return {}
