@@ -811,11 +811,17 @@ async def create_article_multi_file(
         
         # Process image files (remaining files)
         image_files = {}
+        skipped_files = []
         for file in files[1:]:
             # Check if it's an image file
-            file_ext = file.filename.lower().split('.')[-1]
+            file_ext = file.filename.lower().split('.')[-1] if '.' in file.filename else ''
             if file_ext in ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'bmp']:
                 file_content = await file.read()
+                if len(file_content) == 0:
+                    print(f"⚠️ Empty image file: {file.filename}")
+                    skipped_files.append(f"{file.filename} (empty)")
+                    continue
+                    
                 # Store by filename (case-insensitive key)
                 image_files[file.filename.lower()] = {
                     'filename': file.filename,
@@ -823,8 +829,13 @@ async def create_article_multi_file(
                     'content_type': file.content_type
                 }
                 print(f"🖼️ Image file: {file.filename} ({len(file_content)} bytes)")
+            else:
+                print(f"⚠️ Skipping non-image file: {file.filename} (extension: {file_ext})")
+                skipped_files.append(f"{file.filename} (unsupported format)")
         
         print(f"📊 Total images uploaded: {len(image_files)}")
+        if skipped_files:
+            print(f"⚠️ Skipped files: {skipped_files}")
         
         # Generate unique article ID
         article_id = str(uuid.uuid4())
@@ -869,6 +880,8 @@ async def create_article_multi_file(
                     print(f"♻️ Reusing existing image with hash: {image_hash}")
                     # Use the existing image data without creating a new database record
                     cloudinary_result = existing_image.copy()
+                    # Ensure original_filename is set for orphaned image check
+                    cloudinary_result['original_filename'] = img_data['filename']
                     # Update alt and title from current article if provided
                     if img.get('alt'):
                         cloudinary_result['alt'] = img.get('alt', '')
@@ -880,6 +893,7 @@ async def create_article_multi_file(
                     image_id = f"img_{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}_{str(uuid.uuid4())[:8]}"
                     
                     # Upload to Cloudinary
+                    print(f"🚀 Uploading {img_data['filename']} to Cloudinary...")
                     cloudinary_result = cloudinary_handler.upload_to_cloudinary(
                         img_data['content'], 
                         image_id, 
@@ -887,6 +901,7 @@ async def create_article_multi_file(
                     )
                     
                     if cloudinary_result:
+                        print(f"✅ Successfully uploaded {img_data['filename']} to Cloudinary")
                         # Add metadata
                         cloudinary_result['article_id'] = article_id
                         cloudinary_result['original_filename'] = img_data['filename']
@@ -904,6 +919,9 @@ async def create_article_multi_file(
                             if existing:
                                 cloudinary_result = existing
                                 print(f"♻️ Using existing image record for {image_id}")
+                    else:
+                        print(f"❌ Failed to upload {img_data['filename']} to Cloudinary")
+                        continue
                 
                 if cloudinary_result:
                     processed_images.append(cloudinary_result)
@@ -1857,24 +1875,38 @@ async def delete_article(article_id: str):
         
         # Delete associated images from Cloudinary and database
         print(f"🗑️ Cleaning up images for article {article_id}")
-        article_images = images_collection.find({"article_id": article_id})
+        article_images = list(images_collection.find({"article_id": article_id}))
+        print(f"🔍 Found {len(article_images)} images associated with article {article_id}")
+        
         images_deleted = 0
         cloudinary_errors = []
         
         for image in article_images:
             try:
-                # Delete from Cloudinary if public_id exists
+                # Try to delete from Cloudinary using different possible public_id locations
+                public_id = None
+                
+                # Check for public_id in different locations
                 if 'cloudinary_data' in image and 'public_id' in image['cloudinary_data']:
                     public_id = image['cloudinary_data']['public_id']
-                    print(f"🗑️ Deleting Cloudinary image: {public_id}")
-                    cloudinary.uploader.destroy(public_id)
                 elif 'public_id' in image:
-                    # Fallback for older format
-                    print(f"🗑️ Deleting Cloudinary image: {image['public_id']}")
-                    cloudinary.uploader.destroy(image['public_id'])
-                images_deleted += 1
+                    public_id = image['public_id']
+                elif 'id' in image:
+                    # Construct public_id from image id (fallback)
+                    public_id = f"articles/{article_id}/{image['id']}"
+                
+                if public_id:
+                    print(f"🗑️ Deleting Cloudinary image: {public_id}")
+                    result = cloudinary.uploader.destroy(public_id)
+                    print(f"📊 Cloudinary deletion result: {result}")
+                    images_deleted += 1
+                else:
+                    print(f"⚠️ No public_id found for image: {image.get('id', 'unknown')}")
+                    cloudinary_errors.append(f"No public_id found for image {image.get('id', 'unknown')}")
+                    
             except Exception as e:
-                cloudinary_errors.append(f"Failed to delete {image.get('id', 'unknown')}: {str(e)}")
+                error_msg = f"Failed to delete {image.get('id', 'unknown')}: {str(e)}"
+                cloudinary_errors.append(error_msg)
                 print(f"⚠️ Cloudinary deletion error: {e}")
         
         # Delete all images from database (even if Cloudinary deletion failed)

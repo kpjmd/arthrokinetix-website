@@ -100,8 +100,18 @@ class CloudinaryImageHandler:
             Dict with Cloudinary URLs and metadata
         """
         try:
+            # Validate image data
+            if not image_data or len(image_data) == 0:
+                print(f"❌ Empty image data for {image_id}")
+                return None
+                
+            if len(image_data) > self.max_image_size:
+                print(f"❌ Image {image_id} too large: {len(image_data)} bytes")
+                return None
+            
             # Create a unique public_id for Cloudinary
             public_id = f"{folder}/{image_id}"
+            print(f"🔄 Uploading to Cloudinary with public_id: {public_id}")
             
             # Upload original image to Cloudinary
             upload_result = cloudinary.uploader.upload(
@@ -111,6 +121,8 @@ class CloudinaryImageHandler:
                 resource_type="image",
                 **self.transformations['original']
             )
+            
+            print(f"✅ Cloudinary upload successful: {upload_result.get('secure_url', 'No URL')}")
             
             # Generate URLs for different sizes
             urls = {}
@@ -150,7 +162,9 @@ class CloudinaryImageHandler:
             }
             
         except Exception as e:
-            print(f"Error uploading to Cloudinary: {e}")
+            print(f"❌ Error uploading {image_id} to Cloudinary: {e}")
+            import traceback
+            print(f"📋 Traceback: {traceback.format_exc()}")
             return None
 
     def process_article_images(self, images: List[Dict], article_id: str) -> Dict:
