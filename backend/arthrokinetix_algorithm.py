@@ -513,6 +513,8 @@ class ArthrokinetixArtGenerator:
             # Core Analysis
             "evidence_strength": self.article_data.get("evidence_strength", 0.5),
             "technical_density": self.article_data.get("technical_density", 0.5),
+            "readability_score": self.article_data.get("readability_score", 0.5),
+            "certainty_level": self.article_data.get("certainty_level", 0.5),
             "subspecialty": self.subspecialty,
             "dominant_emotion": self.emotional_journey.get("dominantEmotion", "confidence"),
             
