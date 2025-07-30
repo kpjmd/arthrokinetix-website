@@ -423,7 +423,7 @@ const AdminDashboard = () => {
         const formData = new FormData();
         formData.append('title', articleForm.title);
         formData.append('subspecialty', articleForm.subspecialty);
-        formData.append('evidence_strength', '0.5');
+        // evidence_strength will be calculated dynamically by the backend algorithm
         
         if (articleForm.metaDescription) {
           formData.append('meta_description', articleForm.metaDescription);

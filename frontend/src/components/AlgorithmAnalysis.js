@@ -29,7 +29,7 @@ const AlgorithmAnalysis = ({ algorithmDebug, algorithmParams = {}, className = '
         </span>
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-4">
         <div className="text-center">
           <div className="text-2xl font-bold text-blue-600">
             {algorithmDebug.completenessScore}/{algorithmDebug.maxScore}
@@ -49,6 +49,24 @@ const AlgorithmAnalysis = ({ algorithmDebug, algorithmParams = {}, className = '
             {algorithmParams.technical_density ? Math.round(algorithmParams.technical_density * 100) : 'N/A'}%
           </div>
           <div className="text-sm text-gray-600">Technical Density</div>
+        </div>
+        
+        <div className="text-center">
+          <div className="text-2xl font-bold text-blue-600">
+            {algorithmParams.readability_score ? 
+              (algorithmParams.readability_score > 0.7 ? 'Simple' : 
+               algorithmParams.readability_score > 0.4 ? 'Moderate' : 'Complex') : 'N/A'}
+          </div>
+          <div className="text-sm text-gray-600">Content Complexity</div>
+        </div>
+        
+        <div className="text-center">
+          <div className="text-2xl font-bold text-blue-600">
+            {algorithmParams.certainty_level ? 
+              (algorithmParams.certainty_level > 0.7 ? 'Definitive' : 
+               algorithmParams.certainty_level > 0.4 ? 'Moderate' : 'Exploratory') : 'N/A'}
+          </div>
+          <div className="text-sm text-gray-600">Research Confidence</div>
         </div>
         
         <div className="text-center">

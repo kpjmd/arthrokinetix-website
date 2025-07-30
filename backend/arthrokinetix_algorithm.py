@@ -1029,8 +1029,130 @@ class ArthrokinetixArtGenerator:
         return emotion_mapping.get(section_name.lower(), "confidence")
 
     # Add placeholder methods for missing functions
-    def calculate_readability(self, element): return 0.5
-    def calculate_technical_density(self, element): return 0.5
+    def calculate_readability(self, element):
+        """Calculate readability score using Flesch Reading Ease principles"""
+        text = element.text_content if element.text_content else ''
+        if not text.strip():
+            return 0.5
+            
+        # Count sentences, words, and syllables
+        sentences = self._count_sentences(text)
+        words = self._count_words(text)
+        syllables = self._count_syllables(text)
+        
+        if sentences == 0 or words == 0:
+            return 0.5
+            
+        # Flesch Reading Ease calculation
+        avg_sentence_length = words / sentences
+        avg_syllables_per_word = syllables / words
+        
+        # Modified Flesch formula: 206.835 - (1.015 * ASL) - (84.6 * ASW)
+        flesch_score = 206.835 - (1.015 * avg_sentence_length) - (84.6 * avg_syllables_per_word)
+        
+        # Convert to 0-1 scale (0 = very difficult, 1 = very easy)
+        # Flesch scores: 90-100 = very easy, 0-30 = very difficult
+        normalized_score = max(0, min(100, flesch_score)) / 100
+        
+        return normalized_score
+    
+    def _count_sentences(self, text):
+        """Count sentences in text"""
+        import re
+        sentence_endings = re.findall(r'[.!?]+', text)
+        return max(1, len(sentence_endings))
+    
+    def _count_words(self, text):
+        """Count words in text"""
+        words = text.split()
+        return len(words)
+    
+    def _count_syllables(self, text):
+        """Count syllables in text using vowel groups"""
+        import re
+        words = text.lower().split()
+        total_syllables = 0
+        
+        for word in words:
+            # Remove non-alphabetic characters
+            word = re.sub(r'[^a-z]', '', word)
+            if not word:
+                continue
+                
+            # Count vowel groups
+            vowel_groups = re.findall(r'[aeiouy]+', word)
+            syllable_count = len(vowel_groups)
+            
+            # Handle silent e
+            if word.endswith('e') and syllable_count > 1:
+                syllable_count -= 1
+                
+            # Minimum of 1 syllable per word
+            total_syllables += max(1, syllable_count)
+            
+        return max(1, total_syllables)
+
+    def calculate_technical_density(self, element):
+        """Calculate technical density based on medical terminology and complexity"""
+        text = element.text_content.lower() if element.text_content else ''
+        if not text.strip():
+            return 0.5
+            
+        words = text.split()
+        total_words = len(words)
+        if total_words == 0:
+            return 0.5
+            
+        # Medical and technical terms
+        medical_terms = [
+            'diagnosis', 'treatment', 'therapy', 'procedure', 'surgical', 'clinical',
+            'pathology', 'syndrome', 'disease', 'disorder', 'condition', 'symptom',
+            'anatomical', 'physiological', 'biochemical', 'histological', 'radiological',
+            'therapeutic', 'diagnostic', 'prognosis', 'etiology', 'epidemiology',
+            'biomechanical', 'neuromuscular', 'cardiovascular', 'musculoskeletal',
+            'inflammatory', 'degenerative', 'malignant', 'benign', 'acute', 'chronic'
+        ]
+        
+        # Abbreviations and acronyms (common medical)
+        abbreviations = [
+            'mri', 'ct', 'pet', 'ecg', 'ekg', 'eeg', 'dna', 'rna', 'pcr', 'elisa',
+            'who', 'fda', 'nih', 'cdc', 'icu', 'er', 'or', 'iv', 'im', 'po',
+            'bid', 'tid', 'qid', 'prn', 'stat', 'acl', 'mcl', 'lcl', 'pcl'
+        ]
+        
+        # Statistical and measurement terms
+        statistical_terms = [
+            'statistical', 'significance', 'correlation', 'regression', 'analysis',
+            'cohort', 'randomized', 'controlled', 'placebo', 'blinded', 'crossover',
+            'meta-analysis', 'systematic', 'review', 'confidence', 'interval',
+            'odds', 'ratio', 'hazard', 'relative', 'risk', 'prevalence', 'incidence'
+        ]
+        
+        # Count technical terms
+        technical_count = 0
+        for word in words:
+            clean_word = word.strip('.,!?;:()[]{}')
+            if (clean_word in medical_terms or 
+                clean_word in abbreviations or 
+                clean_word in statistical_terms):
+                technical_count += 1
+                
+        # Count complex words (3+ syllables)
+        complex_word_count = 0
+        for word in words:
+            clean_word = word.strip('.,!?;:()[]{}')
+            if len(clean_word) > 6:  # Rough proxy for complex words
+                complex_word_count += 1
+                
+        # Calculate density
+        technical_density = technical_count / total_words
+        complex_density = complex_word_count / total_words
+        
+        # Combine metrics
+        combined_density = (technical_density * 0.7) + (complex_density * 0.3)
+        
+        # Scale to 0-1 range with better sensitivity
+        return min(1.0, combined_density * 5)
     def assess_evidence_strength(self, element):
         """Assess evidence strength - EXACT JavaScript equivalent"""
         text = element.text_content.lower() if element.text_content else ''
@@ -1059,10 +1181,212 @@ class ArthrokinetixArtGenerator:
             pass
         
         return min(1.0, strength)
-    def assess_certainty_level(self, element): return 0.5
+    def assess_certainty_level(self, element):
+        """Assess certainty level based on confidence and hedging language"""
+        text = element.text_content.lower() if element.text_content else ''
+        if not text.strip():
+            return 0.5
+            
+        # High certainty markers
+        high_certainty = [
+            'proven', 'demonstrated', 'established', 'confirmed', 'definitive',
+            'conclusive', 'certain', 'definitely', 'clearly', 'undoubtedly',
+            'evidence shows', 'results demonstrate', 'findings confirm',
+            'significantly', 'consistently', 'reliable', 'validated'
+        ]
+        
+        # Low certainty/hedging markers
+        low_certainty = [
+            'may', 'might', 'could', 'possibly', 'potentially', 'likely',
+            'appears', 'seems', 'suggests', 'indicates', 'implies',
+            'probably', 'presumably', 'tentatively', 'preliminary',
+            'further research', 'more studies', 'additional investigation',
+            'uncertain', 'unclear', 'ambiguous', 'conflicting', 'mixed results'
+        ]
+        
+        # Moderate certainty markers
+        moderate_certainty = [
+            'study shows', 'research indicates', 'data suggests',
+            'evidence supports', 'findings show', 'analysis reveals',
+            'typically', 'generally', 'usually', 'commonly', 'often'
+        ]
+        
+        # Count occurrences
+        high_count = sum(1 for marker in high_certainty if marker in text)
+        low_count = sum(1 for marker in low_certainty if marker in text)
+        moderate_count = sum(1 for marker in moderate_certainty if marker in text)
+        
+        # Calculate base certainty
+        total_markers = high_count + low_count + moderate_count
+        if total_markers == 0:
+            return 0.5  # Neutral certainty
+            
+        # Weighted certainty calculation
+        certainty_score = (
+            (high_count * 1.0) + 
+            (moderate_count * 0.7) + 
+            (low_count * 0.3)
+        ) / total_markers
+        
+        return certainty_score
     
-    def analyze_argument_flow(self, element): return {}
-    def analyze_heading_structure(self, element): return {}
+    def analyze_argument_flow(self, element):
+        """Analyze argument flow and logical progression"""
+        text = element.text_content if element.text_content else ''
+        if not text.strip():
+            return {"flow_quality": 0.5, "logical_markers": 0, "progression_score": 0.5}
+            
+        # Logical connectors and transition words
+        logical_connectors = [
+            'therefore', 'consequently', 'thus', 'hence', 'accordingly',
+            'however', 'nevertheless', 'nonetheless', 'furthermore',
+            'moreover', 'additionally', 'similarly', 'likewise',
+            'in contrast', 'on the other hand', 'conversely',
+            'first', 'second', 'third', 'finally', 'in conclusion',
+            'as a result', 'due to', 'because of', 'given that'
+        ]
+        
+        # Argument structure markers
+        argument_markers = [
+            'hypothesis', 'objective', 'methods', 'results', 'conclusion',
+            'background', 'purpose', 'findings', 'discussion', 'implications',
+            'introduction', 'methodology', 'analysis', 'evidence', 'outcome'
+        ]
+        
+        # Sequential markers
+        sequential_markers = [
+            'initially', 'subsequently', 'then', 'next', 'following',
+            'previously', 'earlier', 'later', 'eventually', 'ultimately'
+        ]
+        
+        text_lower = text.lower()
+        
+        # Count markers
+        logical_count = sum(1 for marker in logical_connectors if marker in text_lower)
+        argument_count = sum(1 for marker in argument_markers if marker in text_lower)
+        sequential_count = sum(1 for marker in sequential_markers if marker in text_lower)
+        
+        total_markers = logical_count + argument_count + sequential_count
+        word_count = len(text.split())
+        
+        # Calculate flow quality based on marker density
+        if word_count > 0:
+            marker_density = total_markers / word_count
+            flow_quality = min(1.0, marker_density * 20)  # Scale appropriately
+        else:
+            flow_quality = 0.5
+            
+        # Calculate progression score
+        has_intro = any(marker in text_lower for marker in ['introduction', 'background', 'objective'])
+        has_methods = any(marker in text_lower for marker in ['methods', 'methodology', 'approach'])
+        has_results = any(marker in text_lower for marker in ['results', 'findings', 'outcome'])
+        has_conclusion = any(marker in text_lower for marker in ['conclusion', 'discussion', 'implications'])
+        
+        structure_elements = sum([has_intro, has_methods, has_results, has_conclusion])
+        progression_score = structure_elements / 4.0
+        
+        return {
+            "flow_quality": flow_quality,
+            "logical_markers": total_markers,
+            "progression_score": progression_score,
+            "structure_completeness": structure_elements
+        }
+    def analyze_heading_structure(self, element):
+        """Analyze heading structure and document organization"""
+        text = element.text_content if element.text_content else ''
+        if not text.strip():
+            return {"hierarchy_depth": 0, "organization_score": 0.5, "heading_count": 0}
+            
+        import re
+        
+        # Look for heading patterns
+        heading_patterns = [
+            r'^[A-Z][A-Z\s]+$',  # ALL CAPS headings
+            r'^\d+\.\s+[A-Z]',   # Numbered headings (1. Introduction)
+            r'^[A-Z][a-z]+:',    # Title case with colon (Methods:)
+            r'^\*+\s*[A-Z]',     # Markdown-style headings
+            r'^#+\s*[A-Z]',      # Hash headings
+        ]
+        
+        lines = text.split('\n')
+        headings = []
+        
+        for line in lines:
+            line = line.strip()
+            if not line:
+                continue
+                
+            # Check if line matches heading patterns
+            is_heading = False
+            heading_level = 1
+            
+            for pattern in heading_patterns:
+                if re.match(pattern, line):
+                    is_heading = True
+                    if pattern.startswith(r'^\*+'):
+                        heading_level = line.count('*')
+                    elif pattern.startswith(r'^#+'):
+                        heading_level = line.count('#')
+                    elif re.match(r'^\d+\.', line):
+                        # Determine level by number depth (1.1.1 = level 3)
+                        heading_level = line.split()[0].count('.') + 1
+                    break
+            
+            # Also check for common section headers
+            section_headers = [
+                'abstract', 'introduction', 'background', 'methods', 'methodology',
+                'results', 'findings', 'discussion', 'conclusion', 'references',
+                'objectives', 'purpose', 'materials', 'procedures', 'analysis',
+                'limitations', 'implications', 'summary', 'acknowledgments'
+            ]
+            
+            if not is_heading:
+                line_lower = line.lower()
+                for header in section_headers:
+                    if (header in line_lower and 
+                        len(line.split()) <= 4 and  # Short lines likely to be headings
+                        line.endswith((':', '.'))):  # Common heading endings
+                        is_heading = True
+                        heading_level = 1
+                        break
+            
+            if is_heading:
+                headings.append({
+                    "text": line,
+                    "level": heading_level,
+                    "position": len(headings)
+                })
+        
+        # Analyze structure
+        heading_count = len(headings)
+        max_depth = max([h["level"] for h in headings]) if headings else 0
+        
+        # Calculate organization score
+        if heading_count == 0:
+            organization_score = 0.3  # No headings = poor organization
+        else:
+            # Check for logical progression
+            has_intro = any('intro' in h["text"].lower() or 'background' in h["text"].lower() for h in headings)
+            has_methods = any('method' in h["text"].lower() or 'procedure' in h["text"].lower() for h in headings)
+            has_results = any('result' in h["text"].lower() or 'finding' in h["text"].lower() for h in headings)
+            has_discussion = any('discussion' in h["text"].lower() or 'conclusion' in h["text"].lower() for h in headings)
+            
+            structure_quality = sum([has_intro, has_methods, has_results, has_discussion]) / 4.0
+            
+            # Penalize too many or too few headings relative to content length
+            word_count = len(text.split())
+            heading_density = heading_count / max(1, word_count / 100)  # Headings per 100 words
+            ideal_density = 1.0  # About 1 heading per 100 words
+            density_score = 1.0 - min(1.0, abs(heading_density - ideal_density))
+            
+            organization_score = (structure_quality * 0.7) + (density_score * 0.3)
+        
+        return {
+            "hierarchy_depth": max_depth,
+            "organization_score": organization_score,
+            "heading_count": heading_count,
+            "headings": headings[:10]  # Limit to first 10 headings for performance
+        }
     def get_statistic_context(self, text, position): return ""
     def assess_statistic_significance(self, stat_type, value):
         """Assess statistical significance based on type and value"""

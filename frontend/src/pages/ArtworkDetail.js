@@ -686,6 +686,66 @@ const ArtworkDetail = () => {
               </div>
             </motion.div>
 
+            {/* Creation Parameters */}
+            <motion.div
+              initial={{ x: 50, opacity: 0 }}
+              animate={{ x: 0, opacity: 1 }}
+              transition={{ duration: 0.8, delay: 0.3 }}
+              className="bg-white rounded-xl p-6 shadow-lg"
+            >
+              <h3 className="text-xl font-bold text-primary mb-4 flex items-center">
+                <Zap className="w-5 h-5 mr-2" />
+                Creation Parameters
+              </h3>
+              
+              <div className="space-y-4">
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-600">Algorithm Version:</span>
+                  <span className={`font-medium px-2 py-1 rounded text-sm ${
+                    algorithmDebug?.isManualAlgorithm 
+                      ? 'bg-green-100 text-green-800' 
+                      : 'bg-yellow-100 text-yellow-800'
+                  }`}>
+                    {algorithmDebug?.isManualAlgorithm ? 'Enhanced v2.0' : 'Standard v1.0'}
+                  </span>
+                </div>
+
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-600">Content Complexity:</span>
+                  <span className="font-medium">
+                    {artwork.algorithm_parameters?.readability_score ? 
+                      (artwork.algorithm_parameters.readability_score > 0.7 ? 'Simple' : 
+                       artwork.algorithm_parameters.readability_score > 0.4 ? 'Moderate' : 'Complex') : 'Unknown'}
+                  </span>
+                </div>
+
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-600">Research Confidence:</span>
+                  <span className="font-medium">
+                    {artwork.algorithm_parameters?.certainty_level ? 
+                      (artwork.algorithm_parameters.certainty_level > 0.7 ? 'Definitive' : 
+                       artwork.algorithm_parameters.certainty_level > 0.4 ? 'Moderate' : 'Exploratory') : 'Unknown'}
+                  </span>
+                </div>
+
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-600">Evidence Strength:</span>
+                  <span className="font-medium">
+                    {artwork.algorithm_parameters?.evidence_strength ? 
+                      `${Math.round(artwork.algorithm_parameters.evidence_strength * 100)}%` : 'N/A'}
+                  </span>
+                </div>
+
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-600">Technical Density:</span>
+                  <span className="font-medium">
+                    {artwork.algorithm_parameters?.technical_density ? 
+                      `${Math.round(artwork.algorithm_parameters.technical_density * 100)}%` : 'N/A'}
+                  </span>
+                </div>
+              </div>
+            </motion.div>
+
             {/* Source Article Link */}
             {article && (
               <motion.div
