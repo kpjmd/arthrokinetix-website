@@ -13,6 +13,7 @@ const ArtworkDetail = () => {
   const [artwork, setArtwork] = useState(null);
   const [article, setArticle] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [fullscreen, setFullscreen] = useState(false);
   const [algorithmDebug, setAlgorithmDebug] = useState(null);
 
@@ -33,77 +34,200 @@ const ArtworkDetail = () => {
   }, [fullscreen]);
 
   const fetchArtwork = async () => {
+    // Enhanced ID validation
+    if (!id) {
+      console.error('Cannot fetch artwork: id is undefined');
+      setError('Invalid artwork URL - no artwork ID provided');
+      setLoading(false);
+      return;
+    }
+
+    // Basic UUID format validation
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (!uuidRegex.test(id)) {
+      console.error('Invalid artwork ID format:', id);
+      setError('Invalid artwork ID format');
+      setLoading(false);
+      return;
+    }
+    
     try {
       setLoading(true);
-      console.log('🎨 Fetching artwork:', id);
+      setError(null);
+      console.log('🎨 Fetching artwork with ID:', id);
+      console.log('🌐 API Base:', API_BASE);
+      console.log('🔗 Full URL:', `${API_BASE}/api/artworks/${id}`);
       
-      // Fetch artwork details
-      const artworkResponse = await fetch(`${API_BASE}/api/artworks/${id}`);
-      if (artworkResponse.ok) {
-        const artworkData = await artworkResponse.json();
-        console.log('📊 Received artwork data:', artworkData);
-        setArtwork(artworkData);
-        
-        // Analyze algorithm data quality
-        const debug = analyzeAlgorithmData(artworkData);
-        setAlgorithmDebug(debug);
-        console.log('🔬 Algorithm data analysis:', debug);
-        
-        // Fetch associated article if available
-        if (artworkData.article_id) {
-          try {
-            const articleResponse = await fetch(`${API_BASE}/api/articles/${artworkData.article_id}`);
-            if (articleResponse.ok) {
-              const articleData = await articleResponse.json();
-              setArticle(articleData);
-              console.log('📖 Found associated article:', articleData.title);
-            }
-          } catch (articleError) {
-            console.log('⚠️ Could not fetch associated article:', articleError);
+      // Create AbortController for timeout handling
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 second timeout
+      
+      try {
+        const artworkResponse = await fetch(`${API_BASE}/api/artworks/${id}`, {
+          signal: controller.signal,
+          headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json'
           }
-        }
-      } else {
-        // If specific artwork not found, get from list
-        console.log('🔄 Artwork not found directly, searching in list...');
-        const allArtworksResponse = await fetch(`${API_BASE}/api/artworks`);
-        const allArtworks = await allArtworksResponse.json();
-        const foundArtwork = allArtworks.artworks?.find(art => art.id === id);
+        });
         
-        if (foundArtwork) {
-          console.log('✅ Found artwork in list:', foundArtwork.title);
-          setArtwork(foundArtwork);
+        clearTimeout(timeoutId);
+        
+        console.log('📡 Response status:', artworkResponse.status);
+        console.log('📡 Response ok:', artworkResponse.ok);
+        
+        if (artworkResponse.ok) {
+          const artworkData = await artworkResponse.json();
           
-          const debug = analyzeAlgorithmData(foundArtwork);
+          console.log('📊 Received artwork data:', {
+            hasData: !!artworkData,
+            title: artworkData?.title,
+            id: artworkData?.id,
+            hasMetadata: !!artworkData?.metadata,
+            hasAlgorithmParams: !!artworkData?.algorithm_parameters
+          });
+          
+          // Validate artwork data
+          if (!artworkData || !artworkData.id) {
+            setError('Invalid artwork data received from server');
+            setLoading(false);
+            return;
+          }
+          
+          setArtwork(artworkData);
+          
+          // Analyze algorithm data quality
+          const debug = analyzeAlgorithmData(artworkData);
           setAlgorithmDebug(debug);
+          console.log('🔬 Algorithm data analysis:', debug);
           
-          // Try to fetch associated article
-          if (foundArtwork.article_id) {
+          // Fetch associated article if available
+          if (artworkData.article_id) {
             try {
-              const articleResponse = await fetch(`${API_BASE}/api/articles/${foundArtwork.article_id}`);
+              const articleController = new AbortController();
+              const articleTimeoutId = setTimeout(() => articleController.abort(), 10000);
+              
+              const articleResponse = await fetch(`${API_BASE}/api/articles/${artworkData.article_id}`, {
+                signal: articleController.signal,
+                headers: {
+                  'Accept': 'application/json',
+                  'Content-Type': 'application/json'
+                }
+              });
+              
+              clearTimeout(articleTimeoutId);
+              
               if (articleResponse.ok) {
                 const articleData = await articleResponse.json();
                 setArticle(articleData);
+                console.log('📖 Found associated article:', articleData.title);
               }
-            } catch (error) {
-              console.log('Could not fetch associated article');
+            } catch (articleError) {
+              if (articleError.name === 'AbortError') {
+                console.log('⏱️ Article fetch timed out');
+              } else {
+                console.log('⚠️ Could not fetch associated article:', articleError);
+              }
             }
           }
         } else {
-          console.log('❌ Artwork not found, using sample data');
-          const sampleArtwork = getSampleArtwork(id);
-          setArtwork(sampleArtwork);
-          setArticle(getSampleArticle(id));
-          setAlgorithmDebug(analyzeAlgorithmData(sampleArtwork));
+          // If specific artwork not found, try fetching from list as fallback
+          console.log('🔄 Artwork not found directly, searching in list...');
+          
+          try {
+            const listController = new AbortController();
+            const listTimeoutId = setTimeout(() => listController.abort(), 10000);
+            
+            const allArtworksResponse = await fetch(`${API_BASE}/api/artworks`, {
+              signal: listController.signal,
+              headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json'  
+              }
+            });
+            
+            clearTimeout(listTimeoutId);
+            
+            if (allArtworksResponse.ok) {
+              const allArtworks = await allArtworksResponse.json();
+              const foundArtwork = allArtworks.artworks?.find(art => art.id === id);
+              
+              if (foundArtwork) {
+                console.log('✅ Found artwork in list:', foundArtwork.title);
+                setArtwork(foundArtwork);
+                
+                const debug = analyzeAlgorithmData(foundArtwork);
+                setAlgorithmDebug(debug);
+                
+                // Try to fetch associated article
+                if (foundArtwork.article_id) {
+                  try {
+                    const articleResponse = await fetch(`${API_BASE}/api/articles/${foundArtwork.article_id}`);
+                    if (articleResponse.ok) {
+                      const articleData = await articleResponse.json();
+                      setArticle(articleData);
+                    }
+                  } catch (error) {
+                    console.log('Could not fetch associated article');
+                  }
+                }
+              } else {
+                // Artwork not found anywhere
+                const errorText = await artworkResponse.text().catch(() => 'Unknown error');
+                console.error(`Artwork not found: ${artworkResponse.status} ${artworkResponse.statusText}`, errorText);
+                
+                if (artworkResponse.status === 404) {
+                  setError('Artwork not found - this artwork may have been removed or the link is incorrect');
+                } else if (artworkResponse.status >= 500) {
+                  setError('Server error - please try again in a few moments');
+                } else {
+                  setError(`Failed to load artwork (Error ${artworkResponse.status}). Please try again later.`);
+                }
+                setLoading(false);
+                return;
+              }
+            } else {
+              throw new Error('Failed to fetch artwork list');
+            }
+          } catch (listError) {
+            if (listError.name === 'AbortError') {
+              setError('Request timed out - please check your connection and try again');
+            } else {
+              setError('Artwork not found');
+            }
+            setLoading(false);
+            return;
+          }
         }
+        
+        setLoading(false);
+        
+      } catch (fetchError) {
+        clearTimeout(timeoutId);
+        
+        if (fetchError.name === 'AbortError') {
+          console.error('⏱️ Artwork fetch timed out');
+          setError('Request timed out - please check your connection and try again');
+        } else {
+          throw fetchError; // Re-throw to be caught by outer catch
+        }
+        setLoading(false);
       }
+      
     } catch (error) {
-      console.error('❌ Error fetching artwork:', error);
-      // Set sample artwork for demo
-      const sampleArtwork = getSampleArtwork(id);
-      setArtwork(sampleArtwork);
-      setArticle(getSampleArticle(id));
-      setAlgorithmDebug(analyzeAlgorithmData(sampleArtwork));
-    } finally {
+      console.error('❌ Error fetching artwork:', {
+        message: error.message,
+        stack: error.stack,
+        url: window.location.href,
+        apiBase: API_BASE,
+        artworkId: id
+      });
+      
+      if (error.name === 'TypeError' && error.message.includes('fetch')) {
+        setError('Network error - please check your internet connection and try again');
+      } else {
+        setError('Failed to load artwork. Please try again later.');
+      }
       setLoading(false);
     }
   };
@@ -533,6 +657,40 @@ const ArtworkDetail = () => {
           transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
           className="w-16 h-16 border-4 border-secondary border-t-transparent rounded-full"
         />
+      </div>
+    );
+  }
+
+  if (error || !artwork) {
+    console.log('🚫 Showing error/not found state:', { error, hasArtwork: !!artwork });
+    return (
+      <div className="min-h-screen bg-gray-50 pt-16 flex items-center justify-center p-4">
+        <div className="text-center max-w-md w-full">
+          <Palette className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+          <h2 className="text-2xl font-semibold text-gray-900 mb-2">
+            Artwork Not Available
+          </h2>
+          <p className="text-gray-600 mb-6">
+            {error || 'This artwork could not be found or loaded'}
+          </p>
+          <div className="space-y-3">
+            <button
+              onClick={() => {
+                setError(null);
+                fetchArtwork();
+              }}
+              className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            >
+              Try Again
+            </button>
+            <Link
+              to="/gallery"
+              className="block w-full px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
+            >
+              Browse Gallery
+            </Link>
+          </div>
+        </div>
       </div>
     );
   }

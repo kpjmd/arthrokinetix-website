@@ -10,6 +10,7 @@ import './App.css';
 // Components
 import Header from './components/Header';
 import Footer from './components/Footer';
+import ErrorBoundary from './components/ErrorBoundary';
 import Homepage from './pages/Homepage';
 import ArticlesHub from './pages/ArticlesHub';
 import EnhancedResearchHub from './pages/EnhancedResearchHub';
@@ -176,10 +177,12 @@ function AppContent() {
           <Route 
             path="/articles/:id" 
             element={
-              <ArticlePage 
-                algorithmState={algorithmState}
-                onStateUpdate={setAlgorithmState}
-              />
+              <ErrorBoundary>
+                <ArticlePage 
+                  algorithmState={algorithmState}
+                  onStateUpdate={setAlgorithmState}
+                />
+              </ErrorBoundary>
             } 
           />
 
@@ -213,7 +216,11 @@ function AppContent() {
           />
           <Route 
             path="/gallery/:id" 
-            element={<ArtworkDetail />} 
+            element={
+              <ErrorBoundary>
+                <ArtworkDetail />
+              </ErrorBoundary>
+            } 
           />
           <Route 
             path="/about" 

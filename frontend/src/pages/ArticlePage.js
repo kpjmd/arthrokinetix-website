@@ -68,9 +68,19 @@ const ArticlePage = ({ algorithmState, onStateUpdate }) => {
   }, []);
 
   const fetchArticle = useCallback(async () => {
+    // Enhanced ID validation
     if (!id) {
       console.error('Cannot fetch article: id is undefined');
       setError('Invalid article URL - no article ID provided');
+      setLoading(false);
+      return;
+    }
+
+    // Basic UUID format validation
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (!uuidRegex.test(id)) {
+      console.error('Invalid article ID format:', id);
+      setError('Invalid article ID format');
       setLoading(false);
       return;
     }
@@ -79,59 +89,129 @@ const ArticlePage = ({ algorithmState, onStateUpdate }) => {
       setLoading(true);
       setError(null);
       console.log('📖 Fetching article with ID:', id);
+      console.log('🌐 API Base:', API_BASE);
+      console.log('🔗 Full URL:', `${API_BASE}/api/articles/${id}`);
       
-      const response = await fetch(`${API_BASE}/api/articles/${id}`);
+      // Create AbortController for timeout handling
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 second timeout
       
-      if (!response.ok) {
-        console.error(`Failed to fetch article: ${response.status} ${response.statusText}`);
-        if (response.status === 404) {
-          setError('Article not found');
-        } else {
-          setError(`Failed to load article (Error ${response.status})`);
-        }
-        setLoading(false);
-        return;
-      }
-      
-      const articleData = await response.json();
-      
-      console.log('📊 Received article data:', articleData);
-      console.log('📄 Article content type:', articleData.content_type);
-      console.log('📝 Has content:', !!articleData.content);
-      console.log('📝 Has HTML content:', !!articleData.html_content);
-      console.log('📝 Content length:', articleData.content?.length || 0);
-      console.log('📝 Article title:', articleData.title);
-      console.log('📝 Article ID:', articleData.id);
-      
-      setArticle(articleData);
-      console.log('✅ Article state updated');
-
-      // Note: Algorithm data analysis will be done after artwork is fetched
-      // since algorithm_parameters are stored in artwork, not article
-
-      // Fetch corresponding artwork
       try {
-        const artworkResponse = await fetch(`${API_BASE}/api/artworks`);
-        const artworkData = await artworkResponse.json();
-        if (artworkData.artworks?.length > 0) {
-          const matchingArtwork = artworkData.artworks.find(art => art.article_id === id);
-          if (matchingArtwork) {
-            setArtwork(matchingArtwork);
-            console.log('🎨 Found matching artwork:', matchingArtwork.title);
-            
-            // Note: Algorithm analysis will be done in separate useEffect
+        const response = await fetch(`${API_BASE}/api/articles/${id}`, {
+          signal: controller.signal,
+          headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json'
+          }
+        });
+        
+        clearTimeout(timeoutId);
+        
+        console.log('📡 Response status:', response.status);
+        console.log('📡 Response ok:', response.ok);
+        
+        if (!response.ok) {
+          const errorText = await response.text().catch(() => 'Unknown error');
+          console.error(`Failed to fetch article: ${response.status} ${response.statusText}`, errorText);
+          
+          if (response.status === 404) {
+            setError('Article not found - this article may have been removed or the link is incorrect');
+          } else if (response.status >= 500) {
+            setError('Server error - please try again in a few moments');
+          } else if (response.status === 403) {
+            setError('Access denied - you may not have permission to view this article');
+          } else {
+            setError(`Failed to load article (Error ${response.status}). Please try again later.`);
+          }
+          setLoading(false);
+          return;
+        }
+        
+        const articleData = await response.json();
+        
+        console.log('📊 Received article data:', {
+          hasData: !!articleData,
+          title: articleData?.title,
+          id: articleData?.id,
+          contentType: articleData?.content_type,
+          hasContent: !!articleData?.content,
+          hasHtmlContent: !!articleData?.html_content,
+          contentLength: articleData?.content?.length || 0
+        });
+        
+        // Validate article data
+        if (!articleData || !articleData.id) {
+          setError('Invalid article data received from server');
+          setLoading(false);
+          return;
+        }
+        
+        setArticle(articleData);
+        console.log('✅ Article state updated');
+
+        // Fetch corresponding artwork with timeout
+        try {
+          const artworkController = new AbortController();
+          const artworkTimeoutId = setTimeout(() => artworkController.abort(), 10000);
+          
+          const artworkResponse = await fetch(`${API_BASE}/api/artworks`, {
+            signal: artworkController.signal,
+            headers: {
+              'Accept': 'application/json',
+              'Content-Type': 'application/json'
+            }
+          });
+          
+          clearTimeout(artworkTimeoutId);
+          
+          if (artworkResponse.ok) {
+            const artworkData = await artworkResponse.json();
+            if (artworkData.artworks?.length > 0) {
+              const matchingArtwork = artworkData.artworks.find(art => art.article_id === id);
+              if (matchingArtwork) {
+                setArtwork(matchingArtwork);
+                console.log('🎨 Found matching artwork:', matchingArtwork.title);
+              } else {
+                console.log('⚠️ No matching artwork found for article ID:', id);
+              }
+            }
+          }
+        } catch (artworkError) {
+          if (artworkError.name === 'AbortError') {
+            console.log('⏱️ Artwork fetch timed out');
+          } else {
+            console.log('⚠️ Could not fetch artwork data:', artworkError);
           }
         }
-      } catch (artworkError) {
-        console.log('⚠️ Could not fetch artwork data:', artworkError);
+        
+        setLoading(false);
+        
+      } catch (fetchError) {
+        clearTimeout(timeoutId);
+        
+        if (fetchError.name === 'AbortError') {
+          console.error('⏱️ Article fetch timed out');
+          setError('Request timed out - please check your connection and try again');
+        } else {
+          throw fetchError; // Re-throw to be caught by outer catch
+        }
+        setLoading(false);
       }
       
-      // Always set loading to false after fetching
-      setLoading(false);
-      
     } catch (error) {
-      console.error('❌ Error fetching article:', error);
-      setError('Failed to load article. Please try again later.');
+      console.error('❌ Error fetching article:', {
+        message: error.message,
+        stack: error.stack,
+        url: window.location.href,
+        apiBase: API_BASE,
+        articleId: id
+      });
+      
+      if (error.name === 'TypeError' && error.message.includes('fetch')) {
+        setError('Network error - please check your internet connection and try again');
+      } else {
+        setError('Failed to load article. Please try again later.');
+      }
       setLoading(false);
     }
   }, [id]);
@@ -720,24 +800,34 @@ const ArticlePage = ({ algorithmState, onStateUpdate }) => {
   }
 
   if (!article || error) {
-    console.log('🚫 Showing error/not found state');
+    console.log('🚫 Showing error/not found state:', { error, hasArticle: !!article });
     return (
-      <div className="min-h-screen bg-gray-50 pt-16 flex items-center justify-center">
-        <div className="text-center">
+      <div className="min-h-screen bg-gray-50 pt-16 flex items-center justify-center p-4">
+        <div className="text-center max-w-md w-full">
           <BookOpen className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-          <h2 className="text-2xl font-semibold text-gray-600 mb-2">
-            {error || 'Article not found'}
+          <h2 className="text-2xl font-semibold text-gray-900 mb-2">
+            Article Not Available
           </h2>
-          <p className="text-gray-500 mb-6">
-            {error ? 'Please check the URL and try again.' : 'The article you\'re looking for doesn\'t exist.'}
+          <p className="text-gray-600 mb-6">
+            {error || 'This article could not be found or loaded'}
           </p>
-          <Link 
-            to="/articles" 
-            className="btn-primary inline-flex items-center"
-          >
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            Back to Medical Library
-          </Link>
+          <div className="space-y-3">
+            <button
+              onClick={() => {
+                setError(null);
+                fetchArticle();
+              }}
+              className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            >
+              Try Again
+            </button>
+            <Link
+              to="/articles"
+              className="block w-full px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
+            >
+              Browse Articles
+            </Link>
+          </div>
         </div>
       </div>
     );
