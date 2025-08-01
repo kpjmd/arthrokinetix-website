@@ -5,7 +5,7 @@ import { ArrowLeft, Share2, Eye, Palette, Award, Calendar, Tag, X, Zap, Activity
 import ShareButtons from '../components/ShareButtons';
 import NFTMintButton, { NFTInfoPanel } from '../components/NFTMintButton';
 import RealArthrokinetixArtwork from '../components/RealArthrokinetixArtwork';
-import { emotionOptions, getEmotionColor, getEmotionIcon } from '../constants/emotions';
+import { emotionOptions, getEmotionColor, getEmotionIcon, getEmotionLabel, getEmotionDescription } from '../constants/emotions';
 
 const API_BASE = process.env.REACT_APP_BACKEND_URL || 'http://localhost:8001';
 
@@ -506,7 +506,7 @@ const ArtworkDetail = () => {
                       style={{ backgroundColor: getEmotionColor(emotion) }}
                     />
                     <span className={`text-sm font-medium truncate ${isDominant ? 'text-yellow-800' : ''}`}>
-                      {emotionOptions.find(e => e.key === emotion)?.label || emotion}
+                      {getEmotionLabel(emotion)}
                     </span>
                     {isDominant && <span className="ml-1 text-xs text-yellow-600">★</span>}
                   </div>
@@ -808,7 +808,7 @@ const ArtworkDetail = () => {
                   <span className="text-gray-600">Dominant Emotion:</span>
                   <div 
                     className="flex items-center"
-                    title={emotionOptions.find(e => e.key === artwork.dominant_emotion)?.description || 'Algorithm-detected emotion'}
+                    title={getEmotionDescription(artwork.dominant_emotion)}
                   >
                     <span className="text-lg mr-1">
                       {getEmotionIcon(artwork.dominant_emotion)}
@@ -817,7 +817,7 @@ const ArtworkDetail = () => {
                       className="w-3 h-3 rounded-full mr-2"
                       style={{ backgroundColor: getEmotionColor(artwork.dominant_emotion) }}
                     />
-                    <span className="font-medium capitalize">{artwork.dominant_emotion}</span>
+                    <span className="font-medium capitalize">{getEmotionLabel(artwork.dominant_emotion)}</span>
                   </div>
                 </div>
 

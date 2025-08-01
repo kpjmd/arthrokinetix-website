@@ -7,7 +7,7 @@ import NFTMintButton from '../components/NFTMintButton';
 import { GalleryNewsletterForm } from '../components/NewsletterForms';
 import RealArthrokinetixArtwork from '../components/RealArthrokinetixArtwork';
 import { useArtworks } from '../hooks/useApi';
-import { emotionOptions, getEmotionColor, getEmotionIcon } from '../constants/emotions';
+import { emotionOptions, getEmotionColor, getEmotionIcon, getEmotionLabel, getEmotionDescription } from '../constants/emotions';
 
 const API_BASE = process.env.REACT_APP_BACKEND_URL || 'http://localhost:8001';
 
@@ -110,12 +110,12 @@ const ArtworkCard = React.memo(({ artwork, index, dataQuality }) => {
             <div 
               className="flex items-center text-sm font-medium capitalize"
               style={{ color: getEmotionColor(artwork.dominant_emotion) }}
-              title={emotionOptions.find(e => e.key === artwork.dominant_emotion)?.description || 'Algorithm-detected emotion'}
+              title={getEmotionDescription(artwork.dominant_emotion)}
             >
               <span className="mr-1 text-base">
                 {getEmotionIcon(artwork.dominant_emotion)}
               </span>
-              {artwork.dominant_emotion}
+              {getEmotionLabel(artwork.dominant_emotion)}
             </div>
           </div>
 

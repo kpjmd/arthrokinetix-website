@@ -606,10 +606,24 @@ class ArthrokinetixArtGenerator:
             count += len(re.findall(r'\b' + re.escape(keyword) + r'\b', text, re.IGNORECASE))
         return count
 
+    def map_backend_to_frontend_emotion(self, backend_emotion: str) -> str:
+        """Map backend emotion terms to frontend-friendly terms"""
+        emotion_mapping = {
+            "problemIntensity": "tension",
+            "solutionConfidence": "confidence", 
+            "healingPotential": "healing",
+            "innovationLevel": "breakthrough",
+            "uncertaintyLevel": "uncertainty"
+        }
+        return emotion_mapping.get(backend_emotion, "confidence")
+    
     def get_dominant_emotion(self) -> str:
         emotions = {k: v for k, v in self.emotional_journey.items() 
                    if k != "dominantEmotion" and isinstance(v, (int, float))}
-        return max(emotions, key=emotions.get) if emotions else "confidence"
+        if emotions:
+            raw_dominant = max(emotions, key=emotions.get)
+            return self.map_backend_to_frontend_emotion(raw_dominant)
+        return "confidence"
 
     def convert_journey_to_mix(self) -> Dict[str, float]:
         """Convert emotional journey to emotional mix for compatibility"""

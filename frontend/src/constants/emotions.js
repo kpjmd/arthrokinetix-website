@@ -49,17 +49,45 @@ export const emotionOptions = [
 ];
 
 /**
+ * Backend to frontend emotion mapping for backwards compatibility
+ * Maps raw backend terms to user-friendly terms
+ */
+const backendToFrontendMapping = {
+  'problemIntensity': 'tension',
+  'ProblemIntensity': 'tension',
+  'solutionConfidence': 'confidence', 
+  'SolutionConfidence': 'confidence',
+  'healingPotential': 'healing',
+  'HealingPotential': 'healing', 
+  'innovationLevel': 'breakthrough',
+  'InnovationLevel': 'breakthrough',
+  'uncertaintyLevel': 'uncertainty',
+  'UncertaintyLevel': 'uncertainty'
+};
+
+/**
+ * Normalize emotion key to handle backend terms
+ * @param {string} key - The emotion key (could be backend or frontend term)
+ * @returns {string} The normalized frontend emotion key
+ */
+export const normalizeEmotionKey = (key) => {
+  if (!key) return 'confidence';
+  return backendToFrontendMapping[key] || key;
+};
+
+/**
  * Get emotion configuration by key
  * @param {string} key - The emotion key
  * @returns {Object|undefined} The emotion configuration object
  */
 export const getEmotionByKey = (key) => {
-  return emotionOptions.find(emotion => emotion.key === key);
+  const normalizedKey = normalizeEmotionKey(key);
+  return emotionOptions.find(emotion => emotion.key === normalizedKey);
 };
 
 /**
  * Get emotion color by key
- * @param {string} key - The emotion key
+ * @param {string} key - The emotion key (handles both backend and frontend terms)
  * @returns {string} The emotion color or default gray
  */
 export const getEmotionColor = (key) => {
@@ -69,7 +97,7 @@ export const getEmotionColor = (key) => {
 
 /**
  * Get emotion icon by key
- * @param {string} key - The emotion key
+ * @param {string} key - The emotion key (handles both backend and frontend terms) 
  * @returns {string} The emotion icon or default question mark
  */
 export const getEmotionIcon = (key) => {
@@ -77,4 +105,25 @@ export const getEmotionIcon = (key) => {
   return emotion ? emotion.icon : '❓';
 };
 
+/**
+ * Get emotion label by key
+ * @param {string} key - The emotion key (handles both backend and frontend terms)
+ * @returns {string} The emotion label or normalized key
+ */
+export const getEmotionLabel = (key) => {
+  const emotion = getEmotionByKey(key);
+  return emotion ? emotion.label : normalizeEmotionKey(key);
+};
+
+/**
+ * Get emotion description by key
+ * @param {string} key - The emotion key (handles both backend and frontend terms)
+ * @returns {string} The emotion description or default message
+ */
+export const getEmotionDescription = (key) => {
+  const emotion = getEmotionByKey(key);
+  return emotion ? emotion.description : 'Algorithm-detected emotion';
+};
+
 export default emotionOptions;
+export { backendToFrontendMapping };
