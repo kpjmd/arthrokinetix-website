@@ -110,13 +110,17 @@ export const generateArtworkFilename = (metadata) => {
                      metadata.ai_analysis_data?.pattern_fingerprint?.substr(0, 8) ||
                      'AKX';
                      
+  // Try multiple paths to get subspecialty
   const subspecialty = metadata.subspecialty ||
+                      metadata.comprehensive_metadata?.subspecialty_analysis?.primary_subspecialty ||
                       metadata.generation_parameters?.subspecialty_input ||
-                      'unknown';
+                      'General';
                       
+  // Try multiple paths to get dominant emotion
   const dominantEmotion = metadata.dominant_emotion ||
+                         metadata.comprehensive_metadata?.emotional_analysis?.dominant_emotion ||
                          metadata.generation_parameters?.dominant_emotion ||
-                         'unknown';
+                         'Unknown';
   
   // Create clean filename components
   const cleanSignatureId = signatureId.replace(/[^a-zA-Z0-9-]/g, '');

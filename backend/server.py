@@ -2572,6 +2572,22 @@ async def generate_artwork_svg(artwork_id: str):
         metadata = artwork.get("metadata", {})
         visual_elements = algorithm_params.get("visual_elements", [])
         
+        # Extract comprehensive metadata from algorithm_parameters for SVG display
+        comprehensive_metadata = algorithm_params.get("comprehensive_metadata", {})
+        if comprehensive_metadata:
+            # Add comprehensive metadata to metadata dict for SVG generation
+            metadata["comprehensive_metadata"] = comprehensive_metadata
+            # Extract key fields for direct access
+            if "subspecialty_analysis" in comprehensive_metadata:
+                metadata["subspecialty"] = comprehensive_metadata["subspecialty_analysis"].get("primary_subspecialty", "unknown")
+            if "generation_parameters" in comprehensive_metadata:
+                gen_params = comprehensive_metadata["generation_parameters"]
+                metadata["signature_id"] = gen_params.get("signature_id", gen_params.get("subspecialty_input", "Unknown"))
+        
+        # Also extract from top-level artwork fields if not already set
+        if not metadata.get("subspecialty"):
+            metadata["subspecialty"] = artwork.get("subspecialty", "General")
+        
         # Generate SVG using the SVG generator
         from svg_generator import ArthrokinetixSVGGenerator
         svg_generator = ArthrokinetixSVGGenerator()

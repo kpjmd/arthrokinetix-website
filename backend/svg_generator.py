@@ -70,7 +70,12 @@ class ArthrokinetixSVGGenerator:
         
         # Add standard metadata
         title = ET.SubElement(description, '{http://purl.org/dc/elements/1.1/}title')
-        signature_id = metadata.get('signature_id', metadata.get('comprehensive_metadata', {}).get('generation_parameters', {}).get('subspecialty_input', 'Unknown'))
+        # Try multiple paths to get signature_id
+        signature_id = metadata.get('signature_id')
+        if not signature_id:
+            comprehensive_meta = metadata.get('comprehensive_metadata', {})
+            gen_params = comprehensive_meta.get('generation_parameters', {})
+            signature_id = gen_params.get('signature_id', gen_params.get('subspecialty_input', 'AKX-Unknown'))
         title.text = f"Arthrokinetix Artwork - {signature_id}"
         
         creator = ET.SubElement(description, '{http://purl.org/dc/elements/1.1/}creator')
@@ -434,7 +439,18 @@ class ArthrokinetixSVGGenerator:
         
         # Version info
         algorithm_version = metadata.get('algorithm_version', '2.0')
-        subspecialty = metadata.get('subspecialty', 'unknown')
+        # Try multiple paths to get subspecialty
+        subspecialty = metadata.get('subspecialty')
+        if not subspecialty or subspecialty.lower() == 'unknown':
+            comprehensive_meta = metadata.get('comprehensive_metadata', {})
+            subspecialty_analysis = comprehensive_meta.get('subspecialty_analysis', {})
+            subspecialty = subspecialty_analysis.get('primary_subspecialty', 'General')
+        
+        # Format subspecialty for display (convert camelCase to spaced)
+        if subspecialty and subspecialty != 'General':
+            # Convert camelCase to readable format
+            import re
+            subspecialty = re.sub(r'([A-Z])', r' \1', subspecialty).strip().title()
         
         text2 = ET.Element('text')
         text2.set('x', '0')

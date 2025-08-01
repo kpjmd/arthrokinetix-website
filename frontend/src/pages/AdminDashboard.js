@@ -1497,7 +1497,9 @@ const AdminDashboard = () => {
                                       {artwork.id?.slice(0, 8) || 'Unknown'}
                                     </h4>
                                     <p className="text-xs text-gray-600 capitalize mt-1">
-                                      {artwork.subspecialty?.replace(/([A-Z])/g, ' $1').trim() || 'Unknown'}
+                                      {artwork.subspecialty?.replace(/([A-Z])/g, ' $1').trim() || 
+                                       artwork.algorithm_parameters?.comprehensive_metadata?.subspecialty_analysis?.primary_subspecialty ||
+                                       'General'}
                                     </p>
                                   </div>
                                 </div>
