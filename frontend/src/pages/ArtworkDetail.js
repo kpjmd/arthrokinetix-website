@@ -5,6 +5,7 @@ import { ArrowLeft, Share2, Eye, Palette, Award, Calendar, Tag, X, Zap, Activity
 import ShareButtons from '../components/ShareButtons';
 import NFTMintButton, { NFTInfoPanel } from '../components/NFTMintButton';
 import RealArthrokinetixArtwork from '../components/RealArthrokinetixArtwork';
+import { emotionOptions, getEmotionColor, getEmotionIcon } from '../constants/emotions';
 
 const API_BASE = process.env.REACT_APP_BACKEND_URL || 'http://localhost:8001';
 
@@ -467,24 +468,10 @@ const ArtworkDetail = () => {
       dataSource = 'fallback';
     }
 
-    const emotionColors = {
-      hope: '#27ae60',
-      tension: '#e74c3c',
-      confidence: '#3498db',
-      uncertainty: '#95a5a6',
-      breakthrough: '#f39c12',
-      healing: '#16a085'
-    };
-
-    const emotionLabels = {
-      hope: 'Hope',
-      tension: 'Tension', 
-      confidence: 'Confidence',
-      uncertainty: 'Uncertain',
-      breakthrough: 'Innovation',
-      healing: 'Healing'
-    };
-
+    // Use centralized emotion configuration instead of local definitions
+    // Backend algorithm maps: problemIntensity→tension, solutionConfidence→confidence, 
+    // innovationLevel→breakthrough, healingPotential→healing/hope, uncertaintyLevel→uncertainty
+    
     const emotionDescriptions = {
       hope: 'Recovery potential',
       tension: 'Risks & challenges',
@@ -511,12 +498,15 @@ const ArtworkDetail = () => {
               <div key={emotion} className={`p-3 rounded-lg border ${isDominant ? 'border-yellow-400 bg-yellow-50' : 'border-gray-200'}`}>
                 <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center min-w-0 flex-1">
+                    <span className="text-base mr-1 flex-shrink-0">
+                      {getEmotionIcon(emotion)}
+                    </span>
                     <div 
                       className="w-3 h-3 rounded-full mr-2 flex-shrink-0"
-                      style={{ backgroundColor: emotionColors[emotion] }}
+                      style={{ backgroundColor: getEmotionColor(emotion) }}
                     />
                     <span className={`text-sm font-medium truncate ${isDominant ? 'text-yellow-800' : ''}`}>
-                      {emotionLabels[emotion]}
+                      {emotionOptions.find(e => e.key === emotion)?.label || emotion}
                     </span>
                     {isDominant && <span className="ml-1 text-xs text-yellow-600">★</span>}
                   </div>
@@ -530,7 +520,7 @@ const ArtworkDetail = () => {
                     className="h-2 rounded-full transition-all duration-300"
                     style={{ 
                       width: `${percentage}%`,
-                      backgroundColor: emotionColors[emotion]
+                      backgroundColor: getEmotionColor(emotion)
                     }}
                   />
                 </div>
@@ -816,10 +806,16 @@ const ArtworkDetail = () => {
 
                 <div className="flex justify-between items-center">
                   <span className="text-gray-600">Dominant Emotion:</span>
-                  <div className="flex items-center">
+                  <div 
+                    className="flex items-center"
+                    title={emotionOptions.find(e => e.key === artwork.dominant_emotion)?.description || 'Algorithm-detected emotion'}
+                  >
+                    <span className="text-lg mr-1">
+                      {getEmotionIcon(artwork.dominant_emotion)}
+                    </span>
                     <span 
                       className="w-3 h-3 rounded-full mr-2"
-                      style={{ backgroundColor: getEmotionColorLocal(artwork.dominant_emotion) }}
+                      style={{ backgroundColor: getEmotionColor(artwork.dominant_emotion) }}
                     />
                     <span className="font-medium capitalize">{artwork.dominant_emotion}</span>
                   </div>
@@ -1079,17 +1075,13 @@ const formatDate = (dateString) => {
   });
 };
 
-const getEmotionColorLocal = (emotion) => {
-  const colors = {
-    hope: '#27ae60',
-    tension: '#e74c3c',
-    confidence: '#3498db',
-    uncertainty: '#95a5a6',
-    breakthrough: '#f39c12',
-    healing: '#16a085'
-  };
-  return colors[emotion] || '#3498db';
-};
+// Note: getEmotionColorLocal function removed - now using centralized getEmotionColor from constants/emotions.js
+// Backend algorithm emotional journey mapping:
+// - problemIntensity (0-1000) → tension (0-1)
+// - solutionConfidence (0-1000) → confidence (0-1)
+// - innovationLevel (0-1000) → breakthrough (0-1) 
+// - healingPotential (0-1000) → healing + hope (0-1)
+// - uncertaintyLevel (0-1000) → uncertainty (0-1)
 
 // Enhanced sample artwork with manual algorithm structure
 const getSampleArtwork = (id) => ({

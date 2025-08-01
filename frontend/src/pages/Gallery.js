@@ -7,6 +7,7 @@ import NFTMintButton from '../components/NFTMintButton';
 import { GalleryNewsletterForm } from '../components/NewsletterForms';
 import RealArthrokinetixArtwork from '../components/RealArthrokinetixArtwork';
 import { useArtworks } from '../hooks/useApi';
+import { emotionOptions, getEmotionColor, getEmotionIcon } from '../constants/emotions';
 
 const API_BASE = process.env.REACT_APP_BACKEND_URL || 'http://localhost:8001';
 
@@ -106,12 +107,16 @@ const ArtworkCard = React.memo(({ artwork, index, dataQuality }) => {
         <div className="space-y-3">
           <div className="flex justify-between items-center">
             <span className="text-sm text-gray-500">Emotion:</span>
-            <span 
-              className="text-sm font-medium capitalize"
-              style={{ color: getEmotionColorLocal(artwork.dominant_emotion) }}
+            <div 
+              className="flex items-center text-sm font-medium capitalize"
+              style={{ color: getEmotionColor(artwork.dominant_emotion) }}
+              title={emotionOptions.find(e => e.key === artwork.dominant_emotion)?.description || 'Algorithm-detected emotion'}
             >
+              <span className="mr-1 text-base">
+                {getEmotionIcon(artwork.dominant_emotion)}
+              </span>
               {artwork.dominant_emotion}
-            </span>
+            </div>
           </div>
 
           <div className="flex justify-between items-center">
@@ -198,14 +203,15 @@ const Gallery = ({ algorithmState }) => {
     { key: 'oncology', label: 'Oncology' }
   ];
 
+  // Create emotions filter options from centralized emotion constants
   const emotions = [
     { key: 'all', label: 'All Emotions' },
-    { key: 'hope', label: 'Hope', color: '#27ae60' },
-    { key: 'confidence', label: 'Confidence', color: '#3498db' },
-    { key: 'breakthrough', label: 'Breakthrough', color: '#f39c12' },
-    { key: 'healing', label: 'Healing', color: '#16a085' },
-    { key: 'tension', label: 'Tension', color: '#e74c3c' },
-    { key: 'uncertainty', label: 'Uncertainty', color: '#95a5a6' }
+    ...emotionOptions.map(emotion => ({
+      key: emotion.key,
+      label: emotion.label,
+      color: emotion.color,
+      icon: emotion.icon
+    }))
   ];
 
   const rarityLevels = [
@@ -391,9 +397,12 @@ const Gallery = ({ algorithmState }) => {
                 value={selectedEmotion}
                 onChange={(e) => setSelectedEmotion(e.target.value)}
                 className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-secondary focus:border-transparent"
+                title="Filter artworks by detected emotion"
               >
                 {emotions.map(emotion => (
-                  <option key={emotion.key} value={emotion.key}>{emotion.label}</option>
+                  <option key={emotion.key} value={emotion.key}>
+                    {emotion.icon ? `${emotion.icon} ${emotion.label}` : emotion.label}
+                  </option>
                 ))}
               </select>
 
@@ -525,17 +534,13 @@ const formatDate = (dateString) => {
   return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 };
 
-const getEmotionColorLocal = (emotion) => {
-  const colors = {
-    hope: '#27ae60',
-    tension: '#e74c3c',
-    confidence: '#3498db',
-    uncertainty: '#95a5a6',
-    breakthrough: '#f39c12',
-    healing: '#16a085'
-  };
-  return colors[emotion] || '#3498db';
-};
+// Note: getEmotionColorLocal function removed - now using centralized getEmotionColor from constants/emotions.js
+// Backend algorithm maps technical terms to user-friendly emotions:
+// - problemIntensity → tension
+// - solutionConfidence → confidence  
+// - innovationLevel → breakthrough
+// - healingPotential → healing (and hope)
+// - uncertaintyLevel → uncertainty
 
 // Enhanced sample artworks with manual algorithm structure
 const generateSampleArtworks = () => [
