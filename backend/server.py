@@ -2588,6 +2588,10 @@ async def generate_artwork_svg(artwork_id: str):
         if not metadata.get("subspecialty"):
             metadata["subspecialty"] = artwork.get("subspecialty", "General")
         
+        # Ensure subspecialty is also available in algorithm_params for SVG generation
+        if not algorithm_params.get("subspecialty"):
+            algorithm_params["subspecialty"] = artwork.get("subspecialty", metadata.get("subspecialty", "General"))
+        
         # Generate SVG using the SVG generator
         from svg_generator import ArthrokinetixSVGGenerator
         svg_generator = ArthrokinetixSVGGenerator()

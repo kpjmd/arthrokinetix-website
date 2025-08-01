@@ -54,7 +54,7 @@ class ArthrokinetixSVGGenerator:
                     svg.append(svg_element)
         
         # Add signature
-        signature = self.create_signature(metadata)
+        signature = self.create_signature(metadata, algorithm_params)
         svg.append(signature)
         
         return self.prettify_svg(svg)
@@ -89,6 +89,16 @@ class ArthrokinetixSVGGenerator:
         # Add comprehensive Arthrokinetix metadata
         arthro_metadata = ET.SubElement(description, '{https://arthrokinetix.com/metadata}comprehensive_metadata')
         comprehensive_metadata = metadata.get('comprehensive_metadata', {})
+        
+        # Include algorithm parameters in comprehensive metadata for completeness
+        if algorithm_params:
+            comprehensive_metadata['algorithm_parameters'] = {
+                'subspecialty': algorithm_params.get('subspecialty'),
+                'tree_complexity': algorithm_params.get('tree_complexity'),
+                'emotional_intensity': algorithm_params.get('emotional_intensity'),
+                'branch_pattern': algorithm_params.get('branch_pattern')
+            }
+        
         arthro_metadata.text = json.dumps(comprehensive_metadata, indent=2)
         
         return metadata_elem
@@ -416,7 +426,7 @@ class ArthrokinetixSVGGenerator:
         
         return group
     
-    def create_signature(self, metadata: Dict) -> ET.Element:
+    def create_signature(self, metadata: Dict, algorithm_params: Dict = None) -> ET.Element:
         """Create algorithm signature"""
         group = ET.Element('g')
         group.set('transform', f'translate({self.canvas_width * 0.05}, {self.canvas_height * 0.95})')
@@ -439,8 +449,18 @@ class ArthrokinetixSVGGenerator:
         
         # Version info
         algorithm_version = metadata.get('algorithm_version', '2.0')
-        # Try multiple paths to get subspecialty
-        subspecialty = metadata.get('subspecialty')
+        # Try multiple paths to get subspecialty - check algorithm_params first since that's where it's stored
+        subspecialty = None
+        
+        # Check algorithm_params first (this is passed as parameter)
+        if algorithm_params:
+            subspecialty = algorithm_params.get('subspecialty')
+        
+        # Fall back to metadata
+        if not subspecialty:
+            subspecialty = metadata.get('subspecialty')
+            
+        # Fall back to comprehensive metadata
         if not subspecialty or subspecialty.lower() == 'unknown':
             comprehensive_meta = metadata.get('comprehensive_metadata', {})
             subspecialty_analysis = comprehensive_meta.get('subspecialty_analysis', {})
