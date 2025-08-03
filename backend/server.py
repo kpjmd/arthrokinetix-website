@@ -1772,25 +1772,132 @@ def calculate_read_time(content: str) -> int:
     words = len(content.split())
     return max(1, round(words / 200))  # Assuming 200 words per minute
 
-async def update_algorithm_state(emotional_data: dict):
-    """Update the persistent algorithm emotional state"""
+async def calculate_algorithm_state_from_all_articles():
+    """Calculate algorithm state based on all articles with emotional data"""
+    try:
+        # Get all articles with emotional data
+        articles_with_emotions = list(articles_collection.find(
+            {"emotional_data": {"$exists": True, "$ne": None}},
+            {"emotional_data": 1, "published_date": 1, "dominant_emotion": 1, "title": 1}
+        ).sort("published_date", -1))
+        
+        if not articles_with_emotions:
+            print("No articles with emotional data found")
+            return None
+            
+        print(f"Calculating algorithm state from {len(articles_with_emotions)} articles")
+        
+        # Initialize emotion totals
+        emotions = ["hope", "tension", "confidence", "uncertainty", "breakthrough", "healing"]
+        emotion_totals = {emotion: 0.0 for emotion in emotions}
+        total_weight = 0.0
+        
+        # Calculate weighted average with recency bias
+        now = datetime.utcnow()
+        for i, article in enumerate(articles_with_emotions):
+            emotional_data = article.get("emotional_data", {})
+            published_date = article.get("published_date", now)
+            
+            # Calculate recency weight (more recent articles have higher weight)
+            if isinstance(published_date, datetime):
+                days_old = (now - published_date).days
+            else:
+                days_old = 0
+                
+            # Weight decreases with age, but never goes below 0.1
+            recency_weight = max(0.1, 1.0 / (1.0 + days_old * 0.01))
+            
+            # Add position weight (earlier in list = more recent = higher weight)
+            position_weight = 1.0 - (i * 0.01)  # Small penalty for position
+            
+            final_weight = recency_weight * position_weight
+            total_weight += final_weight
+            
+            # Add weighted emotions
+            for emotion in emotions:
+                emotion_value = emotional_data.get(emotion, 0.5)
+                emotion_totals[emotion] += emotion_value * final_weight
+                
+            print(f"  Article: {article.get('title', 'Unknown')[:50]}... - Dominant: {article.get('dominant_emotion', 'N/A')} - Weight: {final_weight:.3f}")
+        
+        # Calculate weighted averages
+        if total_weight > 0:
+            calculated_emotional_mix = {
+                emotion: round(total / total_weight, 3)
+                for emotion, total in emotion_totals.items()
+            }
+        else:
+            calculated_emotional_mix = {emotion: 0.5 for emotion in emotions}
+        
+        # Find dominant emotion
+        dominant_emotion = max(calculated_emotional_mix, key=calculated_emotional_mix.get)
+        
+        print(f"Calculated emotional mix: {calculated_emotional_mix}")
+        print(f"Calculated dominant emotion: {dominant_emotion}")
+        
+        return {
+            "emotional_state": {
+                "dominant_emotion": dominant_emotion,
+                "emotional_intensity": calculated_emotional_mix[dominant_emotion],
+                "emotional_mix": calculated_emotional_mix
+            },
+            "articles_analyzed": len(articles_with_emotions),
+            "total_weight": total_weight
+        }
+        
+    except Exception as e:
+        print(f"Error calculating algorithm state from articles: {e}")
+        import traceback
+        traceback.print_exc()
+        return None
+
+async def update_algorithm_state(emotional_data: dict, article_metadata: dict = None):
+    """Update the persistent algorithm emotional state with improved blending"""
     try:
         current_state = algorithm_states_collection.find_one({}, sort=[("timestamp", -1)])
+        emotions = ["hope", "tension", "confidence", "uncertainty", "breakthrough", "healing"]
+        
+        # Validate emotional_data
+        if not emotional_data or not isinstance(emotional_data, dict):
+            print("⚠️ Invalid emotional_data provided, using defaults")
+            emotional_data = {emotion: 0.5 for emotion in emotions}
         
         if current_state:
+            # Calculate dynamic blending weight based on article count and strength
+            articles_processed = current_state.get("articles_processed", 1)
+            
+            # More articles = less influence from single new article
+            base_influence = max(0.05, min(0.3, 1.0 / (articles_processed ** 0.3)))
+            
+            # Boost influence if article has strong emotions
+            emotion_strength = max(emotional_data.values()) if emotional_data.values() else 0.5
+            if emotion_strength > 0.8:
+                base_influence *= 1.5  # Strong emotions get more influence
+            elif emotion_strength < 0.3:
+                base_influence *= 0.7  # Weak emotions get less influence
+            
+            # Cap influence between 5% and 35%
+            article_influence = max(0.05, min(0.35, base_influence))
+            current_influence = 1.0 - article_influence
+            
+            print(f"📊 Blending: {current_influence:.1%} current + {article_influence:.1%} new article (strength: {emotion_strength:.2f})")
+            
             # Blend current emotions with new article emotions
             new_emotional_mix = {}
-            emotions = ["hope", "tension", "confidence", "uncertainty", "breakthrough", "healing"]
-            
             for emotion in emotions:
                 current_value = current_state["emotional_state"]["emotional_mix"].get(emotion, 0.5)
                 new_value = emotional_data.get(emotion, 0.5)
-                # Use weighted average (80% current, 20% new)
-                blended_value = current_value * 0.8 + new_value * 0.2
-                new_emotional_mix[emotion] = round(blended_value, 3)
+                
+                # Use dynamic weighted average
+                blended_value = current_value * current_influence + new_value * article_influence
+                new_emotional_mix[emotion] = round(max(0.0, min(1.0, blended_value)), 3)
             
             # Find new dominant emotion
             dominant_emotion = max(new_emotional_mix, key=new_emotional_mix.get)
+            
+            # Check for significant state changes
+            old_dominant = current_state["emotional_state"]["dominant_emotion"]
+            state_change_significant = old_dominant != dominant_emotion
             
             # Update visual representation
             visual_rep = generate_visual_representation(dominant_emotion, new_emotional_mix[dominant_emotion])
@@ -1803,22 +1910,31 @@ async def update_algorithm_state(emotional_data: dict):
                 },
                 "visual_representation": visual_rep,
                 "timestamp": datetime.utcnow(),
-                "articles_processed": current_state.get("articles_processed", 0) + 1,
-                "feedback_influences": current_state.get("feedback_influences", [])
+                "articles_processed": articles_processed + 1,
+                "feedback_influences": current_state.get("feedback_influences", []),
+                "update_metadata": {
+                    "article_influence": article_influence,
+                    "emotion_strength": emotion_strength,
+                    "previous_dominant": old_dominant,
+                    "state_changed": state_change_significant,
+                    "article_metadata": article_metadata or {}
+                }
             }
             
             algorithm_states_collection.insert_one(new_state)
-            print(f"Algorithm state updated. Articles processed: {new_state['articles_processed']}")
+            
+            change_indicator = "🔄" if state_change_significant else "📈"
+            print(f"{change_indicator} Algorithm state updated: {old_dominant} → {dominant_emotion} (Articles: {new_state['articles_processed']})")
+            
         else:
             # Create initial algorithm state if none exists
-            print("Creating initial algorithm state from first article...")
+            print("🆕 Creating initial algorithm state from first article...")
             
             # Use the emotional data from the article to create initial state
-            emotions = ["hope", "tension", "confidence", "uncertainty", "breakthrough", "healing"]
             initial_emotional_mix = {}
-            
             for emotion in emotions:
-                initial_emotional_mix[emotion] = emotional_data.get(emotion, 0.5)
+                value = emotional_data.get(emotion, 0.5)
+                initial_emotional_mix[emotion] = round(max(0.0, min(1.0, value)), 3)
             
             # Find dominant emotion
             dominant_emotion = max(initial_emotional_mix, key=initial_emotional_mix.get)
@@ -1835,14 +1951,20 @@ async def update_algorithm_state(emotional_data: dict):
                 "visual_representation": visual_rep,
                 "timestamp": datetime.utcnow(),
                 "articles_processed": 1,
-                "feedback_influences": []
+                "feedback_influences": [],
+                "update_metadata": {
+                    "initial_creation": True,
+                    "article_metadata": article_metadata or {}
+                }
             }
             
             algorithm_states_collection.insert_one(initial_state)
-            print(f"Initial algorithm state created. Articles processed: 1")
+            print(f"✅ Initial algorithm state created: {dominant_emotion} (intensity: {initial_emotional_mix[dominant_emotion]:.2f})")
             
     except Exception as e:
-        print(f"Error updating algorithm state: {e}")
+        print(f"❌ Error updating algorithm state: {e}")
+        import traceback
+        traceback.print_exc()
 
 def generate_visual_representation(dominant_emotion: str, intensity: float) -> dict:
     """Generate visual representation for algorithm mood indicator"""
@@ -1990,6 +2112,17 @@ async def delete_article(article_id: str):
         # Delete associated feedback
         feedback_collection.delete_many({"article_id": article_id})
         
+        # Recalculate algorithm state after article deletion
+        print("🔄 Recalculating algorithm state after article deletion...")
+        try:
+            recalc_result = await recalculate_algorithm_state()
+            if recalc_result.get("success"):
+                print(f"✅ Algorithm state updated after deletion: {recalc_result.get('new_dominant_emotion')}")
+            else:
+                print("⚠️ Algorithm state recalculation failed after deletion")
+        except Exception as e:
+            print(f"⚠️ Error recalculating algorithm state after deletion: {e}")
+        
         response_message = f"Article {article_id} and associated content deleted successfully"
         if cloudinary_errors:
             response_message += f". Warning: {len(cloudinary_errors)} Cloudinary deletion errors occurred"
@@ -2069,33 +2202,19 @@ async def cleanup_orphaned_images():
 async def recalculate_algorithm_state():
     """Recalculate algorithm state based on existing articles"""
     try:
-        # Count existing articles
-        article_count = articles_collection.count_documents({})
+        print("🔄 Recalculating algorithm state from all articles...")
         
-        # Get current state
+        # Get current state for comparison
         current_state = algorithm_states_collection.find_one({}, sort=[("timestamp", -1)])
         
-        if current_state:
-            # Update the count
-            current_state["articles_processed"] = article_count
-            current_state["timestamp"] = datetime.utcnow()
+        # Calculate new state from all articles
+        calculated_state = await calculate_algorithm_state_from_all_articles()
+        
+        if calculated_state is None:
+            # No articles with emotional data found - create default state
+            article_count = articles_collection.count_documents({})
             
-            # Remove the _id to create a new document
-            current_state.pop("_id", None)
-            
-            # Insert updated state
-            algorithm_states_collection.insert_one(current_state)
-            
-            return {
-                "success": True,
-                "message": f"Algorithm state recalculated. Articles processed: {article_count}",
-                "articles_processed": article_count
-            }
-        else:
-            # Create initial algorithm state if none exists
-            print("Creating initial algorithm state during recalculation...")
-            
-            initial_state = {
+            default_state = {
                 "emotional_state": {
                     "dominant_emotion": "confidence",
                     "emotional_intensity": 0.6,
@@ -2103,31 +2222,182 @@ async def recalculate_algorithm_state():
                         "hope": 0.4,
                         "confidence": 0.6,
                         "healing": 0.3,
-                        "innovation": 0.2,
+                        "breakthrough": 0.2,
                         "tension": 0.1,
                         "uncertainty": 0.2
                     }
                 },
-                "visual_representation": {
-                    "shape": "circle",
-                    "color": "#3498db",
-                    "glow_intensity": 0.6,
-                    "pulse_rate": 1.2
-                },
+                "visual_representation": generate_visual_representation("confidence", 0.6),
                 "timestamp": datetime.utcnow(),
                 "articles_processed": article_count,
-                "feedback_influences": []
+                "feedback_influences": current_state.get("feedback_influences", []) if current_state else []
             }
             
-            algorithm_states_collection.insert_one(initial_state)
+            algorithm_states_collection.insert_one(default_state)
             
             return {
                 "success": True,
-                "message": f"Initial algorithm state created. Articles processed: {article_count}",
-                "articles_processed": article_count
+                "message": f"No articles with emotional data found. Created default state. Total articles: {article_count}",
+                "articles_processed": article_count,
+                "articles_analyzed": 0,
+                "state_changed": True
             }
+        
+        # Create new algorithm state from calculated data
+        new_state = {
+            "emotional_state": calculated_state["emotional_state"],
+            "visual_representation": generate_visual_representation(
+                calculated_state["emotional_state"]["dominant_emotion"],
+                calculated_state["emotional_state"]["emotional_intensity"]
+            ),
+            "timestamp": datetime.utcnow(),
+            "articles_processed": articles_collection.count_documents({}),
+            "articles_analyzed": calculated_state["articles_analyzed"],
+            "feedback_influences": current_state.get("feedback_influences", []) if current_state else [],
+            "recalculation_metadata": {
+                "total_weight": calculated_state["total_weight"],
+                "recalculated_at": datetime.utcnow().isoformat(),
+                "previous_dominant": current_state["emotional_state"]["dominant_emotion"] if current_state else None
+            }
+        }
+        
+        # Insert the new calculated state
+        algorithm_states_collection.insert_one(new_state)
+        
+        # Check if state changed significantly
+        state_changed = True
+        if current_state:
+            old_dominant = current_state["emotional_state"]["dominant_emotion"]
+            new_dominant = new_state["emotional_state"]["dominant_emotion"]
+            state_changed = old_dominant != new_dominant
+        
+        print(f"✅ Algorithm state recalculated successfully")
+        print(f"   Previous dominant: {current_state['emotional_state']['dominant_emotion'] if current_state else 'None'}")
+        print(f"   New dominant: {new_state['emotional_state']['dominant_emotion']}")
+        print(f"   Articles analyzed: {calculated_state['articles_analyzed']}")
+        
+        return {
+            "success": True,
+            "message": f"Algorithm state recalculated from {calculated_state['articles_analyzed']} articles",
+            "articles_processed": new_state["articles_processed"],
+            "articles_analyzed": calculated_state["articles_analyzed"],
+            "previous_dominant_emotion": current_state["emotional_state"]["dominant_emotion"] if current_state else None,
+            "new_dominant_emotion": new_state["emotional_state"]["dominant_emotion"],
+            "state_changed": state_changed,
+            "emotional_mix": new_state["emotional_state"]["emotional_mix"]
+        }
             
     except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/admin/validate-algorithm-state")
+async def validate_algorithm_state():
+    """Compare current algorithm state with calculated state from all articles"""
+    try:
+        print("🔍 Validating algorithm state accuracy...")
+        
+        # Get current stored state
+        current_state = algorithm_states_collection.find_one({}, sort=[("timestamp", -1)])
+        if not current_state:
+            return {
+                "validation_status": "no_current_state",
+                "message": "No current algorithm state found",
+                "recommendation": "Run recalculate-algorithm-state to create initial state"
+            }
+        
+        # Calculate what the state should be based on all articles
+        calculated_state = await calculate_algorithm_state_from_all_articles()
+        if calculated_state is None:
+            return {
+                "validation_status": "no_articles",
+                "message": "No articles with emotional data found for comparison",
+                "current_state": {
+                    "dominant_emotion": current_state["emotional_state"]["dominant_emotion"],
+                    "articles_processed": current_state.get("articles_processed", 0)
+                }
+            }
+        
+        # Compare current vs calculated
+        current_emotions = current_state["emotional_state"]["emotional_mix"]
+        calculated_emotions = calculated_state["emotional_state"]["emotional_mix"]
+        
+        # Calculate differences
+        emotion_diffs = {}
+        total_diff = 0
+        emotions = ["hope", "tension", "confidence", "uncertainty", "breakthrough", "healing"]
+        
+        for emotion in emotions:
+            current_val = current_emotions.get(emotion, 0.5)
+            calculated_val = calculated_emotions.get(emotion, 0.5)
+            diff = abs(current_val - calculated_val)
+            emotion_diffs[emotion] = {
+                "current": current_val,
+                "calculated": calculated_val,
+                "difference": round(diff, 3)
+            }
+            total_diff += diff
+        
+        avg_diff = total_diff / len(emotions)
+        
+        # Determine validation status
+        current_dominant = current_state["emotional_state"]["dominant_emotion"]
+        calculated_dominant = calculated_state["emotional_state"]["dominant_emotion"]
+        dominant_matches = current_dominant == calculated_dominant
+        
+        # Classification thresholds
+        if avg_diff < 0.05 and dominant_matches:
+            validation_status = "accurate"
+            recommendation = "Algorithm state is accurate"
+        elif avg_diff < 0.15 and dominant_matches:
+            validation_status = "mostly_accurate"
+            recommendation = "Algorithm state is mostly accurate with minor drift"
+        elif dominant_matches:
+            validation_status = "dominant_correct"
+            recommendation = "Dominant emotion is correct but values have drifted. Consider recalculation."
+        else:
+            validation_status = "inaccurate"
+            recommendation = "Algorithm state is inaccurate. Recalculation recommended."
+        
+        # Get article analysis for context
+        articles_with_emotions = list(articles_collection.find(
+            {"emotional_data": {"$exists": True, "$ne": None}},
+            {"dominant_emotion": 1, "title": 1, "emotional_data": 1}
+        ).limit(5))
+        
+        article_summary = []
+        for article in articles_with_emotions:
+            emotions_data = article.get("emotional_data", {})
+            dominant = article.get("dominant_emotion") or max(emotions_data, key=emotions_data.get) if emotions_data else "unknown"
+            article_summary.append({
+                "title": article.get("title", "Unknown")[:50] + "...",
+                "dominant_emotion": dominant
+            })
+        
+        return {
+            "validation_status": validation_status,
+            "dominant_emotion_matches": dominant_matches,
+            "average_difference": round(avg_diff, 3),
+            "recommendation": recommendation,
+            "current_state": {
+                "dominant_emotion": current_dominant,
+                "emotional_mix": current_emotions,
+                "articles_processed": current_state.get("articles_processed", 0),
+                "last_updated": current_state.get("timestamp")
+            },
+            "calculated_state": {
+                "dominant_emotion": calculated_dominant,
+                "emotional_mix": calculated_emotions,
+                "articles_analyzed": calculated_state["articles_analyzed"]
+            },
+            "emotion_differences": emotion_diffs,
+            "recent_articles_sample": article_summary,
+            "validation_timestamp": datetime.utcnow().isoformat()
+        }
+        
+    except Exception as e:
+        print(f"❌ Error validating algorithm state: {e}")
+        import traceback
+        traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
 
 # Newsletter and feedback endpoints (keeping existing functionality)
