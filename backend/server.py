@@ -1813,9 +1813,13 @@ async def calculate_algorithm_state_from_all_articles():
             final_weight = recency_weight * position_weight
             total_weight += final_weight
             
-            # Add weighted emotions
+            # Add weighted emotions with safe type conversion
             for emotion in emotions:
                 emotion_value = emotional_data.get(emotion, 0.5)
+                try:
+                    emotion_value = float(emotion_value) if emotion_value is not None else 0.5
+                except (ValueError, TypeError):
+                    emotion_value = 0.5
                 emotion_totals[emotion] += emotion_value * final_weight
                 
             print(f"  Article: {article.get('title', 'Unknown')[:50]}... - Dominant: {article.get('dominant_emotion', 'N/A')} - Weight: {final_weight:.3f}")
@@ -1869,8 +1873,17 @@ async def update_algorithm_state(emotional_data: dict, article_metadata: dict = 
             # More articles = less influence from single new article
             base_influence = max(0.05, min(0.3, 1.0 / (articles_processed ** 0.3)))
             
-            # Boost influence if article has strong emotions
-            emotion_strength = max(emotional_data.values()) if emotional_data.values() else 0.5
+            # Boost influence if article has strong emotions (with safe type conversion)
+            try:
+                safe_values = []
+                for value in emotional_data.values():
+                    try:
+                        safe_values.append(float(value) if value is not None else 0.5)
+                    except (ValueError, TypeError):
+                        safe_values.append(0.5)
+                emotion_strength = max(safe_values) if safe_values else 0.5
+            except Exception:
+                emotion_strength = 0.5
             if emotion_strength > 0.8:
                 base_influence *= 1.5  # Strong emotions get more influence
             elif emotion_strength < 0.3:
@@ -1882,11 +1895,19 @@ async def update_algorithm_state(emotional_data: dict, article_metadata: dict = 
             
             print(f"📊 Blending: {current_influence:.1%} current + {article_influence:.1%} new article (strength: {emotion_strength:.2f})")
             
-            # Blend current emotions with new article emotions
+            # Blend current emotions with new article emotions (with safe type conversion)
             new_emotional_mix = {}
             for emotion in emotions:
-                current_value = current_state["emotional_state"]["emotional_mix"].get(emotion, 0.5)
-                new_value = emotional_data.get(emotion, 0.5)
+                # Safely convert to float
+                try:
+                    current_value = float(current_state["emotional_state"]["emotional_mix"].get(emotion, 0.5))
+                except (ValueError, TypeError):
+                    current_value = 0.5
+                    
+                try:
+                    new_value = float(emotional_data.get(emotion, 0.5))
+                except (ValueError, TypeError):
+                    new_value = 0.5
                 
                 # Use dynamic weighted average
                 blended_value = current_value * current_influence + new_value * article_influence
@@ -2321,18 +2342,27 @@ async def validate_algorithm_state():
         current_emotions = current_state["emotional_state"]["emotional_mix"]
         calculated_emotions = calculated_state["emotional_state"]["emotional_mix"]
         
-        # Calculate differences
+        # Calculate differences with safe type conversion
         emotion_diffs = {}
         total_diff = 0
         emotions = ["hope", "tension", "confidence", "uncertainty", "breakthrough", "healing"]
         
         for emotion in emotions:
-            current_val = current_emotions.get(emotion, 0.5)
-            calculated_val = calculated_emotions.get(emotion, 0.5)
+            # Safely convert to float with fallback
+            try:
+                current_val = float(current_emotions.get(emotion, 0.5))
+            except (ValueError, TypeError):
+                current_val = 0.5
+                
+            try:
+                calculated_val = float(calculated_emotions.get(emotion, 0.5))
+            except (ValueError, TypeError):
+                calculated_val = 0.5
+            
             diff = abs(current_val - calculated_val)
             emotion_diffs[emotion] = {
-                "current": current_val,
-                "calculated": calculated_val,
+                "current": round(current_val, 3),
+                "calculated": round(calculated_val, 3),
                 "difference": round(diff, 3)
             }
             total_diff += diff
@@ -2367,7 +2397,29 @@ async def validate_algorithm_state():
         article_summary = []
         for article in articles_with_emotions:
             emotions_data = article.get("emotional_data", {})
-            dominant = article.get("dominant_emotion") or max(emotions_data, key=emotions_data.get) if emotions_data else "unknown"
+            
+            # Get dominant emotion with safe type conversion
+            dominant = article.get("dominant_emotion")
+            if not dominant and emotions_data:
+                try:
+                    # Convert emotion values to floats for safe comparison
+                    safe_emotions = {}
+                    for emotion, value in emotions_data.items():
+                        try:
+                            safe_emotions[emotion] = float(value) if value is not None else 0.0
+                        except (ValueError, TypeError):
+                            safe_emotions[emotion] = 0.0
+                    
+                    if safe_emotions:
+                        dominant = max(safe_emotions, key=safe_emotions.get)
+                    else:
+                        dominant = "unknown"
+                except Exception as e:
+                    print(f"Error determining dominant emotion: {e}")
+                    dominant = "unknown"
+            elif not dominant:
+                dominant = "unknown"
+            
             article_summary.append({
                 "title": article.get("title", "Unknown")[:50] + "...",
                 "dominant_emotion": dominant
@@ -2736,15 +2788,21 @@ async def update_algorithm_with_feedback(emotion: str, influence_weight: float, 
         # Calculate influence based on weight
         influence_factor = min(influence_weight * 0.2, 0.3)  # Cap maximum influence at 30%
         
-        # Update emotional mix
+        # Update emotional mix with safe type conversion
         new_mix = current_mix.copy()
         for emotion_key in new_mix:
+            # Safely convert to float
+            try:
+                current_val = float(new_mix[emotion_key])
+            except (ValueError, TypeError):
+                current_val = 0.5
+                
             if emotion_key == emotion:
                 # Increase the feedback emotion
-                new_mix[emotion_key] = min(1.0, new_mix[emotion_key] + influence_factor)
+                new_mix[emotion_key] = min(1.0, current_val + influence_factor)
             else:
                 # Slightly decrease other emotions to maintain balance
-                new_mix[emotion_key] = max(0.1, new_mix[emotion_key] - (influence_factor / 5))
+                new_mix[emotion_key] = max(0.1, current_val - (influence_factor / 5))
                 
         # Normalize values to ensure they sum to a reasonable range
         total = sum(new_mix.values())
