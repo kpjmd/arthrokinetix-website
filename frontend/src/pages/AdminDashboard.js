@@ -171,14 +171,81 @@ const AdminDashboard = () => {
 
       if (response.ok) {
         const result = await response.json();
-        alert(`Algorithm state recalculated! Articles processed: ${result.articles_processed}`);
+        
+        // Create detailed success message
+        let message = `✅ Algorithm state recalculated successfully!\n\n`;
+        message += `📊 Articles analyzed: ${result.articles_analyzed || 0}\n`;
+        message += `📚 Total articles: ${result.articles_processed || 0}\n`;
+        
+        if (result.previous_dominant_emotion && result.new_dominant_emotion) {
+          const changed = result.state_changed ? '🔄 CHANGED' : '📈 Unchanged';
+          message += `\n${changed}:\n`;
+          message += `Previous: ${result.previous_dominant_emotion}\n`;
+          message += `New: ${result.new_dominant_emotion}`;
+          
+          if (result.state_changed) {
+            message += `\n\n🎯 The algorithm now better reflects your articles' emotions!`;
+          }
+        }
+        
+        alert(message);
         fetchDashboardData();
       } else {
-        alert('Failed to recalculate algorithm state');
+        alert('❌ Failed to recalculate algorithm state');
       }
     } catch (error) {
       console.error('Error recalculating algorithm state:', error);
-      alert('Error recalculating algorithm state');
+      alert('❌ Error recalculating algorithm state: ' + error.message);
+    }
+  };
+
+  // Validate algorithm state
+  const handleValidateAlgorithmState = async () => {
+    try {
+      const response = await fetch(`${API_BASE}/api/admin/validate-algorithm-state`);
+
+      if (response.ok) {
+        const result = await response.json();
+        
+        // Create detailed validation message
+        let message = `🔍 Algorithm State Validation Results\n\n`;
+        
+        // Status indicator
+        const statusEmoji = {
+          'accurate': '✅',
+          'mostly_accurate': '📈',
+          'dominant_correct': '⚠️',
+          'inaccurate': '❌',
+          'no_current_state': '🚫',
+          'no_articles': '📝'
+        };
+        
+        message += `${statusEmoji[result.validation_status] || '❓'} Status: ${result.validation_status.replace('_', ' ').toUpperCase()}\n\n`;
+        
+        if (result.current_state && result.calculated_state) {
+          message += `Current: ${result.current_state.dominant_emotion}\n`;
+          message += `Expected: ${result.calculated_state.dominant_emotion}\n`;
+          message += `Match: ${result.dominant_emotion_matches ? '✅ Yes' : '❌ No'}\n`;
+          message += `Avg Difference: ${result.average_difference}\n\n`;
+          message += `Articles Analyzed: ${result.calculated_state.articles_analyzed}\n\n`;
+        }
+        
+        message += `💡 ${result.recommendation}`;
+        
+        if (result.recent_articles_sample && result.recent_articles_sample.length > 0) {
+          message += `\n\n📚 Recent Articles:\n`;
+          result.recent_articles_sample.slice(0, 3).forEach(article => {
+            message += `• ${article.title} (${article.dominant_emotion})\n`;
+          });
+        }
+        
+        alert(message);
+      } else {
+        alert('❌ Failed to validate algorithm state');
+      }
+    } catch (error) {
+      console.error('Error validating algorithm state:', error);
+      alert('❌ Error validating algorithm state: ' + error.message);
     }
   };
   
@@ -1059,13 +1126,24 @@ const AdminDashboard = () => {
               <div className="space-y-6">
                 <div className="flex justify-between items-center">
                   <h2 className="text-xl font-semibold text-gray-900">Content Management</h2>
-                  <button
-                    onClick={handleRecalculateAlgorithmState}
-                    className="flex items-center px-4 py-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition-colors"
-                  >
-                    <BarChart3 className="w-5 h-5 mr-2" />
-                    Fix Algorithm Count
-                  </button>
+                  <div className="flex space-x-3">
+                    <button
+                      onClick={handleValidateAlgorithmState}
+                      className="flex items-center px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+                      title="Check if algorithm state accurately reflects article emotions"
+                    >
+                      <BarChart3 className="w-5 h-5 mr-2" />
+                      Validate State
+                    </button>
+                    <button
+                      onClick={handleRecalculateAlgorithmState}
+                      className="flex items-center px-4 py-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition-colors"
+                      title="Recalculate algorithm emotional state from all articles"
+                    >
+                      <BarChart3 className="w-5 h-5 mr-2" />
+                      Recalculate Algorithm State
+                    </button>
+                  </div>
                 </div>
     
                 {/* Articles Management */}

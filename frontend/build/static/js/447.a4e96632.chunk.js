@@ -1,0 +1,1 @@
+(self.webpackChunkarthrokinetix_frontend=self.webpackChunkarthrokinetix_frontend||[]).push([[447],{3285:()=>{},5340:()=>{},9838:()=>{}}]);
