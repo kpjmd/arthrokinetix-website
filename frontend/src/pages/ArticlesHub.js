@@ -42,9 +42,10 @@ const ArticlesHub = () => {
   }, [selectedSubspecialty]);
 
   const fetchArticles = async () => {
+    let url;
     try {
       setLoading(true);
-      const url = selectedSubspecialty === 'all' 
+      url = selectedSubspecialty === 'all' 
         ? `${API_BASE}/api/articles`
         : `${API_BASE}/api/articles?subspecialty=${selectedSubspecialty}`;
       
