@@ -3334,6 +3334,69 @@ async def fix_article_signature(article_id: str):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+@app.get("/api/admin/data-inspection")
+async def admin_data_inspection():
+    """Admin endpoint to inspect article and artwork emotional data"""
+    try:
+        # Get articles with emotional data
+        articles = list(articles_collection.find({}, {
+            'id': 1, 'title': 1, 'emotional_data': 1, 'subspecialty': 1, 
+            'published_date': 1, '_id': 0
+        }))
+        
+        # Get artworks with emotional data  
+        artworks = list(artworks_collection.find({}, {
+            'id': 1, 'title': 1, 'dominant_emotion': 1, 'article_id': 1,
+            'subspecialty': 1, 'created_date': 1, '_id': 0
+        }))
+        
+        # Analyze emotion distribution in articles
+        article_emotions = {}
+        for article in articles:
+            emotion = article.get('emotional_data', {}).get('dominant_emotion', 'None')
+            article_emotions[emotion] = article_emotions.get(emotion, 0) + 1
+        
+        # Analyze emotion distribution in artworks
+        artwork_emotions = {}
+        for artwork in artworks:
+            emotion = artwork.get('dominant_emotion', 'None')
+            artwork_emotions[emotion] = artwork_emotions.get(emotion, 0) + 1
+        
+        # Check for articles without emotional data
+        articles_without_emotions = [
+            {
+                'id': article.get('id'),
+                'title': article.get('title'),
+                'subspecialty': article.get('subspecialty')
+            }
+            for article in articles 
+            if not article.get('emotional_data') or not article.get('emotional_data', {}).get('dominant_emotion')
+        ]
+        
+        # Summary statistics
+        summary = {
+            'total_articles': len(articles),
+            'total_artworks': len(artworks),
+            'articles_with_emotions': len([a for a in articles if a.get('emotional_data', {}).get('dominant_emotion')]),
+            'articles_without_emotions': len(articles_without_emotions),
+            'unique_article_emotions': len(article_emotions),
+            'unique_artwork_emotions': len(artwork_emotions)
+        }
+        
+        return {
+            'summary': summary,
+            'article_emotion_distribution': article_emotions,
+            'artwork_emotion_distribution': artwork_emotions,
+            'articles_sample': articles[:5],  # First 5 articles for inspection
+            'artworks_sample': artworks[:5],  # First 5 artworks for inspection
+            'articles_without_emotions': articles_without_emotions,
+            'timestamp': datetime.now().isoformat()
+        }
+        
+    except Exception as e:
+        print(f"[ADMIN DATA INSPECTION ERROR] {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
 if __name__ == "__main__":
     import uvicorn
     
