@@ -3397,6 +3397,87 @@ async def admin_data_inspection():
         print(f"[ADMIN DATA INSPECTION ERROR] {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
+@app.post("/api/admin/sync-article-emotions")
+async def sync_article_emotions():
+    """
+    Re-analyze articles with manual algorithm and sync their dominant emotions
+    to match their corresponding artworks for consistent display
+    """
+    try:
+        # Get all articles and their corresponding artworks
+        articles = list(articles_collection.find({}))
+        artworks = list(artworks_collection.find({}))
+        
+        # Create mapping of article_id to artwork
+        artwork_by_article = {aw.get('article_id'): aw for aw in artworks if aw.get('article_id')}
+        
+        updated_count = 0
+        emotion_mapping = {
+            "problemIntensity": "tension",
+            "solutionConfidence": "confidence", 
+            "healingPotential": "healing",
+            "innovationLevel": "breakthrough",
+            "uncertaintyLevel": "uncertainty"
+        }
+        
+        print(f"🔄 Starting emotion sync for {len(articles)} articles...")
+        
+        for article in articles:
+            article_id = article.get('id') or article.get('_id')
+            if not article_id:
+                continue
+                
+            # Find corresponding artwork
+            artwork = artwork_by_article.get(article_id)
+            if not artwork:
+                print(f"⚠️ No artwork found for article {article_id}")
+                continue
+                
+            # Get artwork's dominant emotion and map it if needed
+            artwork_emotion = artwork.get('dominant_emotion', 'confidence')
+            mapped_emotion = emotion_mapping.get(artwork_emotion, artwork_emotion)
+            
+            # Get current article emotion
+            current_emotion = article.get('emotional_data', {}).get('dominant_emotion', 'confidence')
+            
+            if current_emotion != mapped_emotion:
+                # Update the article's emotional_data
+                update_data = {
+                    '$set': {
+                        'emotional_data.dominant_emotion': mapped_emotion
+                    }
+                }
+                
+                # Update in database
+                result = articles_collection.update_one(
+                    {'id': article_id},
+                    update_data
+                )
+                
+                if result.modified_count > 0:
+                    updated_count += 1
+                    print(f"✅ Updated article {article_id}: {current_emotion} → {mapped_emotion}")
+                else:
+                    print(f"⚠️ Failed to update article {article_id}")
+            else:
+                print(f"📍 Article {article_id} already has correct emotion: {mapped_emotion}")
+        
+        print(f"🎉 Emotion sync complete! Updated {updated_count} articles")
+        
+        return {
+            "success": True,
+            "message": f"Successfully synced emotions for {updated_count} articles",
+            "total_articles": len(articles),
+            "updated_count": updated_count,
+            "skipped_count": len(articles) - updated_count
+        }
+        
+    except Exception as e:
+        print(f"❌ Error syncing article emotions: {e}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
+
 if __name__ == "__main__":
     import uvicorn
     
