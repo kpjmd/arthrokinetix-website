@@ -197,12 +197,14 @@ const About = () => {
                 <div key={index} className="flex items-center gap-4">
                   <div 
                     className="w-4 h-4 rounded-full"
-                    style={{ backgroundColor: getEmotionColor(article.emotional_data?.dominant_emotion || 'confidence') }}
+                    style={{ backgroundColor: getEmotionColor(article.emotional_data?.dominant_emotion || 'uncertainty') }}
                   />
                   <div className="flex-1">
                     <div className="flex justify-between items-center">
                       <span className="text-sm font-medium capitalize">
-                        {article.emotional_data?.dominant_emotion || 'confidence'}
+                        {article.emotional_data?.dominant_emotion || (
+                          console.warn(`Missing emotional_data.dominant_emotion for article: ${article.id} - ${article.title}`) || 'Unknown'
+                        )}
                       </span>
                       <span className="text-sm text-gray-500">
                         {Math.round((article.emotional_data?.emotional_intensity || 0.5) * 100)}%

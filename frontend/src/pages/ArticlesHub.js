@@ -356,10 +356,12 @@ const ArticlesHub = () => {
                         )}
 
                         {/* Subtle Clinical Insight */}
-                        {article.emotional_data?.dominant_emotion && (
+                        {article.emotional_data?.dominant_emotion ? (
                           <div className="text-xs text-gray-500 mb-4">
                             Clinical focus: <span className="capitalize font-medium">{article.emotional_data.dominant_emotion}</span>
                           </div>
+                        ) : (
+                          console.warn(`Missing emotional_data.dominant_emotion for article: ${article.id} - ${article.title}`) || null
                         )}
 
                         {/* Action Button */}
