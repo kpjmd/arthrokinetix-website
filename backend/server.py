@@ -1166,12 +1166,11 @@ async def get_articles(
             projection = {field: 1 for field in field_list}
             projection["_id"] = 1
         else:
-            # Default: exclude heavy content fields but ensure emotional_data is included
+            # Default: exclude heavy content fields (emotional_data will be included by default)
             projection = {
                 "content": 0,
                 "html_content": 0,
-                "algorithm_parameters.statistical_data": 0,
-                "emotional_data": 1  # Explicitly include emotional_data for frontend display
+                "algorithm_parameters.statistical_data": 0
             }
         
         # Calculate pagination
