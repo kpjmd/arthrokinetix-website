@@ -49,6 +49,11 @@ const ArticlesHub = () => {
         : `${API_BASE}/api/articles?subspecialty=${selectedSubspecialty}`;
       
       const response = await fetch(url);
+      
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+      
       const data = await response.json();
       
       // Deduplicate articles by ID
@@ -70,7 +75,9 @@ const ArticlesHub = () => {
       
       setArticles(uniqueArticles);
     } catch (error) {
-      console.error('Error fetching articles:', error);
+      console.error('❌ Error fetching articles:', error);
+      console.error('❌ API URL:', url);
+      console.error('❌ Falling back to sample data due to API failure');
       setArticles(generateSampleArticles());
     } finally {
       setLoading(false);
