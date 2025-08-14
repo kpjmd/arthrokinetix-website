@@ -246,7 +246,7 @@ const RealArthrokinetixArtwork = ({ artwork, width = 400, height = 400 }) => {
             opacity="0.8"
             fontFamily="monospace"
           >
-            {generateUniqueID(params)}
+            {artwork.metadata?.signature_id || generateUniqueID(params)}
           </text>
           <text
             x="0"
